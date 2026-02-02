@@ -37,6 +37,23 @@ build:
     paths:
       - dist/
 
+pages:
+  stage: deploy
+  script:
+    # Install dependencies
+    - pip install .[dev]
+    # Build HTML docs
+    - cd docs
+    - make html
+    # Copy the generated HTML to the public folder
+    - cp -r _build/html ../../public
+  artifacts:
+    paths:
+      - public
+  only:
+    - /^main$|^develop$|^release-.*$/  # build docs only on main, develop or release branches
+
+
 cache:
   key: ${CI_COMMIT_REF_SLUG}
   paths:
