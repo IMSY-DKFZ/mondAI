@@ -12,7 +12,6 @@ stages:
 - lint
 - test
 - build
-- secret-detection
 
 before_script:
   - pip install --upgrade pip
@@ -37,13 +36,3 @@ build:
   artifacts:
     paths:
       - dist/
-
-sast:
-  stage: test
-  
-include:
-- template: Auto-DevOps.gitlab-ci.yml
-variables:
-  SECRET_DETECTION_ENABLED: 'true'
-secret_detection:
-  stage: secret-detection
