@@ -10,30 +10,29 @@ description = "Image quality metrics for medical imaging"
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [
-    { name = "Division of Intelligent Medical Systems (IMSY), German Cancer Research Center (DKFZ)", email = "your.email@example.com" }
+    { name = "Division of Intelligent Medical Systems (IMSY), German Cancer Research Center (DKFZ)", email = "your.email@example.com" },
 ]
 requires-python = ">=3.10"
 
 dependencies = [
-    "torch>=2.10",
-    "numpy",
+    "torch>=2.10", # BSD-3-Clause
+    "numpy",       # BSD-3-Clause and MIT
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest",
-    "pytest-cov",
-    "pre-commit",
-    "ruff",
-    "mypy",
-    "sphinx",
-    "myst-parser"
+    "pytest",      # MIT
+    "pytest-cov",  # MIT
+    "pre-commit",  # MIT
+    "ruff",        # MIT
+    "mypy",        # MIT
+    "sphinx",      # BSD-2-Clause
+    "myst-parser", # BSD-2-Clause
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra -q"
-
 
 
 [tool.ruff]
