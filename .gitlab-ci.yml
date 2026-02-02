@@ -5,24 +5,42 @@
 # Container Scanning customization: https://docs.gitlab.com/ee/user/application_security/container_scanning/#customizing-the-container-scanning-settings
 # Note that environment variables can be set in several places
 # See https://docs.gitlab.com/ee/ci/variables/#cicd-variable-precedence
+
+image: python:3.10
+
 stages:
-- build
+- lint
 - test
-- deploy
-- review
-- dast
-- staging
-- canary
-- production
-- incremental rollout 10%
-- incremental rollout 25%
-- incremental rollout 50%
-- incremental rollout 100%
-- performance
-- cleanup
+- build
 - secret-detection
+
+before_script:
+  - pip install --upgrade pip
+
+lint:
+  stage: lint
+  script:
+    - pip install pre-commit
+    - pre-commit run --all-files
+
+tests:
+  stage: test
+  script:
+    - pip install .[dev]
+    - pytest --cov=mondai --cov-report=term
+
+build:
+  stage: build
+  script:
+    - pip install build
+    - python -m build
+  artifacts:
+    paths:
+      - dist/
+
 sast:
   stage: test
+  
 include:
 - template: Auto-DevOps.gitlab-ci.yml
 variables:
