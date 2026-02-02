@@ -36,3 +36,9 @@ build:
   artifacts:
     paths:
       - dist/
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - .venv/
+    - ~/.cache/pip/
