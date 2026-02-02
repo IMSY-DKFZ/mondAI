@@ -47,7 +47,7 @@ pages:
     - cd docs
     - make html
     # Copy the generated HTML to the public folder
-    - cp -r _build/html ../../public
+    - cp -r build/html ../../public
   artifacts:
     paths:
       - public
