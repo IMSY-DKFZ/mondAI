@@ -12,7 +12,7 @@ stages:
 - lint
 - test
 - build
-- deploy
+- pages
 
 before_script:
   - pip install --upgrade pip
@@ -39,7 +39,7 @@ build:
       - dist/
 
 pages:
-  stage: deploy
+  stage: pages
   script:
     # Install dependencies
     - pip install .[dev]
@@ -47,7 +47,9 @@ pages:
     - cd docs
     - make html
     # Copy the generated HTML to the public folder
-    - cp -r build/html ../../public
+    - cd ..
+    - mkdir -p public
+    - cp -r docs/build/html/* public/
   artifacts:
     paths:
       - public
