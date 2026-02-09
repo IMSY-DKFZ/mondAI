@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 
+from mondAI.settings import settings
 from mondAI.utils.internal_format import convert_to_internal_format
 
 
@@ -26,7 +27,9 @@ def test_convert_to_internal_format_device() -> None:
     # Test if the tensor is moved to the correct device
     image_np = np.random.rand(2, 3, 4, 5)
     result = convert_to_internal_format(image_np)
-    assert result.device == torch.device("cuda" if torch.cuda.is_available() else "cpu", index=0)
+    assert result.device == torch.device(
+        "cuda" if torch.cuda.is_available() and settings.torch_device == "gpu" else "cpu", index=0
+    )
 
 
 def test_convert_to_internal_format_settings_cpu() -> None:
