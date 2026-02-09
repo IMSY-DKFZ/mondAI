@@ -21,13 +21,16 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest",      # MIT
-    "pytest-cov",  # MIT
-    "pre-commit",  # MIT
-    "ruff",        # MIT
-    "mypy",        # MIT
-    "sphinx",      # BSD-2-Clause
-    "myst-parser", # BSD-2-Clause
+    "pytest",       # MIT
+    "pytest-cov",   # MIT
+    "pre-commit",   # MIT
+    "ruff",         # MIT
+    "mypy",         # MIT
+    "sphinx",       # BSD-2-Clause
+    "myst-parser",  # BSD-2-Clause
+    "scikit-image", # BSD-3-Clause
+    "pooch",        # BSD-3-Clause
+    "matplotlib",   # PSF-2.0
 ]
 
 [tool.pytest.ini_options]
@@ -41,3 +44,4 @@ line-length = 120
 
 [tool.mypy]
 strict = true
+disallow_untyped_decorators = false
