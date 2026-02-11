@@ -6,3 +6,14 @@ This package provides image quality metric implementations which are:
 * reproducible and reportable
 * tested
 * documented
+
+
+
+```{toctree}
+:maxdepth: 3
+:caption: API
+installation
+usage
+limitations
+api/index
+```

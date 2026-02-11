@@ -3,6 +3,11 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath("../../src"))
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
@@ -16,9 +21,15 @@ release = "0.0.1"
 
 extensions = [
     "myst_parser",
-    "sphinx.ext.autodoc",
+    "sphinx.ext.autodoc",  # generate documentation using doc strings
+    "sphinx.ext.autosummary",  # used to generate overview tables
+    "sphinx.ext.intersphinx",  # link between different python packages
+    "sphinx.ext.viewcode",  # links to code snippets
     "sphinx.ext.napoleon",
 ]
+
+autosummary_generate = True
+autosummary_generate_overwrite = True
 
 templates_path = ["_templates"]
 exclude_patterns = []
@@ -30,3 +41,16 @@ source_suffix = [".rst", ".md"]
 
 html_theme = "alabaster"
 html_static_path = ["_static"]
+html_sidebars = {
+    "**": [
+        "about.html",
+        "searchfield.html",
+        "navigation.html",
+        "relations.html",
+        "donate.html",
+    ]
+}
+html_theme_options = {
+    "description": "Correct, reproducible and tested metric implementations for image quality",
+    "show_relbars": True,
+}
