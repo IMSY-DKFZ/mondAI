@@ -26,7 +26,6 @@ class FullReferenceMetric(Metric, ABC):
         dims: Sequence[str] = ("W", "H"),
     ) -> float | torch.Tensor | np.ndarray:
         """Compute the metric between image and corresponding reference."""
-
         # Check inputs
         check_image_type(image)
         check_image_type(reference)
@@ -95,5 +94,9 @@ class FullReferenceMetric(Metric, ABC):
 
     @abstractmethod
     def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> float | torch.Tensor:
-        """Internal method to compute the metric. To be implemented by subclasses."""
+        """Internal method to compute the metric.
+
+        To be implemented by subclasses.
+
+        """
         raise NotImplementedError("Subclasses should implement this method.")

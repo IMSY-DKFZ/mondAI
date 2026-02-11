@@ -42,6 +42,13 @@ addopts = "-ra -q"
 select = ["E", "F", "I", "B"]
 line-length = 120
 
+[tool.docformatter]
+wrap-summaries = 87
+wrap-descriptions = 87
+blank = true
+pre-summary-newline = false
+make-summary-multi-line = false
+
 [tool.mypy]
 strict = true
 disallow_untyped_decorators = false

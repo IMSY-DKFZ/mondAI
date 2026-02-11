@@ -23,7 +23,6 @@ class NoReferenceMetric(Metric, ABC):
         dims: Sequence[str] = ("W", "H"),
     ) -> float | torch.Tensor | np.ndarray:
         """Compute the metric for the given image."""
-
         # Check inputs
         check_image_type(image)
         check_nan_values(image, reference=False)
@@ -85,5 +84,9 @@ class NoReferenceMetric(Metric, ABC):
 
     @abstractmethod
     def _compute(self, image: np.ndarray | torch.Tensor) -> float | list[float]:
-        """Internal method to compute the metric. To be implemented by subclasses."""
+        """Internal method to compute the metric.
+
+        To be implemented by subclasses.
+
+        """
         raise NotImplementedError("Subclasses should implement this method.")

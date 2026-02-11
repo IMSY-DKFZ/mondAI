@@ -20,23 +20,22 @@ class Metric(ABC):
 
     @abstractmethod
     def __str__(self) -> str:
-        """Full text representation of the metric including its name and
-        abbreviation and parameters for reproducible reporting."""
+        """Full text representation of the metric including its name and abbreviation
+        and parameters for reproducible reporting."""
         raise NotImplementedError("Subclasses should implement this method.")
 
     @abstractmethod
     def fingerprint(self) -> dict[str, Any]:
-        """Return a dictionary that uniquely identifies the metric and its
-        parameters for reproducibility."""
+        """Return a dictionary that uniquely identifies the metric and its parameters
+        for reproducibility."""
         raise NotImplementedError("Subclasses should implement this method.")
 
     def _arrow_indicating_optimum(self) -> str:
-        """
-        Show an arrow indicating whether higher metric values are better.
+        """Show an arrow indicating whether higher metric values are better.
 
-        :param self: The Metric instance.
         :return: "↑" if higher is better, "↓" otherwise.
         :rtype: str
+
         """
         return "↑" if self.higher_is_better else "↓"
 
