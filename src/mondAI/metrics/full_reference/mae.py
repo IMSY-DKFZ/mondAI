@@ -5,7 +5,22 @@ from mondAI.metrics.full_reference.base import FullReferenceMetric
 
 
 class MAE(FullReferenceMetric):
-    """Mean Absolute Error (MAE) metric implementation."""
+    """Mean Absolute Error (MAE) metric implementation.
+
+    The Mean Absolute Error (MAE) is a measure of errors between paired observations
+    expressed as the average absolute difference between the predicted values and the
+    actual values. It is defined mathematically as:
+
+    \[
+    MAE = \frac{1}{n} \sum_{i=1}^{n} |y_i - \hat{y}_i|
+    \]
+
+    where:
+    - \(y_i\) is the actual value,
+    - \(\hat{y}_i\) is the predicted value,
+    - \(n\) is the number of observations.
+
+    """
 
     name = "Mean Absolute Error"
     abbreviation = "MAE"
