@@ -39,8 +39,10 @@ addopts = "-ra -q"
 
 
 [tool.ruff]
-select = ["E", "F", "I", "B"]
 line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
 
 [tool.docformatter]
 wrap-summaries = 87
