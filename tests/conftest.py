@@ -5,6 +5,9 @@ from pytest import fixture
 from skimage.data import brain as brain_volume
 from skimage.data import shepp_logan_phantom
 
+from mondAI.metrics.full_reference.base import FullReferenceMetric
+from mondAI.metrics.no_reference.base import NoReferenceMetric
+
 
 def load_shepp_logan_phantom() -> np.ndarray:
     # Load the Shepp-Logan phantom (400, 400) pixel image
@@ -166,6 +169,58 @@ def batch_of_multispectral_volumes_B_D_C_W_H() -> torch.Tensor:
 @fixture
 def batch_of_multispectral_volumes_B_D_W_H_C() -> torch.Tensor:
     return create_random_image((4, 10, 256, 256, 10))
+
+
+@fixture
+def dummy_full_reference_metric() -> FullReferenceMetric:
+    class DummyFullReferenceMetric(FullReferenceMetric):
+        name = "Dummy Full Reference Metric"
+        abbreviation = "DFRM"
+        higher_is_better = True
+
+        def _check_metric_configuration(self) -> bool:
+            return True
+
+        def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> float:
+            return 0.0
+
+        def __str__(self) -> str:
+            return f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()}"
+
+        def fingerprint(self) -> dict[str, str | bool]:
+            return {
+                "name": self.name,
+                "abbreviation": self.abbreviation,
+                "higher_is_better": self.higher_is_better,
+            }
+
+    return DummyFullReferenceMetric()
+
+
+@fixture
+def dummy_no_reference_metric() -> NoReferenceMetric:
+    class DummyNoReferenceMetric(NoReferenceMetric):
+        name = "Dummy No Reference Metric"
+        abbreviation = "DNRM"
+        higher_is_better = True
+
+        def _check_metric_configuration(self) -> bool:
+            return True
+
+        def _compute(self, image: torch.Tensor) -> float:
+            return 0.0
+
+        def __str__(self) -> str:
+            return f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()}"
+
+        def fingerprint(self) -> dict[str, str | bool]:
+            return {
+                "name": self.name,
+                "abbreviation": self.abbreviation,
+                "higher_is_better": self.higher_is_better,
+            }
+
+    return DummyNoReferenceMetric()
 
 
 # Example usage

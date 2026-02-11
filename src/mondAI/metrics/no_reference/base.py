@@ -78,11 +78,6 @@ class NoReferenceMetric(Metric, ABC):
         return scores
 
     @abstractmethod
-    def _check_metric_configuration(self) -> bool:
-        """Check if the metric configuration is valid."""
-        raise NotImplementedError("Subclasses should implement this method.")
-
-    @abstractmethod
     def _compute(self, image: np.ndarray | torch.Tensor) -> float | list[float]:
         """Internal method to compute the metric.
 

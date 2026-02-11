@@ -88,11 +88,6 @@ class FullReferenceMetric(Metric, ABC):
         return scores
 
     @abstractmethod
-    def _check_metric_configuration(self) -> bool:
-        """Check if the metric configuration is valid."""
-        raise NotImplementedError("Subclasses should implement this method.")
-
-    @abstractmethod
     def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> float | torch.Tensor:
         """Internal method to compute the metric.
 

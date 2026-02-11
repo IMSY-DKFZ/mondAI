@@ -25,6 +25,42 @@ def test_no_reference_metric_abstract_class_not_instantiable() -> None:
         NoReferenceMetric()  # type: ignore
 
 
+def test_metric_abstract_str_method_not_callable(dummy_full_reference_metric: FullReferenceMetric) -> None:
+    with raises(NotImplementedError):
+        Metric.__str__(dummy_full_reference_metric)
+
+
+def test_metric_abstract_fiungerprint_method_not_callable(dummy_full_reference_metric: FullReferenceMetric) -> None:
+    with raises(NotImplementedError):
+        Metric.fingerprint(dummy_full_reference_metric)
+
+
+def test_metric_abstract_call_method_not_callable(dummy_full_reference_metric: FullReferenceMetric) -> None:
+    with raises(NotImplementedError):
+        Metric.__call__(dummy_full_reference_metric)
+
+
+def test_metric_abstract_check_metric_configuration_method_not_callable(
+    dummy_full_reference_metric: FullReferenceMetric,
+) -> None:
+    with raises(NotImplementedError):
+        Metric._check_metric_configuration(dummy_full_reference_metric)
+
+
+def test_metric_abstract_compute_method_not_callable(
+    dummy_full_reference_metric: FullReferenceMetric, phantom: np.ndarray
+) -> None:
+    with raises(NotImplementedError):
+        FullReferenceMetric._compute(dummy_full_reference_metric, phantom, phantom)
+
+
+def test_metric_abstract_no_reference_compute__method_not_callable(
+    dummy_no_reference_metric: NoReferenceMetric, phantom: np.ndarray
+) -> None:
+    with raises(NotImplementedError):
+        NoReferenceMetric._compute(dummy_no_reference_metric, phantom)
+
+
 def test_metric_str_dummy_representation() -> None:
     class DummyMetric(FullReferenceMetric):
         name = "Dummy Metric"

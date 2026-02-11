@@ -19,6 +19,11 @@ class Metric(ABC):
         raise NotImplementedError("Subclasses should implement this method.")
 
     @abstractmethod
+    def _check_metric_configuration(self) -> bool:
+        """Check if the metric configuration is valid."""
+        raise NotImplementedError("Subclasses should implement this method.")
+
+    @abstractmethod
     def __str__(self) -> str:
         """Full text representation of the metric including its name and abbreviation
         and parameters for reproducible reporting."""
