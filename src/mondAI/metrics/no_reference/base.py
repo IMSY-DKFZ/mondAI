@@ -6,6 +6,7 @@ import torch
 
 from mondAI.metrics.base import Metric
 from mondAI.metrics.dimension import _DIMENSION_LOOKUP
+from mondAI.settings import settings
 from mondAI.utils.checks import (
     check_dimensions,
     check_image_type,
@@ -20,7 +21,7 @@ class NoReferenceMetric(Metric, ABC):
     def __call__(
         self,
         image: np.ndarray | torch.Tensor,
-        dims: Sequence[str] = ("H", "W"),
+        dims: Sequence[str] = settings.default_dims,
     ) -> float | torch.Tensor | np.ndarray:
         """Compute the metric for the given image."""
         # Check inputs

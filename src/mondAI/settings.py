@@ -1,3 +1,6 @@
+from mondAI.metrics.dimension import _DIMENSION_LOOKUP
+
+
 class _Settings:
     def __init__(self) -> None:
         # Default values for reset
@@ -5,11 +8,13 @@ class _Settings:
         self._default_torch_device = "gpu"  # Options: "cpu", "gpu"
         self._default_logging_level = "INFO"  # Options: "DEBUG", "INFO", "WARNING", "ERROR"
         self._default_tolerance = 1e-8  # Positive float
+        self._default_dimensions = ("H", "W")  # Default dimensions for metrics, can be overridden in metric calls
 
         # Initial settings
         self._torch_device: str = self._default_torch_device
         self._logging_level: str = self._default_logging_level
         self._tolerance: float = self._default_tolerance
+        self._default_dims: tuple[str, ...] = self._default_dimensions
 
     @property
     def torch_device(self) -> str:
@@ -43,11 +48,24 @@ class _Settings:
             raise ValueError(f"tolerance must be a float, but is {type(tol)}")
         self._tolerance = tol
 
+    @property
+    def default_dims(self) -> tuple[str, ...]:
+        return self._default_dims
+
+    @default_dims.setter
+    def default_dims(self, dims: tuple[str, ...]) -> None:
+        if not all(isinstance(dim, str) for dim in dims):
+            raise ValueError(f"All default dimensions must be strings, but got {dims}")
+        if not all(dim in _DIMENSION_LOOKUP for dim in dims):
+            raise ValueError(f"All default dimensions must be one of {list(_DIMENSION_LOOKUP.keys())}, but got {dims}")
+        self._default_dims = dims
+
     # Reset all settings to defaults
     def reset_to_defaults(self) -> None:
         self._torch_device = self._default_torch_device
         self._logging_level = self._default_logging_level
         self._tolerance = self._default_tolerance
+        self._default_dims = self._default_dimensions
 
 
 settings = _Settings()

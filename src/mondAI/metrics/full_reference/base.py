@@ -6,6 +6,7 @@ import torch
 
 from mondAI.metrics.base import Metric
 from mondAI.metrics.dimension import _DIMENSION_LOOKUP
+from mondAI.settings import settings
 from mondAI.utils.checks import (
     check_dimensions,
     check_image_type,
@@ -23,7 +24,7 @@ class FullReferenceMetric(Metric, ABC):
         self,
         image: np.ndarray | torch.Tensor,
         reference: np.ndarray | torch.Tensor,
-        dims: Sequence[str] = ("H", "W"),
+        dims: Sequence[str] = settings.default_dims,
     ) -> float | torch.Tensor | np.ndarray:
         """Compute the metric between image and corresponding reference."""
         # Check inputs

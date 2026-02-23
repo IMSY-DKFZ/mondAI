@@ -47,13 +47,26 @@ def test_tolerance_setter(settings: _Settings) -> None:
         settings.tolerance = 1
 
 
+def test_default_dims_setter(settings: _Settings) -> None:
+    settings.default_dims = ("B", "C", "H", "W")
+    assert settings.default_dims == ("B", "C", "H", "W")
+
+    with pytest.raises(ValueError):
+        settings.default_dims = ("B", "C", None, "W")  # type: ignore
+
+    with pytest.raises(ValueError):
+        settings.default_dims = ("B", "C", "X", "W")  # Invalid dimension
+
+
 def test_reset_to_defaults(settings: _Settings) -> None:
     settings.torch_device = "cpu"
     settings.logging_level = "DEBUG"
     settings.tolerance = 1e-5
+    settings.default_dims = ("B", "C", "H", "W")
 
     settings.reset_to_defaults()
 
     assert settings.torch_device == "gpu"
     assert settings.logging_level == "INFO"
     assert settings.tolerance == 1e-8
+    assert settings.default_dims == ("H", "W")  # type: ignore[comparison-overlap]
