@@ -1,3 +1,4 @@
 from .mae import MAE
+from .metric_template import MetricTemplate
 
-FULL_REFERENCE_METRICS = [MAE]
+FULL_REFERENCE_METRICS = [MAE, MetricTemplate]
