@@ -12,6 +12,7 @@ This package provides image quality metric implementations which are:
 ```{toctree}
 :maxdepth: 3
 :caption: API
+motivation
 installation
 usage
 limitations
