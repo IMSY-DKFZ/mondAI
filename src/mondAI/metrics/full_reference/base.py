@@ -23,7 +23,7 @@ class FullReferenceMetric(Metric, ABC):
         self,
         image: np.ndarray | torch.Tensor,
         reference: np.ndarray | torch.Tensor,
-        dims: Sequence[str] = ("W", "H"),
+        dims: Sequence[str] = ("H", "W"),
     ) -> float | torch.Tensor | np.ndarray:
         """Compute the metric between image and corresponding reference."""
         # Check inputs

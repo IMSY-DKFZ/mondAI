@@ -26,7 +26,7 @@ class MAE(FullReferenceMetric):
     abbreviation = "MAE"
     higher_is_better = False
 
-    expected_dimensions = (Dimension.WIDTH, Dimension.HEIGHT)
+    expected_dimensions = (Dimension.HEIGHT, Dimension.WIDTH)
 
     def __init__(self) -> None:
         """Initialize MAE metric."""

@@ -20,7 +20,7 @@ class NoReferenceMetric(Metric, ABC):
     def __call__(
         self,
         image: np.ndarray | torch.Tensor,
-        dims: Sequence[str] = ("W", "H"),
+        dims: Sequence[str] = ("H", "W"),
     ) -> float | torch.Tensor | np.ndarray:
         """Compute the metric for the given image."""
         # Check inputs
