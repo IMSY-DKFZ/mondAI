@@ -1,3 +1,5 @@
+from typing import Sequence
+
 import numpy as np
 import pytest
 import torch
@@ -40,11 +42,18 @@ def test_metric_abstract_call_method_not_callable(dummy_full_reference_metric: F
         Metric.__call__(dummy_full_reference_metric)
 
 
-def test_metric_abstract_check_metric_configuration_method_not_callable(
+def test_metric_abstract_compute_vmapped_method_not_callable(
+    dummy_full_reference_metric: FullReferenceMetric, phantom: np.ndarray
+) -> None:
+    with raises(NotImplementedError):
+        Metric._compute_vmapped(dummy_full_reference_metric, phantom, phantom)
+
+
+def test_metric_abstract_check_inputs_for_metric_method_not_callable(
     dummy_full_reference_metric: FullReferenceMetric,
 ) -> None:
     with raises(NotImplementedError):
-        Metric._check_metric_configuration(dummy_full_reference_metric)
+        Metric._check_inputs_for_metric(dummy_full_reference_metric)
 
 
 def test_metric_abstract_compute_method_not_callable(
@@ -67,7 +76,7 @@ def test_metric_str_dummy_representation() -> None:
         abbreviation = "DM"
         higher_is_better = True
 
-        def _check_metric_configuration(self) -> bool:
+        def _check_inputs_for_metric(self, *inputs: torch.Tensor) -> bool:
             return True
 
         def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> float:
@@ -102,7 +111,7 @@ def test_metric_dummy_fingerprint() -> None:
         abbreviation = "DM"
         higher_is_better = True
 
-        def _check_metric_configuration(self) -> bool:
+        def _check_inputs_for_metric(self, *inputs: torch.Tensor) -> bool:
             return True
 
         def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> float:
@@ -174,3 +183,45 @@ def test_metric_list_reflexivity(phantom: np.ndarray, metric_class: type[Metric]
         raise ValueError(f"Unknown metric class {metric_class}")
     assert len(results) == 1
     assert results[0] == 0.0
+
+
+def test_metric_call_with_vectorization_invalid_input_number(phantom: np.ndarray) -> None:
+    class InvalidMetric(Metric):
+        name = "Invalid Metric"
+        abbreviation = "IM"
+        higher_is_better = True
+
+        def _check_inputs_for_metric(self, *inputs: torch.Tensor) -> bool:
+            return True
+
+        def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> float:
+            return 0.0
+
+        def __str__(self) -> str:
+            return f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()}"
+
+        def fingerprint(self) -> dict[str, str | bool]:
+            return {
+                "name": self.name,
+                "abbreviation": self.abbreviation,
+                "higher_is_better": self.higher_is_better,
+            }
+
+        def __call__(
+            self,
+            image: np.ndarray | torch.Tensor,
+            reference: np.ndarray | torch.Tensor,
+            dims: Sequence[str] = ("H", "W"),
+        ) -> float | torch.Tensor | np.ndarray:
+            """Compute the metric between image and corresponding two references
+            (error)."""
+
+            return self._call_with_vectorization(image, reference, reference, dims=dims)
+
+        def _compute_vmapped(self, *reshaped_images: torch.Tensor) -> torch.Tensor:
+            images, references = reshaped_images
+            return torch.vmap(self._compute)(images, references)
+
+    metric = InvalidMetric()
+    with raises(ValueError, match="InvalidMetric supports 1 or 2 input images, got 3."):
+        metric(phantom, phantom, dims=("H", "W"))

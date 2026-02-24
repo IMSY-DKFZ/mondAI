@@ -32,6 +32,13 @@ class MetricTemplate(FullReferenceMetric):  # TODO: rename to actual metric name
     def __init__(self, parameter1: int = 100) -> None:
         """Initialize the Metric Template.
 
+        The constructor should include checks for any parameters that the metric uses
+        to ensure they are within valid ranges or meet certain conditions. For example,
+        if the metric has a parameter that must be non-negative, this method should
+        check that condition and raise a ValueError if it is not met. This helps to
+        prevent invalid configurations of the metric that could lead to incorrect
+        results or errors during computation.
+
         :param parameter1: An example parameter for the metric, replace with actual
             parameters as needed.
         :type parameter1: int
@@ -40,28 +47,32 @@ class MetricTemplate(FullReferenceMetric):  # TODO: rename to actual metric name
         super().__init__()
         self.parameter1 = parameter1  # TODO: replace with actual parameters for the metric
 
-    def _check_metric_configuration(self) -> bool:
-        """Check if the metric configuration is valid.
-
-        This method should include checks for any parameters that the metric uses to
-        ensure they are within valid ranges or meet certain conditions. For example, if
-        the metric has a parameter that must be non-negative, this method should check
-        that condition and raise a ValueError if it is not met. This helps to prevent
-        invalid configurations of the metric that could lead to incorrect results or
-        errors during computation.
-
-        Please only perform metric specific checks in this method. General checks for
-        input images are already performed in the base class.
-
-        :return: True if the metric configuration is valid, otherwise raises a
-            ValueError.
-
-        """
-
         # TODO: replace with actual checks for the metric's parameters.
         if self.parameter1 < 0:
             raise ValueError("parameter1 must be non-negative.")
 
+    def _check_inputs_for_metric(self, *inputs: torch.Tensor) -> bool:
+        """Check if the input images are compatible with the metric configuration.
+
+        Please only perform metric specific checks in this method. General checks for
+        input images are already performed in the base class.
+
+        :param inputs: A tuple containing the input images and references, typically in
+            the form (images, references).
+        :type inputs: tuple[torch.Tensor, torch.Tensor]
+        :return: True if the input images and metric are compatible, otherwise raises a
+            ValueError.
+        :rtype: bool
+        :raises ValueError: If the input images are not compatible with the metric
+            configuration.
+
+        """
+
+        image, reference = inputs
+
+        # TODO: replace with actual checks for the metric's parameters.
+        if self.parameter1 < image.ndim:
+            raise ValueError(f"parameter1 must be less than the number of dimensions in the input image({image.ndim}).")
         return True
 
     def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
