@@ -124,7 +124,7 @@ class Metric(ABC):
         scores_1d = self._compute_vmapped(*reshaped_images)
 
         # return scalar if there are no "other dimensions" to iterate over
-        if other_shape is None or len(other_shape) == 0:
+        if len(other_shape) == 0:
             return scores_1d.item()
 
         # reshape back to original "other dimensions" shape
