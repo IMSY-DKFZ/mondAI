@@ -1,3 +1,13 @@
+"""This file contains tests which verify the functionality of the settings module.
+
+It tests the default values of the settings, as well as the validation logic in the
+setters for each setting. The tests ensure that invalid values raise appropriate
+exceptions and that valid values are accepted correctly. Additionally, it tests the
+`reset_to_defaults` method to confirm that it restores all settings to their default
+values.
+
+"""
+
 import pytest
 
 from mondAI.settings import _Settings

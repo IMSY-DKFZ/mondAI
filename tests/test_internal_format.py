@@ -1,3 +1,6 @@
+"""This file contains tests for the `convert_to_internal_format` function defined in
+`utils/internal_format.py`."""
+
 import numpy as np
 import torch
 

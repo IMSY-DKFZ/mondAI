@@ -1,3 +1,15 @@
+"""This file contains fixtures for testing the metrics defined in `metrics`. These
+fixtures provide a variety of test images and volumes, including the Shepp-Logan
+phantom and a brain volume, as well as random images of different shapes and
+dimensions. Additionally, it includes dummy implementations of a full reference metric
+and a no reference metric for testing purposes.
+
+These fixtures can be used across multiple test files to ensure consistency and reduce
+code duplication when testing the metrics' functionality and behavior on different
+types of input data.
+
+"""
+
 from typing import Callable
 
 import matplotlib.pyplot as plt
@@ -49,11 +61,6 @@ def grayscale_image_W_H() -> torch.Tensor:
 
 
 @fixture
-def grayscale_image_W_H_1() -> torch.Tensor:
-    return create_random_image((256, 256, 1))
-
-
-@fixture
 def rgb_image_C_W_H() -> torch.Tensor:
     return create_random_image((3, 256, 256))
 
@@ -61,116 +68,6 @@ def rgb_image_C_W_H() -> torch.Tensor:
 @fixture
 def rgb_image_W_H_C() -> torch.Tensor:
     return create_random_image((256, 256, 3))
-
-
-@fixture
-def multispectral_image_C_W_H() -> torch.Tensor:
-    return create_random_image((10, 256, 256))
-
-
-@fixture
-def multispectral_image_W_H_C() -> torch.Tensor:
-    return create_random_image((256, 256, 10))
-
-
-@fixture
-def batch_of_grayscale_images_B_C_W_H() -> torch.Tensor:
-    return create_random_image((4, 1, 256, 256))
-
-
-@fixture
-def batch_of_rgb_images_B_C_W_H() -> torch.Tensor:
-    return create_random_image((4, 3, 256, 256))
-
-
-@fixture
-def batch_of_multispectral_images_B_C_W_H() -> torch.Tensor:
-    return create_random_image((4, 10, 256, 256))
-
-
-@fixture
-def batch_of_grayscale_images_B_W_H() -> torch.Tensor:
-    return create_random_image((4, 256, 256))
-
-
-@fixture
-def batch_of_rgb_images_B_W_H_C() -> torch.Tensor:
-    return create_random_image((4, 256, 256, 3))
-
-
-@fixture
-def batch_of_multispectral_images_B_W_H_C() -> torch.Tensor:
-    return create_random_image((4, 256, 256, 10))
-
-
-@fixture
-def batch_of_grayscale_images_B_W_H_1() -> torch.Tensor:
-    return create_random_image((4, 256, 256, 1))
-
-
-@fixture
-def batch_of_rgb_images_B_W_H_3() -> torch.Tensor:
-    return create_random_image((4, 256, 256, 3))
-
-
-@fixture
-def batch_of_multispectral_images_B_W_H_10() -> torch.Tensor:
-    return create_random_image((4, 256, 256, 10))
-
-
-@fixture
-def grayscale_volume_D_W_H() -> torch.Tensor:
-    return create_random_image((10, 256, 256))
-
-
-@fixture
-def grayscale_volume_D_W_H_1() -> torch.Tensor:
-    return create_random_image((10, 256, 256, 1))
-
-
-@fixture
-def rgb_volume_D_C_W_H() -> torch.Tensor:
-    return create_random_image((10, 3, 256, 256))
-
-
-@fixture
-def rgb_volume_D_W_H_C() -> torch.Tensor:
-    return create_random_image((10, 256, 256, 3))
-
-
-@fixture
-def multispectral_volume_D_C_W_H() -> torch.Tensor:
-    return create_random_image((10, 10, 256, 256))
-
-
-@fixture
-def multispectral_volume_D_W_H_C() -> torch.Tensor:
-    return create_random_image((10, 256, 256, 10))
-
-
-@fixture
-def batch_of_grayscale_volumes_B_D_W_H() -> torch.Tensor:
-    return create_random_image((4, 10, 256, 256))
-
-
-@fixture
-def batch_of_rgb_volumes_B_D_C_W_H() -> torch.Tensor:
-    return create_random_image((4, 10, 3, 256, 256))
-
-
-@fixture
-def batch_of_rgb_volumes_B_D_W_H_C() -> torch.Tensor:
-    return create_random_image((4, 10, 256, 256, 3))
-
-
-@fixture
-def batch_of_multispectral_volumes_B_D_C_W_H() -> torch.Tensor:
-    return create_random_image((4, 10, 10, 256, 256))
-
-
-@fixture
-def batch_of_multispectral_volumes_B_D_W_H_C() -> torch.Tensor:
-    return create_random_image((4, 10, 256, 256, 10))
 
 
 @fixture

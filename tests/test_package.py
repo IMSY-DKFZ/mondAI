@@ -1,3 +1,6 @@
+"""Test the mondAI package's __getattr__ and __setattr__ functions, as well as the
+__version__ attribute."""
+
 import pytest
 
 from mondAI import __getattr__, __setattr__

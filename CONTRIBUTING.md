@@ -36,6 +36,17 @@ Author et al., "XXX Metric", Journal, Year
     * mentioning that the reimplementation is [inspired by/adapted from/taken from] a specific commit from a repository. Please also mention the corresponding license and any modification you did to the implementation for transparency.
     * also add this information to the `THIRD_PARTY_NOTICES.md` file for the corresponding metric
 
+## Writing tests
+
+In addition to the `Tests` section in the README, here are some helpful tips for writing tests.
+
+There are `phantom` and `brain` as well as some other fixtures (defined in `conftest.py`) which can be used for testing purposes.
+
+There are three different types of tests:
+1. general framework tests: These check that the generic implementations of the base classes, the util functions and the framework in general work correctly. They are located in `test_*.py` files under `tests/`
+2. metric specific tests: These perform tests that are specific to individual metrics and are located under `tests/metric_specific_tests/`
+3. regression tests: These compare that the implementations are stable, e.g. don't change when dependencies are updated. They are generated in `test_regression.py` and reference scores are stored under `tests/test_regression/`
+
 ## List of Contributers
 
 * Tom Rix

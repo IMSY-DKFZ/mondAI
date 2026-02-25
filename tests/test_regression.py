@@ -1,3 +1,14 @@
+"""This file contains regression tests.
+
+It validates that computing metrics on the phantom and brain images produces consistent
+results. The tests compute each metric on the phantom and brain images (for full
+refernce metrics compared to the flipped images), and compare the results to previously
+stored values using pytest-regressions. This ensures that any changes to the metric
+implementations do not cause unintended changes in the computed values, thus helping to
+catch regressions in the codebase.
+
+"""
+
 import numpy as np
 import pytest
 from pytest_regressions.data_regression import DataRegressionFixture
