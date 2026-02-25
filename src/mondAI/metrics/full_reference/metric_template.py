@@ -1,3 +1,5 @@
+from typing import Callable
+
 import torch
 
 from mondAI.metrics.dimension import Dimension
@@ -69,6 +71,18 @@ class MetricTemplate(FullReferenceMetric):  # TODO: rename to actual metric name
 
         """
         return torch.tensor(0.0)  # TODO: replace with actual computation logic for the metric
+
+    def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
+        """Return a dictionary of other implementations of the metric. This will be
+        used when compare_implementations is True to compute the metric using different
+        libraries or implementations for comparison.
+
+        :return: A dictionary where the keys are the names of the libraries or implementations, and the values are
+        callables that compute the metric using those implementations.
+        :rtype: dict[str, callable[..., torch.Tensor]]
+
+        """
+        return {}  # TODO: replace with actual other implementations of the metric, if available.
 
     def __str__(self) -> str:
         """Full text representation of the metric.

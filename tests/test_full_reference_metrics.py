@@ -112,3 +112,16 @@ def test_metric_call_with_dimensions_torch_valid(
     metric = metric_class()
     result = metric(rgb_image_C_W_H, rgb_image_C_W_H, dims=("C", "W", "H"))
     assert isinstance(result, torch.Tensor)
+
+
+@pytest.mark.parametrize("metric_class", FULL_REFERENCE_METRICS)
+def test_metric_call_with_compare_implementations(
+    rgb_image_C_W_H: torch.Tensor, metric_class: type[FullReferenceMetric]
+) -> None:
+    metric = metric_class()
+    result = metric(rgb_image_C_W_H, rgb_image_C_W_H, dims=("C", "W", "H"), compare_implementations=True)
+    assert isinstance(result, dict)
+    assert "mondAI" in result
+    assert len(result) == len(metric._other_implementations()) + 1  # +1 for the default implementation
+
+    # test exception handling

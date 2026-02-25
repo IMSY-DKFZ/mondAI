@@ -56,6 +56,13 @@ def test_metric_abstract_compute_method_not_callable(
         FullReferenceMetric._compute(dummy_full_reference_metric, phantom, phantom)
 
 
+def test_metric_abstract_other_implementations_method_not_callable(
+    dummy_full_reference_metric: FullReferenceMetric, phantom: np.ndarray
+) -> None:
+    with raises(NotImplementedError):
+        FullReferenceMetric._other_implementations(dummy_full_reference_metric)
+
+
 def test_metric_abstract_no_reference_compute__method_not_callable(
     dummy_no_reference_metric: NoReferenceMetric, phantom: np.ndarray
 ) -> None:
@@ -69,8 +76,11 @@ def test_metric_str_dummy_representation() -> None:
         abbreviation = "DM"
         higher_is_better = True
 
-        def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> float:
-            return 0.0
+        def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+            return torch.Tensor(0.0)
+
+        def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
+            return {}
 
         def __str__(self) -> str:
             return f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()}"
@@ -101,8 +111,11 @@ def test_metric_dummy_fingerprint() -> None:
         abbreviation = "DM"
         higher_is_better = True
 
-        def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> float:
-            return 0.0
+        def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+            return torch.Tensor(0.0)
+
+        def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
+            return {}
 
         def __str__(self) -> str:
             return f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()}"
@@ -178,8 +191,11 @@ def test_metric_call_with_vectorization_invalid_input_number(phantom: np.ndarray
         abbreviation = "IM"
         higher_is_better = True
 
-        def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> float:
-            return 0.0
+        def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+            return torch.Tensor(0.0)
+
+        def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
+            return {}
 
         def __str__(self) -> str:
             return f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()}"
@@ -203,7 +219,7 @@ def test_metric_call_with_vectorization_invalid_input_number(phantom: np.ndarray
             return self._call_with_vectorization(image, reference, reference, dims=dims, compute_function=self._compute)
 
         def _compute_vmapped(
-            self, *reshaped_images: torch.Tensor, compute_function: Callable[..., float | torch.Tensor | np.ndarray]
+            self, *reshaped_images: torch.Tensor, compute_function: Callable[..., torch.Tensor]
         ) -> torch.Tensor:
             images, references = reshaped_images
             return torch.vmap(compute_function)(images, references)

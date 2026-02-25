@@ -1,3 +1,5 @@
+from typing import Callable
+
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -181,6 +183,9 @@ def dummy_full_reference_metric() -> FullReferenceMetric:
         def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
             return torch.Tensor(0.0)
 
+        def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
+            return {}
+
         def __str__(self) -> str:
             return f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()}"
 
@@ -203,6 +208,9 @@ def dummy_no_reference_metric() -> NoReferenceMetric:
 
         def _compute(self, image: torch.Tensor) -> torch.Tensor:
             return torch.Tensor(0.0)
+
+        def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
+            return {}
 
         def __str__(self) -> str:
             return f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()}"

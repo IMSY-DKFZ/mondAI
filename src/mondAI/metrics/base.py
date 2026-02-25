@@ -21,7 +21,9 @@ class Metric(ABC):
     expected_dimensions: tuple[Dimension, ...]
 
     @abstractmethod
-    def __call__(self, *args: Any, **kwargs: Any) -> float | list[float]:
+    def __call__(
+        self, *args: Any, **kwargs: Any
+    ) -> float | torch.Tensor | np.ndarray | dict[str, float | torch.Tensor | np.ndarray]:
         """Compute the metric score."""
         raise NotImplementedError("Subclasses should implement this method.")
 
@@ -50,7 +52,7 @@ class Metric(ABC):
     def _compute_vmapped(
         self,
         *views: torch.Tensor,
-        compute_function: Callable[..., float | torch.Tensor | np.ndarray],
+        compute_function: Callable[..., torch.Tensor],
     ) -> torch.Tensor:
         """Vectorized compute function over flattened items.
 
@@ -63,7 +65,7 @@ class Metric(ABC):
         self,
         *inputs: np.ndarray | torch.Tensor,
         dims: Sequence[str] = settings.default_dims,
-        compute_function: Callable[..., float | torch.Tensor | np.ndarray],
+        compute_function: Callable[..., torch.Tensor],
     ) -> float | torch.Tensor | np.ndarray:
         """Shared call pipeline for metrics, including:
 
@@ -78,7 +80,7 @@ class Metric(ABC):
         :param dims: The dimensions of the input images, specified as a sequence of strings.
         :type dims: Sequence[str]
         :param compute_function: The function to compute the metric, which will be vectorized.
-        :type compute_function: Callable[..., float | torch.Tensor | np.ndarray]
+        :type compute_function: Callable[..., torch.Tensor]
         :return: The computed metric score, as a scalar or array/tensor depending on the input shape and type.
         :rtype: float | torch.Tensor | np.ndarray
         :raises ValueError: If the number of inputs is not 1 or 2, if the input images contain NaN values, or if the
@@ -142,6 +144,22 @@ class Metric(ABC):
             return scores.to(output_device) if output_device is not None else scores
         return scores.detach().cpu().numpy()
 
+    @abstractmethod
+    def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
+        """Return a dictionary of other implementations of the metric for comparison.
+
+        The keys should be the names of the libraries or implementations, and the values
+        should be callables that compute the metric with the same signature as the main
+        implementation.
+
+        If no peer implementations are available return an empty dictionary.
+
+        :return: A dictionary mapping implementation names to their corresponding metric computation functions.
+        :rtype: dict[str, Callable[..., float | torch.Tensor | np.ndarray]]
+
+        """
+        raise NotImplementedError("Subclasses should implement this method.")
+
 
 class MetricList:
     """A list of metrics."""
@@ -150,7 +168,9 @@ class MetricList:
         self.list_name = list_name
         self.metrics = metrics if metrics is not None else []
 
-    def __call__(self, *args: Any, **kwargs: Any) -> list[float | list[float]]:
+    def __call__(
+        self, *args: Any, **kwargs: Any
+    ) -> list[float | torch.Tensor | np.ndarray | dict[str, float | torch.Tensor | np.ndarray]]:
         return [m(*args, **kwargs) for m in self.metrics]
 
     def __str__(self) -> str:
