@@ -49,13 +49,6 @@ def test_metric_abstract_compute_vmapped_method_not_callable(
         Metric._compute_vmapped(dummy_full_reference_metric, phantom, phantom)
 
 
-def test_metric_abstract_check_inputs_for_metric_method_not_callable(
-    dummy_full_reference_metric: FullReferenceMetric,
-) -> None:
-    with raises(NotImplementedError):
-        Metric._check_inputs_for_metric(dummy_full_reference_metric)
-
-
 def test_metric_abstract_compute_method_not_callable(
     dummy_full_reference_metric: FullReferenceMetric, phantom: np.ndarray
 ) -> None:
@@ -75,9 +68,6 @@ def test_metric_str_dummy_representation() -> None:
         name = "Dummy Metric"
         abbreviation = "DM"
         higher_is_better = True
-
-        def _check_inputs_for_metric(self, *inputs: torch.Tensor) -> bool:
-            return True
 
         def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> float:
             return 0.0
@@ -110,9 +100,6 @@ def test_metric_dummy_fingerprint() -> None:
         name = "Dummy Metric"
         abbreviation = "DM"
         higher_is_better = True
-
-        def _check_inputs_for_metric(self, *inputs: torch.Tensor) -> bool:
-            return True
 
         def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> float:
             return 0.0
@@ -190,9 +177,6 @@ def test_metric_call_with_vectorization_invalid_input_number(phantom: np.ndarray
         name = "Invalid Metric"
         abbreviation = "IM"
         higher_is_better = True
-
-        def _check_inputs_for_metric(self, *inputs: torch.Tensor) -> bool:
-            return True
 
         def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> float:
             return 0.0

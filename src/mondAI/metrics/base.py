@@ -26,11 +26,6 @@ class Metric(ABC):
         raise NotImplementedError("Subclasses should implement this method.")
 
     @abstractmethod
-    def _check_inputs_for_metric(self, *inputs: torch.Tensor) -> bool:
-        """Check if the input images are compatible with the metric configuration."""
-        raise NotImplementedError("Subclasses should implement this method.")
-
-    @abstractmethod
     def __str__(self) -> str:
         """Full text representation of the metric including its name and abbreviation
         and parameters for reproducible reporting."""
@@ -101,8 +96,6 @@ class Metric(ABC):
         output_device = inputs[0].device if output_is_torch else None
 
         torch_inputs = tuple(convert_to_internal_format(x) for x in inputs)
-
-        self._check_inputs_for_metric(*torch_inputs)
 
         dims_enum = [_DIMENSION_LOOKUP[d] for d in dims]
 

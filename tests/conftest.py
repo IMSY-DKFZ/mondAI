@@ -178,9 +178,6 @@ def dummy_full_reference_metric() -> FullReferenceMetric:
         abbreviation = "DFRM"
         higher_is_better = True
 
-        def _check_inputs_for_metric(self, *inputs: torch.Tensor) -> bool:
-            return True
-
         def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
             return torch.Tensor(0.0)
 
@@ -203,9 +200,6 @@ def dummy_no_reference_metric() -> NoReferenceMetric:
         name = "Dummy No Reference Metric"
         abbreviation = "DNRM"
         higher_is_better = True
-
-        def _check_inputs_for_metric(self, *inputs: torch.Tensor) -> bool:
-            return True
 
         def _compute(self, image: torch.Tensor) -> torch.Tensor:
             return torch.Tensor(0.0)

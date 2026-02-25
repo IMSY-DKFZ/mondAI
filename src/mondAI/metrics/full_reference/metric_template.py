@@ -51,35 +51,14 @@ class MetricTemplate(FullReferenceMetric):  # TODO: rename to actual metric name
         if self.parameter1 < 0:
             raise ValueError("parameter1 must be non-negative.")
 
-    def _check_inputs_for_metric(self, *inputs: torch.Tensor) -> bool:
-        """Check if the input images are compatible with the metric configuration.
-
-        Please only perform metric specific checks in this method. General checks for
-        input images are already performed in the base class.
-
-        :param inputs: A tuple containing the input images and references, typically in
-            the form (images, references).
-        :type inputs: tuple[torch.Tensor, torch.Tensor]
-        :return: True if the input images and metric are compatible, otherwise raises a
-            ValueError.
-        :rtype: bool
-        :raises ValueError: If the input images are not compatible with the metric
-            configuration.
-
-        """
-
-        image, reference = inputs
-
-        # TODO: replace with actual checks for the metric's parameters.
-        if self.parameter1 < image.ndim:
-            raise ValueError(f"parameter1 must be less than the number of dimensions in the input image({image.ndim}).")
-        return True
-
     def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
         """Compute the metric between image and reference.
 
         TODO: replace with actual computation logic for the metric. This method should implement the core logic of the
         metric, taking the input image and reference and returning the computed metric score as a torch.Tensor.
+
+        Please only perform metric specific checks in this method. General checks for
+        input images are already performed in the base class.
 
         :param image: The input image for which the metric is being computed.
         :type image: torch.Tensor
