@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Callable, Sequence
 
 import numpy as np
 import pytest
@@ -46,7 +46,7 @@ def test_metric_abstract_compute_vmapped_method_not_callable(
     dummy_full_reference_metric: FullReferenceMetric, phantom: np.ndarray
 ) -> None:
     with raises(NotImplementedError):
-        Metric._compute_vmapped(dummy_full_reference_metric, phantom, phantom)
+        Metric._compute_vmapped(dummy_full_reference_metric, phantom, phantom, compute_function=lambda x: x)
 
 
 def test_metric_abstract_compute_method_not_callable(
@@ -200,11 +200,13 @@ def test_metric_call_with_vectorization_invalid_input_number(phantom: np.ndarray
             """Compute the metric between image and corresponding two references
             (error)."""
 
-            return self._call_with_vectorization(image, reference, reference, dims=dims)
+            return self._call_with_vectorization(image, reference, reference, dims=dims, compute_function=self._compute)
 
-        def _compute_vmapped(self, *reshaped_images: torch.Tensor) -> torch.Tensor:
+        def _compute_vmapped(
+            self, *reshaped_images: torch.Tensor, compute_function: Callable[..., float | torch.Tensor | np.ndarray]
+        ) -> torch.Tensor:
             images, references = reshaped_images
-            return torch.vmap(self._compute)(images, references)
+            return torch.vmap(compute_function)(images, references)
 
     metric = InvalidMetric()
     with raises(ValueError, match="InvalidMetric supports 1 or 2 input images, got 3."):

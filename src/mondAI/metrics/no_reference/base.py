@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Sequence
+from typing import Callable, Sequence
 
 import numpy as np
 import torch
@@ -18,20 +18,24 @@ class NoReferenceMetric(Metric, ABC):
     ) -> float | torch.Tensor | np.ndarray:
         """Compute the metric for the given image."""
 
-        return self._call_with_vectorization(image, dims=dims)
+        return self._call_with_vectorization(image, dims=dims, compute_function=self._compute)
 
-    def _compute_vmapped(self, *reshaped_images: torch.Tensor) -> torch.Tensor:
+    def _compute_vmapped(
+        self, *reshaped_images: torch.Tensor, compute_function: Callable[..., float | torch.Tensor | np.ndarray]
+    ) -> torch.Tensor:
         """Function to compute the metric in a vectorized manner over flattened items.
         Returns a 1D tensor (N,).
 
         :param reshaped_images: Tuple of tensors containing the images and references, each of shape (N, ...).
         :type reshaped_images: tuple[torch.Tensor]
+        :param compute_function: The function to compute the metric for a single image.
+        :type compute_function: Callable[..., float | torch.Tensor | np.ndarray]
         :return: Tensor containing metric scores for each item in the batch.
         :rtype: torch.Tensor
 
         """
         (images,) = reshaped_images
-        return torch.vmap(self._compute)(images)
+        return torch.vmap(compute_function)(images)
 
     @abstractmethod
     def _compute(self, image: torch.Tensor) -> float | torch.Tensor:

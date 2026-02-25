@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Sequence
+from typing import Any, Callable, Sequence
 
 import numpy as np
 import torch
@@ -47,8 +47,12 @@ class Metric(ABC):
         return "↑" if self.higher_is_better else "↓"
 
     @abstractmethod
-    def _compute_vmapped(self, *views: torch.Tensor) -> torch.Tensor:
-        """Vectorized compute over flattened items.
+    def _compute_vmapped(
+        self,
+        *views: torch.Tensor,
+        compute_function: Callable[..., float | torch.Tensor | np.ndarray],
+    ) -> torch.Tensor:
+        """Vectorized compute function over flattened items.
 
         Must return a 1D tensor (N,).
 
@@ -59,6 +63,7 @@ class Metric(ABC):
         self,
         *inputs: np.ndarray | torch.Tensor,
         dims: Sequence[str] = settings.default_dims,
+        compute_function: Callable[..., float | torch.Tensor | np.ndarray],
     ) -> float | torch.Tensor | np.ndarray:
         """Shared call pipeline for metrics, including:
 
@@ -72,6 +77,8 @@ class Metric(ABC):
         :type inputs: tuple[np.ndarray | torch.Tensor, ...]
         :param dims: The dimensions of the input images, specified as a sequence of strings.
         :type dims: Sequence[str]
+        :param compute_function: The function to compute the metric, which will be vectorized.
+        :type compute_function: Callable[..., float | torch.Tensor | np.ndarray]
         :return: The computed metric score, as a scalar or array/tensor depending on the input shape and type.
         :rtype: float | torch.Tensor | np.ndarray
         :raises ValueError: If the number of inputs is not 1 or 2, if the input images contain NaN values, or if the
@@ -121,7 +128,7 @@ class Metric(ABC):
             reshaped_images.append(image_reshaped)
 
         # Compute metric for each image (pair)
-        scores_1d = self._compute_vmapped(*reshaped_images)
+        scores_1d = self._compute_vmapped(*reshaped_images, compute_function=compute_function)
 
         # return scalar if there are no "other dimensions" to iterate over
         if len(other_shape) == 0:
