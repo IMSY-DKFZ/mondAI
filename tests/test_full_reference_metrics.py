@@ -123,5 +123,3 @@ def test_metric_call_with_compare_implementations(
     assert isinstance(result, dict)
     assert "mondAI" in result
     assert len(result) == len(metric._other_implementations()) + 1  # +1 for the default implementation
-
-    # test exception handling

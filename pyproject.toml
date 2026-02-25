@@ -26,6 +26,7 @@ dependencies = [
 dev = [
     "pytest",       # MIT
     "pytest-cov",   # MIT
+    "pytest-regressions", # MIT
     "pre-commit",   # MIT
     "ruff",         # MIT
     "mypy",         # MIT
