@@ -21,7 +21,7 @@ In the long run mondAI will also be installable via PyPI:
 
 You can simply create metric objects and call them on your images/references:
 ```python
-from mondAI import PSNR, SSIM
+from mondAI.metrics import PSNR, SSIM
 
 psnr = PSNR()
 ssim = SSIM()

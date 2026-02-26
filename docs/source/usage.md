@@ -3,7 +3,7 @@
 ## Simple computation of metric scores
 
 ```python
-from mondAI import MAE
+from mondAI.metrics import MAE
 
 mae = MAE()
 image = torch.random.rand((256,256))
@@ -19,7 +19,7 @@ Sometimes you would like to compare the implementations of the same metric from 
 import torch
 from skimage.data import shepp_logan_phantom
 
-from mondAI.metrics.full_reference.mae import MAE
+from mondAI.metrics import MAE
 
 img1 = torch.from_numpy(shepp_logan_phantom()).unsqueeze(0).unsqueeze(0).float() / 255.0
 img2 = torch.flip(img1.clone(), dims=[2])  # Using the same image for simplicity
