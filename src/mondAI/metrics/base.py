@@ -4,11 +4,14 @@ from typing import Any, Callable, Sequence
 import numpy as np
 import torch
 
+from mondAI.logging import get_logger
 from mondAI.settings import settings
 from mondAI.utils.checks import check_dimensions, check_image_type, check_nan_values
 from mondAI.utils.internal_format import convert_to_internal_format
 
 from .dimension import _DIMENSION_LOOKUP, Dimension
+
+logger = get_logger()
 
 
 class Metric(ABC):
@@ -103,6 +106,7 @@ class Metric(ABC):
         # tensor operations while maintaining compatibility with both input types.
         output_is_torch = isinstance(inputs[0], torch.Tensor)
         output_device = inputs[0].device if output_is_torch else None
+        logger.debug(f"Input was {'torch.Tensor' if output_is_torch else 'numpy.ndarray'} on device {output_device}.")
 
         torch_inputs = tuple(convert_to_internal_format(x) for x in inputs)
 
@@ -129,6 +133,8 @@ class Metric(ABC):
             image_reshaped = image_permuted.reshape(-1, *metric_shape)
             reshaped_images.append(image_reshaped)
 
+        logger.debug(f"Metric shape: {metric_shape}, other shape: {other_shape}, permute order: {permute_order}")
+
         # Compute metric for each image (pair)
         scores_1d = self._compute_vmapped(*reshaped_images, compute_function=compute_function)
 
@@ -141,7 +147,10 @@ class Metric(ABC):
 
         # convert to numpy if necessary for consistency with input types
         if output_is_torch:
+            logger.debug(f"Converting output to original torch device {output_device}.")
             return scores.to(output_device) if output_device is not None else scores
+
+        logger.debug("Converting output to numpy array for consistency with input type.")
         return scores.detach().cpu().numpy()
 
     @abstractmethod
@@ -171,6 +180,14 @@ class MetricList:
     def __call__(
         self, *args: Any, **kwargs: Any
     ) -> list[float | torch.Tensor | np.ndarray | dict[str, float | torch.Tensor | np.ndarray]]:
+        if len(self.metrics) == 0:
+            logger.warning(f"MetricList {self.list_name} is empty. Please add metrics before calling.")
+        elif len(self.metrics) == 1:
+            logger.debug(
+                f"MetricList {self.list_name} contains only one metric. Consider adding multiple othrogonal metrics \
+                instead of computing just one metric for more comprehensive evaluation."
+            )
+
         return [m(*args, **kwargs) for m in self.metrics]
 
     def __str__(self) -> str:

@@ -54,3 +54,9 @@ def test_metric_list_call(phantom: np.ndarray, metric_class: type[Metric]) -> No
     else:
         raise ValueError(f"Unknown metric class {metric_class}")
     assert len(results) == 1
+
+
+def test_metric_list_call_empty() -> None:
+    metric_list = MetricList()
+    results = metric_list()
+    assert results == []

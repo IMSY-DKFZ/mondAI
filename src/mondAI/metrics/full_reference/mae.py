@@ -2,8 +2,11 @@ from typing import Callable
 
 import torch
 
+from mondAI.logging import get_logger
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
+
+logger = get_logger()
 
 
 class MAE(FullReferenceMetric):
@@ -57,7 +60,7 @@ class MAE(FullReferenceMetric):
             implementations["sklearn"] = sklearn_mae
 
         except Exception:
-            print("sklearn is not available, skipping sklearn implementation of MAE.")
+            logger.warning("sklearn is not available, skipping sklearn implementation of MAE.")
 
         ### tensorflow ###
         try:
@@ -76,7 +79,7 @@ class MAE(FullReferenceMetric):
             implementations["tensorflow"] = tensorflow_mae
 
         except Exception:
-            print("tensorflow is not available, skipping tensorflow implementation of MAE.")
+            logger.warning("tensorflow is not available, skipping tensorflow implementation of MAE.")
 
         ### monai ###
         try:
@@ -90,7 +93,7 @@ class MAE(FullReferenceMetric):
             implementations["monai"] = monai_mae
 
         except Exception:
-            print("monai is not available, skipping monai implementation of MAE.")  # TODO: convert to logging
+            logger.warning("monai is not available, skipping monai implementation of MAE.")
 
         return implementations
 

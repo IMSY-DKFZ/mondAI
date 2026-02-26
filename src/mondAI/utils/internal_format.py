@@ -1,7 +1,10 @@
 import numpy as np
 import torch
 
+from mondAI.logging import get_logger
 from mondAI.settings import settings
+
+logger = get_logger()
 
 
 def convert_to_internal_format(image: np.ndarray | torch.Tensor) -> torch.Tensor:
@@ -16,8 +19,12 @@ def convert_to_internal_format(image: np.ndarray | torch.Tensor) -> torch.Tensor
     """
     # Convert numpy array to float64 torch tensor if necessary
     if isinstance(image, np.ndarray):
+        logger.info(f"Converting input image from numpy array with dtype {image.dtype} to torch tensor dtype float64.")
         internal_format = torch.tensor(image, dtype=torch.float64, device=_get_torch_device())
     else:
+        logger.info(
+            f"Converting input image from torch tensor with dtype {image.dtype} to internal format with dtype float64."
+        )
         internal_format = image.to(dtype=torch.float64, device=_get_torch_device())
 
     return internal_format
@@ -32,6 +39,9 @@ def _get_torch_device() -> torch.device:
 
     """
     if settings.torch_device == "cpu":
+        logger.info("Using CPU as torch device as specified in settings.")
         return torch.device("cpu")
     else:
-        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        torch_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        logger.info(f"Using torch device: {torch_device}.")
+        return torch_device
