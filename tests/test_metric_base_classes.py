@@ -53,11 +53,11 @@ def test_abstract_method_not_callable(
         method(dummy_full_reference_metric)
 
 
-def test_metric_abstract_compute_vmapped_method_not_callable(
+def test_metric_abstract_compute_iteratively_method_not_callable(
     dummy_full_reference_metric: FullReferenceMetric, phantom: np.ndarray
 ) -> None:
     with raises(NotImplementedError):
-        Metric._compute_vmapped(dummy_full_reference_metric, phantom, phantom, compute_function=lambda x: x)
+        Metric._compute_iteratively(dummy_full_reference_metric, phantom, phantom, compute_function=lambda x: x)
 
 
 def test_metric_abstract_compute_method_not_callable(

@@ -52,19 +52,19 @@ class Metric(ABC):
         return "↑" if self.higher_is_better else "↓"
 
     @abstractmethod
-    def _compute_vmapped(
+    def _compute_iteratively(
         self,
         *views: torch.Tensor,
         compute_function: Callable[..., torch.Tensor],
     ) -> torch.Tensor:
-        """Vectorized compute function over flattened items.
+        """Iteratively compute function over flattened items.
 
         Must return a 1D tensor (N,).
 
         """
         raise NotImplementedError("Subclasses should implement this method.")
 
-    def _call_with_vectorization(
+    def _call_pipeline(
         self,
         *inputs: np.ndarray | torch.Tensor,
         dims: Sequence[str] = settings.default_dims,
@@ -75,14 +75,14 @@ class Metric(ABC):
         - common input checks (type/nan/dims)
         - conversion to internal torch representation
         - expected-dimension validation + permutation/flattening
-        - vectorized execution (subclass hook)
+        - iterative execution (subclass hook)
         - output restoration
 
         :param inputs: One or more input images (e.g. image and reference) as numpy arrays or torch tensors.
         :type inputs: tuple[np.ndarray | torch.Tensor, ...]
         :param dims: The dimensions of the input images, specified as a sequence of strings.
         :type dims: Sequence[str]
-        :param compute_function: The function to compute the metric, which will be vectorized.
+        :param compute_function: The function to compute the metric, which will be iteratively applied.
         :type compute_function: Callable[..., torch.Tensor]
         :return: The computed metric score, as a scalar or array/tensor depending on the input shape and type.
         :rtype: float | torch.Tensor | np.ndarray
@@ -129,14 +129,14 @@ class Metric(ABC):
             metric_shape = image_permuted.shape[len(other_dim_indices) :]
             other_shape = image_permuted.shape[: len(other_dim_indices)]
 
-            # reshape so that vmap iterates over "other dimensions"
+            # reshape so that `_compute_iteratively` iterates over "other dimensions"
             image_reshaped = image_permuted.reshape(-1, *metric_shape)
             reshaped_images.append(image_reshaped)
 
         logger.debug(f"Metric shape: {metric_shape}, other shape: {other_shape}, permute order: {permute_order}")
 
         # Compute metric for each image (pair)
-        scores_1d = self._compute_vmapped(*reshaped_images, compute_function=compute_function)
+        scores_1d = self._compute_iteratively(*reshaped_images, compute_function=compute_function)
 
         # return scalar if there are no "other dimensions" to iterate over
         if len(other_shape) == 0:

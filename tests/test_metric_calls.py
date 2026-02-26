@@ -214,13 +214,18 @@ def test_metric_call_with_vectorization_invalid_input_number(phantom: np.ndarray
             """Compute the metric between image and corresponding two references
             (error)."""
 
-            return self._call_with_vectorization(image, reference, reference, dims=dims, compute_function=self._compute)
+            return self._call_pipeline(image, reference, reference, dims=dims, compute_function=self._compute)
 
-        def _compute_vmapped(
+        def _compute_iteratively(
             self, *reshaped_images: torch.Tensor, compute_function: Callable[..., torch.Tensor]
         ) -> torch.Tensor:
             images, references = reshaped_images
-            return torch.vmap(compute_function)(images, references)
+            return torch.stack(
+                [
+                    compute_function(image, reference)
+                    for image, reference in zip(images.unbind(0), references.unbind(0), strict=True)
+                ]
+            )
 
     metric = InvalidMetric()
     with raises(ValueError, match="InvalidMetric supports 1 or 2 input images, got 3."):

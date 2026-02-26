@@ -51,23 +51,19 @@ class FullReferenceMetric(Metric, ABC):
 
         if compare_implementations:
             scores = {
-                library_name: self._call_with_vectorization(
-                    image, reference, dims=dims, compute_function=implementation
-                )
+                library_name: self._call_pipeline(image, reference, dims=dims, compute_function=implementation)
                 for library_name, implementation in self._other_implementations().items()
             }
-            scores["mondAI"] = self._call_with_vectorization(
-                image, reference, dims=dims, compute_function=self._compute
-            )
+            scores["mondAI"] = self._call_pipeline(image, reference, dims=dims, compute_function=self._compute)
             return scores
 
         else:
-            return self._call_with_vectorization(image, reference, dims=dims, compute_function=self._compute)
+            return self._call_pipeline(image, reference, dims=dims, compute_function=self._compute)
 
-    def _compute_vmapped(
+    def _compute_iteratively(
         self, *reshaped_images: torch.Tensor, compute_function: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
     ) -> torch.Tensor:
-        """Function to compute the metric in a vectorized manner over flattened items.
+        """Function to compute the metric in an iterative manner over flattened items.
         Returns a 1D tensor (N,).
 
         :param reshaped_images: Tuple of tensors containing the images and references, each of shape (N, ...).
