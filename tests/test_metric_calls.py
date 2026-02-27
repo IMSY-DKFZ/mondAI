@@ -18,6 +18,7 @@ import torch
 from pytest import raises
 
 from mondAI.metrics.base import Metric
+from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference import FULL_REFERENCE_METRICS
 from mondAI.metrics.full_reference.base import FullReferenceMetric
 from mondAI.metrics.no_reference import NO_REFERENCE_METRICS
@@ -230,3 +231,101 @@ def test_metric_call_with_vectorization_invalid_input_number(phantom: np.ndarray
     metric = InvalidMetric()
     with raises(ValueError, match="InvalidMetric supports 1 or 2 input images, got 3."):
         metric(phantom, phantom, dims=("H", "W"))
+
+
+@pytest.mark.parametrize(
+    "image_dimensions, metric_dimensions",
+    [
+        (("H", "W"), (Dimension.HEIGHT, Dimension.WIDTH)),
+        (("D", "H", "W"), (Dimension.DEPTH, Dimension.HEIGHT, Dimension.WIDTH)),
+        (("D", "H", "W"), (Dimension.HEIGHT, Dimension.WIDTH)),
+        (("H", "W", "D"), (Dimension.HEIGHT, Dimension.WIDTH)),
+        (("C", "H", "W"), (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)),
+        (("C", "H", "W"), (Dimension.HEIGHT, Dimension.WIDTH)),
+        (("C", "H", "W"), (Dimension.CHANNEL,)),
+        (("H", "W", "C"), (Dimension.CHANNEL,)),
+        (("B", "D", "H", "W"), (Dimension.BATCH, Dimension.DEPTH, Dimension.HEIGHT, Dimension.WIDTH)),
+        (("B", "D", "H", "W"), (Dimension.DEPTH, Dimension.HEIGHT, Dimension.WIDTH)),
+        (("B", "D", "H", "W"), (Dimension.HEIGHT, Dimension.WIDTH)),
+        (("B", "C", "H", "W"), (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)),
+        (("B", "C", "H", "W"), (Dimension.HEIGHT, Dimension.WIDTH)),
+        (("B", "C", "H", "W"), (Dimension.CHANNEL,)),
+        (("B", "C", "H", "W"), (Dimension.BATCH,)),
+        (
+            ("B", "C", "D", "H", "W"),
+            (Dimension.BATCH, Dimension.CHANNEL, Dimension.DEPTH, Dimension.HEIGHT, Dimension.WIDTH),
+        ),
+        (
+            ("B", "C", "H", "W", "D"),
+            (Dimension.BATCH, Dimension.CHANNEL, Dimension.DEPTH, Dimension.HEIGHT, Dimension.WIDTH),
+        ),
+        (("B", "C", "D", "H", "W"), (Dimension.CHANNEL, Dimension.DEPTH, Dimension.HEIGHT, Dimension.WIDTH)),
+        (("B", "C", "D", "H", "W"), (Dimension.DEPTH, Dimension.HEIGHT, Dimension.WIDTH)),
+        (("B", "C", "D", "H", "W"), (Dimension.HEIGHT, Dimension.WIDTH)),
+        (("B", "C", "D", "H", "W"), (Dimension.CHANNEL,)),
+        (("B", "C", "D", "H", "W"), (Dimension.BATCH,)),
+        (("B", "C", "D", "H", "W"), (Dimension.DEPTH,)),
+        (("B", "C", "D", "H", "W"), (Dimension.BATCH, Dimension.CHANNEL)),
+        # (("H", "W"), ("D", "H", "W")),  # invalid case: image has fewer dimensions than metric expects
+        # (("D", "H", "W"), ("H", "W")),  # invalid case: image has more dimensions than metric expects
+        # (("C", "H", "W"), ("H", "W")),  # invalid case: image has more dimensions than metric expects
+    ],
+)
+def test_output_shape_depending_on_image_and_metric_dimensions(
+    image_dimensions: Sequence[str],
+    metric_dimensions: tuple[Dimension, ...],
+    output_shape_test_metric_factory: Callable[[tuple[Dimension, ...]], FullReferenceMetric],
+) -> None:
+    img = torch.rand(tuple(4 for _ in image_dimensions))  # create a random tensor with the specified image dimensions
+
+    metric = output_shape_test_metric_factory(metric_dimensions)
+    result = metric(img, img, dims=image_dimensions, compare_implementations=False)
+
+    # check if output shape is correct based on the specified metric dimensions and image dimensions
+    expected_output_dims = len(image_dimensions) - len(metric_dimensions)
+
+    if expected_output_dims == 0:
+        assert isinstance(result, float), f"Expected result to be a scalar (float), but got {type(result)}"
+    elif expected_output_dims > 0:
+        assert isinstance(result, torch.Tensor), f"Expected result to be a torch.Tensor, but got {type(result)}"
+        assert result.ndim == expected_output_dims, (
+            f"Expected result to have {expected_output_dims} dimensions, but got {result.ndim}"
+        )
+        assert all(dim == 4 for dim in result.shape), f"Expected result shape to contain only 4, but got {result.shape}"
+    else:
+        raise ValueError("Expected output dimensions cannot be negative.")
+
+
+@pytest.mark.parametrize(
+    "image_dimensions, metric_dimensions",
+    [
+        (
+            ("H", "W"),
+            (Dimension.DEPTH, Dimension.HEIGHT, Dimension.WIDTH),
+        ),  # invalid case: image has fewer dimensions than metric expects
+        (
+            ("H", "W"),
+            (Dimension.HEIGHT, Dimension.WIDTH, Dimension.CHANNEL),
+        ),  # invalid case: image has fewer dimensions than metric expects
+        (("H", "W"), (Dimension.CHANNEL,)),  # invalid case: image has other dimension than metric expects
+        (
+            ("C", "H", "W"),
+            (Dimension.DEPTH, Dimension.HEIGHT, Dimension.WIDTH),
+        ),  # invalid case: image has other dimension than metric expects
+        (
+            ("B", "C", "H", "W"),
+            (Dimension.DEPTH, Dimension.HEIGHT, Dimension.WIDTH),
+        ),  # imvalid case: image has other dimension than metric expects
+    ],
+)
+def test_invalid_image_and_metric_dimensions(
+    image_dimensions: Sequence[str],
+    metric_dimensions: tuple[Dimension, ...],
+    output_shape_test_metric_factory: Callable[[tuple[Dimension, ...]], FullReferenceMetric],
+) -> None:
+    img = torch.rand(tuple(4 for _ in image_dimensions))  # create a random tensor with the specified image dimensions
+
+    metric = output_shape_test_metric_factory(metric_dimensions)
+
+    with pytest.raises(ValueError):
+        metric(img, img, dims=image_dimensions, compare_implementations=False)

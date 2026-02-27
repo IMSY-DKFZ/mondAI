@@ -19,6 +19,7 @@ from pytest import fixture
 from skimage.data import brain as brain_volume
 from skimage.data import shepp_logan_phantom
 
+from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
 from mondAI.metrics.no_reference.base import NoReferenceMetric
 
@@ -120,6 +121,37 @@ def dummy_no_reference_metric() -> NoReferenceMetric:
             }
 
     return DummyNoReferenceMetric()
+
+
+@fixture
+def output_shape_test_metric_factory() -> Callable[[tuple[Dimension, ...]], FullReferenceMetric]:
+    def _make_metric(metric_dimensions: tuple[Dimension, ...]) -> FullReferenceMetric:
+        class OutputShapeTestMetric(FullReferenceMetric):
+            name = "Output Shape Test Metric"
+            abbreviation = "OSTM"
+            higher_is_better = True
+
+            expected_dimensions = metric_dimensions
+
+            def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+                return torch.mean(image)  # dummy computation
+
+            def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
+                return {}
+
+            def __str__(self) -> str:
+                return f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()}"
+
+            def fingerprint(self) -> dict[str, str | bool]:
+                return {
+                    "name": self.name,
+                    "abbreviation": self.abbreviation,
+                    "higher_is_better": self.higher_is_better,
+                }
+
+        return OutputShapeTestMetric()
+
+    return _make_metric
 
 
 # Example usage
