@@ -12,21 +12,22 @@ def get_logger() -> logging.Logger:
     easily configured.
 
     Usage:
-    ```python
-    from mondAI.logging import get_logger
 
-    logger = get_logger()  # Get the singleton logger instance
+    .. code-block:: python
 
-    logger.info("This is an info message.")
-    logger.debug("This is a debug message.")
+        from mondAI.logging import get_logger
 
-    logger.setLevel(logging.DEBUG)  # Change logging level to DEBUG after instantiation
-    logger.debug("This debug message will now be shown.")
-    ```
+        logger = get_logger()  # Get the singleton logger instance
 
-    Use `settings.logging_level` to set the default logging level for the entire package. This will only affect loggers
-    that are instantiated after the change. To change the logging level of an existing logger, use
-    `logger.setLevel(logging.DEBUG)` or the appropriate level.
+        logger.info("This is an info message.")
+        logger.debug("This is a debug message.")
+
+        logger.setLevel(logging.DEBUG)  # Change logging level to DEBUG after instantiation
+        logger.debug("This debug message will now be shown.")
+
+    Use :code:`settings.logging_level` to set the default logging level for the entire package. This will only affect
+    loggers that are instantiated after the change. To change the logging level of an existing logger, use
+    :code:`logger.setLevel(logging.DEBUG)` or the appropriate level.
 
     """
     global _logger

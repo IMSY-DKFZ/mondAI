@@ -1,4 +1,4 @@
-# Limiations
+# Limitations
 
 Currently the package does not support
 * masked image metrics

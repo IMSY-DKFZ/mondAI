@@ -43,14 +43,10 @@ html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
 html_sidebars = {
     "**": [
-        "about.html",
         "searchfield.html",
-        "navigation.html",
         "relations.html",
-        "donate.html",
     ]
 }
 html_theme_options = {
-    "description": "Correct, reproducible and tested metric implementations for image quality",
-    "show_relbars": True,
+    # "description": "Correct, reproducible and tested metric implementations for image quality",
 }
