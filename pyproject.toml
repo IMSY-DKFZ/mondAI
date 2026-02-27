@@ -15,26 +15,27 @@ authors = [
 requires-python = ">=3.10"
 
 dependencies = [
-    "torch>=2.10", # BSD-3-Clause
-    "numpy",       # BSD-3-Clause and MIT
+    "torch>=2.10",         # BSD-3-Clause
+    "numpy",               # BSD-3-Clause and MIT
     "scikit-learn==1.7.2", # BSD-3-Clause
-    "tensorflow==2.16.1", # Apache-2.0
-    "monai==1.5.1",      # Apache-2.0
+    "tensorflow==2.16.1",  # Apache-2.0
+    "monai==1.5.1",        # Apache-2.0
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest",       # MIT
-    "pytest-cov",   # MIT
-    "pytest-regressions", # MIT
-    "pre-commit",   # MIT
-    "ruff",         # MIT
-    "mypy",         # MIT
-    "sphinx",       # BSD-2-Clause
-    "myst-parser",  # BSD-2-Clause
-    "scikit-image", # BSD-3-Clause
-    "pooch",        # BSD-3-Clause
-    "matplotlib",   # PSF-2.0
+    "pytest",              # MIT
+    "pytest-cov",          # MIT
+    "pytest-regressions",  # MIT
+    "pre-commit",          # MIT
+    "ruff",                # MIT
+    "mypy",                # MIT
+    "sphinx",              # BSD-2-Clause
+    "pydata-sphinx-theme", # BSD-3-Clause
+    "myst-parser",         # BSD-2-Clause
+    "scikit-image",        # BSD-3-Clause
+    "pooch",               # BSD-3-Clause
+    "matplotlib",          # PSF-2.0
 ]
 
 [tool.pytest.ini_options]
