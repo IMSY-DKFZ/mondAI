@@ -38,6 +38,8 @@ comparison = [
     "scikit-learn==1.7.2", # BSD-3-Clause
     "tensorflow==2.16.1",  # Apache-2.0
     "monai==1.5.1",        # Apache-2.0
+    "piq==0.8.0",          # Apache-2.0
+    "deepinv==0.4.0",      # BSD-3-Clause
 ]
 
 [tool.pytest.ini_options]
