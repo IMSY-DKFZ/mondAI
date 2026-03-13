@@ -5,23 +5,28 @@ import torch
 from mondAI.logging import get_logger
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
+from mondAI.utils.conversions import rgb_to_yiq
 from mondAI.utils.similarity_map import similarity_map
-
-# from mondAI.utils.conversions import rgb_to_yiq
 
 logger = get_logger()
 
 
 class HaarPSI(FullReferenceMetric):
     """Haar wavelet-based perceptual similarity index (HaarPSI) computes the perceptual
-    similarity between two images based on features from their Haar wavelet transform.
-    It is designed to capture perceptual differences between images which align with
-    human visual perception.
+    similarity between two images based on features from their Haar wavelet
+    coefficients. It is designed to capture perceptual differences between images which
+    align with human visual perception.
 
-    It expects two-dimensional grayscale images with pixel values in the range [0, 255].
+    It expects two-dimensional grayscale or RGB (set `use_rgb` to True) images with pixel values in the range [0, 255].
     The resulting HaarPSI score ranges from 0 to 1, where a score of 1 indicates perfect
     similarity between the input image and the reference image, while a score of 0 indicates
-    no perceptual similarity. For the mathematical formulation of the metric, please refer to
+    no perceptual similarity. Note that the RGB definition is not just a simple channel-wise application of the
+    grayscale definition,
+    but rather a different definition that considers the Y, I and Q channels of the YIQ color space separately.
+
+    HaarPSI used the magnitudes of high-frequency Haar wavelet coefficients to compute local similarities and the
+    magnitudes of low-frequency Haar wavelet coefficients to compute weights for these local similarities.
+    For the mathematical formulation of the metric, please refer to
     the original publication
 
 
@@ -61,9 +66,11 @@ class HaarPSI(FullReferenceMetric):
     expected_dimensions = (
         Dimension.HEIGHT,
         Dimension.WIDTH,
-    )  # for color images use HaarPSI_RGB instead, which expects (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
+    )  # for RGB images when `use_rgb == True` this chanes to (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
 
-    def __init__(self, preprocess_with_subsampling: bool = True, C: float = 5.0, alpha: float = 4.9) -> None:
+    def __init__(
+        self, preprocess_with_subsampling: bool = True, C: float = 5.0, alpha: float = 4.9, use_rgb: bool = False
+    ) -> None:
         """Initialize the Metric Template.
 
         The constructor should include checks for any parameters that the metric uses
@@ -87,6 +94,12 @@ class HaarPSI(FullReferenceMetric):
             images is 4.9, for natural images 4.2. The authors suggest to set it in the
             range [2.0, 8.0].
         :type alpha: float
+        :param use_rgb: Whether to use metric definition for RGB images instead of
+            grayscale definition. Note that the RGB definition is different from
+            applying the grayscale definition to each channel separately and then
+            aggregate. If True, the metric will expect 3-channel RGB images. Default is
+            False (grayscale).
+        :type use_rgb: bool
 
         """
 
@@ -94,6 +107,9 @@ class HaarPSI(FullReferenceMetric):
         self.preprocess_with_subsampling = preprocess_with_subsampling
         self.C = C
         self.alpha = alpha
+        self.use_rgb = use_rgb
+        if self.use_rgb:
+            self.expected_dimensions = (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)  # type: ignore[assignment]
 
         # Check parameter settings for validity
         if self.C <= 0:
@@ -142,6 +158,11 @@ class HaarPSI(FullReferenceMetric):
         image = image.double()
         reference = reference.double()
 
+        # Convert from RGB to YIQ color space
+        if self.use_rgb:
+            image = rgb_to_yiq(image)
+            reference = rgb_to_yiq(reference)
+
         # Downscale input to simulates the typical distance between an image and its viewer.
         if self.preprocess_with_subsampling:
             image = self._subsample(image)
@@ -149,13 +170,14 @@ class HaarPSI(FullReferenceMetric):
 
         # Perform Haar wavelet decomposition on 3 scales
         n_scales = 3
-        coefficients_reference = self._haar_wavelet_decomposition(reference, n_scales)
-        coefficients_image = self._haar_wavelet_decomposition(image, n_scales)
+        coefficients_reference = self._haar_wavelet_decomposition(reference[0] if self.use_rgb else reference, n_scales)
+        coefficients_image = self._haar_wavelet_decomposition(image[0] if self.use_rgb else image, n_scales)
 
         # Pre-allocate variables for the local similarities and the weights
         n_orientations = 2  # consider vertical and horizontal orientations of a 2D discrete Haar wavelet transform
-        local_similarities = reference.new_zeros(n_orientations, *reference.shape)  # (2, H, W)
-        weights = reference.new_zeros(n_orientations, *reference.shape)  # (2, H, W)
+        n_feature_channels = n_orientations + 1 if self.use_rgb else n_orientations  # grayscale: 2 , RGB 3 (Y, I, Q)
+        local_similarities = reference.new_zeros((n_feature_channels, *reference.shape))  # (2 or 3, H, W)
+        weights = reference.new_zeros(local_similarities.shape)  # (2 or 3, H, W)
 
         # Computes the weights and similarities for each orientation
         for orientation in range(n_orientations):
@@ -168,6 +190,22 @@ class HaarPSI(FullReferenceMetric):
             local_similarities[orientation] = self._get_local_similarity_for_orientation(
                 coefficients_image, coefficients_reference, n_scales, orientation
             )
+
+        # Compute similarities for color channels (third feature channel)
+        if self.use_rgb:
+
+            def magnitude(image: torch.Tensor) -> torch.Tensor:
+                return torch.abs(self._convolve2d(image, image.new_ones((2, 2)) / 4.0))
+
+            coefficients_reference_I = magnitude(reference[1])
+            coefficients_image_I = magnitude(image[1])
+            coefficients_reference_Q = magnitude(reference[2])
+            coefficients_image_Q = magnitude(image[2])
+
+            similarity_I = similarity_map(coefficients_reference_I, coefficients_image_I, self.C)
+            similarity_Q = similarity_map(coefficients_reference_Q, coefficients_image_Q, self.C)
+            weights[2] = (weights[0] + weights[1]) / 2
+            local_similarities[2] = (similarity_I + similarity_Q) / 2
 
         # Calculates the final score
         pre_logit = torch.sum(torch.sigmoid(self.alpha * local_similarities) * weights) / torch.sum(weights)
@@ -195,9 +233,14 @@ class HaarPSI(FullReferenceMetric):
             def piq_haarpsi(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
                 # piq's implementation expects inputs with shape (N, C, H, W) and
                 # data_range parameter should correspond to pixel value range
+
+                if not self.use_rgb:
+                    image = image.unsqueeze(0)
+                    reference = reference.unsqueeze(0)
+
                 return haarpsi(
-                    image.unsqueeze(0).unsqueeze(0),
-                    reference.unsqueeze(0).unsqueeze(0),
+                    image.unsqueeze(0),
+                    reference.unsqueeze(0),
                     data_range=255.0,
                     c=self.C,
                     alpha=self.alpha,
@@ -217,6 +260,11 @@ class HaarPSI(FullReferenceMetric):
             def deepinv_haarpsi(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
                 # DeepInv's implementation expects inputs with shape (N, C, H, W) and
                 #  pixel values in [0, 1] with single precision (float32, therefore scores might deviate slightly)
+
+                if not self.use_rgb:
+                    image = image.unsqueeze(0)
+                    reference = reference.unsqueeze(0)
+
                 haarpsi_metric = DeepInvHaarPSI(C=self.C, alpha=self.alpha)
                 return haarpsi_metric(
                     image.unsqueeze(0).unsqueeze(0).float() / 255.0,
@@ -242,7 +290,10 @@ class HaarPSI(FullReferenceMetric):
         """
         arrow = self._arrow_indicating_optimum()
         preprocessing = " and subsampling as preprocessing" if self.preprocess_with_subsampling else ""
-        return f"{self.name} ({self.abbreviation}) {arrow} with C={self.C} and alpha={self.alpha}{preprocessing}"
+        rgb_info = " using RGB definition" if self.use_rgb else ""
+        return (
+            f"{self.name} ({self.abbreviation}) {arrow} with C={self.C} and alpha={self.alpha}{preprocessing}{rgb_info}"
+        )
 
     def fingerprint(self) -> dict[str, str | bool | float]:
         """Return a dictionary that uniquely identifies the metric.
@@ -259,18 +310,29 @@ class HaarPSI(FullReferenceMetric):
             "C": self.C,
             "alpha": self.alpha,
             "preprocess_with_subsampling": self.preprocess_with_subsampling,
+            "use_rgb": self.use_rgb,
         }
 
     def _input_checks(self, image: torch.Tensor, reference: torch.Tensor) -> None:
-        """_summary_
+        """Perform input checks specific to HaarPSI, such as checking for valid pixel
+        value ranges and dimensions.
 
-        :param image: _description_
+        Warns if the images have height or width smaller than 16 pixels, which may lead
+        to unreliable results due to border effects of the 16x16 kernel used in
+        HaarPSI. Warns if all pixel values in both image and reference are in the range
+        [0, 1], which may indicate that the images are not correctly scaled for
+        HaarPSI, which expects pixel values in the range [0, 255].
+
+        :param image: The input image for which the metric is being computed.
         :type image: torch.Tensor
-        :param reference: _description_
+        :param reference: The reference image to compare against.
         :type reference: torch.Tensor
-        :raises ValueError: _description_
-        :raises ValueError: _description_
-        :raises ValueError: _description_
+        :raises ValueError: If the input image contains pixel values outside the range
+            [0, 255].
+        :raises ValueError: If the reference image contains pixel values outside the
+            range [0, 255].
+        :raises ValueError: If use_rgb is True but the images do not have 3 channels,
+            which is required for the RGB definition of HaarPSI.
 
         """
         # Input checks specific to HaarPSI
@@ -287,13 +349,29 @@ class HaarPSI(FullReferenceMetric):
                 "correctly scaled for accurate computation of HaarPSI."
             )
 
-        # # Check that only 1 or 3 channels are present
-        # if image.shape[self.expected_dimensions.index(Dimension.CHANNEL)] not in (1, 3):
-        #     raise ValueError(
-        #         f"Input image has {image.shape[0]} channels. HaarPSI expects 1 (grayscale) or 3 (RGB) channels."
-        #     )
+        if (
+            reference.shape[self.expected_dimensions.index(Dimension.HEIGHT)] < 16
+            or reference.shape[self.expected_dimensions.index(Dimension.WIDTH)] < 16
+        ):
+            logger.warning(
+                "Input image has height or width smaller than 16 pixels. HaarPSI uses a 16x16 kernel, "
+                "so results may be unreliable for small images due to border effects."
+            )
 
-        # TODO: check kernel size (based on n_scales = 3?) makes sense for image sizes.
+        if any([image.shape[self.expected_dimensions.index(dim)] < 16 for dim in (Dimension.HEIGHT, Dimension.WIDTH)]):
+            logger.warning(
+                "Images have height or width smaller than 16 pixels. HaarPSI uses a 16x16 kernel, "
+                "so results may be unreliable for small images due to border effects."
+            )
+
+        if self.use_rgb:
+            channel_dim = self.expected_dimensions.index(Dimension.CHANNEL)
+            if image.shape[channel_dim] != 3:
+                raise ValueError(
+                    f"Images have {image.shape[channel_dim]} channels. HaarPSI expects 3 (RGB) channels, "
+                    "when use_rgb is set to True. Instead you might want to use the grayscale definition"
+                    "(use_rgb=False) and apply it channel wise."
+                )
 
     def _subsample(self, image: torch.Tensor) -> torch.Tensor:
         """Subsample the input image by a factor of 2 using a 2x2 mean filter and
@@ -301,13 +379,26 @@ class HaarPSI(FullReferenceMetric):
         its viewer in psychophysical experiments as described in the original
         publication.
 
-        :param image: The input 2D image to be subsampled, shape (H, W)
+        If use_rgb is True and the input image has 3 channels, the subsampling is
+        applied to each channel separately and then the subsampled channels are stacked
+        back together.
+
+        :param image: The input 2D image to be subsampled, shape (H, W), or (C, H, W)
+            if use_rgb is True and the image has 3 channels.
         :type image: torch.Tensor
         :return: The subsampled image, shape (H/2, W/2), or (H/2+1, W/2+1) if the input
+            dimensions are odd. If use_rgb is True and the input image has 3 channels,
+            the output shape will be (C, H/2, W/2) or (C, H/2+1, W/2+1) if the input
             dimensions are odd.
         :rtype: torch.Tensor
 
         """
+
+        # apply subsampling to each channel separately and stack back together
+        if self.use_rgb and image.shape[self.expected_dimensions.index(Dimension.CHANNEL)] == 3:
+            subsampled_channels = [self._subsample(image[channel]) for channel in range(3)]
+            return torch.stack(subsampled_channels, dim=self.expected_dimensions.index(Dimension.CHANNEL))
+
         kernel_size = 2
         filter_weights = image.new_ones(1, 1, kernel_size, kernel_size) / kernel_size**2
         mean_filtered = torch.nn.functional.conv2d(image.unsqueeze(0), weight=filter_weights, padding="same")
