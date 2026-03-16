@@ -226,7 +226,7 @@ class HaarPSI(FullReferenceMetric):
 
         implementations = {}
 
-        ### PIG ###
+        ### PIQ ###
         try:
             from piq import haarpsi
 
@@ -244,6 +244,7 @@ class HaarPSI(FullReferenceMetric):
                     data_range=255.0,
                     c=self.C,
                     alpha=self.alpha,
+                    subsample=self.preprocess_with_subsampling,
                 )
 
             implementations["piq"] = piq_haarpsi
@@ -251,6 +252,59 @@ class HaarPSI(FullReferenceMetric):
         except Exception:
             logger.warning(
                 "piq or it's HaarPSI implementation is not available, skipping piq implementation of HaarPSI"
+            )
+
+        ### PIQA ###
+
+        try:
+            from piqa.haarpsi import haarpsi as haarpsi_piqa
+
+            def piqa_haarpsi(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+                # piqa's implementation expects inputs with shape (N, C, H, W) and
+                # data_range parameter should correspond to pixel value range
+
+                if not self.use_rgb:
+                    image = image.unsqueeze(0)
+                    reference = reference.unsqueeze(0)
+
+                return haarpsi_piqa(
+                    image.unsqueeze(0).float() / 255.0,
+                    reference.unsqueeze(0).float() / 255.0,
+                    value_range=1.0,
+                    c=self.C,
+                    alpha=self.alpha,
+                )
+
+            implementations["piqa"] = piqa_haarpsi
+        except Exception:
+            logger.warning(
+                "piqa or it's HaarPSI implementation is not available, skipping piqa implementation of HaarPSI"
+            )
+
+        ### IdealIQA ###
+
+        try:
+            from haarpsi_ideal_iqa import haarpsi as haarpsi_ideal
+
+            def ideal_iqa_haarpsi(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+                # ideal_iqa's implementation expects inputs with shape (N, C, H, W) and
+                # pixel values in [0, 1], while the original implementation expects images with pixel values in [0, 255]
+
+                score, _, _ = haarpsi_ideal(
+                    reference / 255.0,
+                    image / 255.0,
+                    C=self.C,
+                    α=self.alpha,
+                    preprocess_with_subsampling=self.preprocess_with_subsampling,
+                )
+                return score
+
+            implementations["ideal_iqa"] = ideal_iqa_haarpsi
+
+        except Exception:
+            logger.warning(
+                "haarpsi_ideal_iqa or it's HaarPSI implementation is not available, "
+                "skipping ideal_iqa implementation of HaarPSI"
             )
 
         ### deepinv ###
@@ -265,10 +319,12 @@ class HaarPSI(FullReferenceMetric):
                     image = image.unsqueeze(0)
                     reference = reference.unsqueeze(0)
 
-                haarpsi_metric = DeepInvHaarPSI(C=self.C, alpha=self.alpha)
+                haarpsi_metric = DeepInvHaarPSI(
+                    C=self.C, alpha=self.alpha, preprocess_with_subsampling=self.preprocess_with_subsampling
+                )
                 return haarpsi_metric(
-                    image.unsqueeze(0).unsqueeze(0).float() / 255.0,
-                    reference.unsqueeze(0).unsqueeze(0).float() / 255.0,
+                    image.unsqueeze(0).float() / 255.0,
+                    reference.unsqueeze(0).float() / 255.0,
                 )
 
             implementations["deepinv"] = deepinv_haarpsi
@@ -276,6 +332,29 @@ class HaarPSI(FullReferenceMetric):
         except Exception:
             logger.warning(
                 "deepinv or it's HaarPSI implementation is not available, skipping deepinv implementation of HaarPSI"
+            )
+
+        ### Origninal NumPy implementation by Rafael Reisenhofer and David Neumann ###
+
+        try:
+            from haarpsi_original import haar_psi as org_haarpsi
+
+            def original_haarpsi(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+                # The original implementation by Rafael Reisenhofer and David Neumann expects images with pixel values
+                # in [0, 255] and uses double precision floating point format.
+
+                score, _, _ = org_haarpsi(
+                    reference.numpy(force=True),
+                    image.numpy(force=True),
+                    preprocess_with_subsampling=self.preprocess_with_subsampling,
+                )
+                return torch.tensor(score)
+
+            implementations["original_numpy"] = original_haarpsi
+        except Exception:
+            logger.warning(
+                "haarpsi_original or it's HaarPSI implementation is not available, "
+                "skipping original_numpy implementation of HaarPSI"
             )
 
         return implementations
