@@ -36,13 +36,10 @@ def test_abstract_class_not_instanticable(klass: Metric | FullReferenceMetric | 
     [
         Metric.__call__,
         Metric.__str__,
-        Metric.fingerprint,
         Metric._other_implementations,
         FullReferenceMetric.__str__,
-        FullReferenceMetric.fingerprint,
         FullReferenceMetric._other_implementations,
         NoReferenceMetric.__str__,
-        NoReferenceMetric.fingerprint,
         NoReferenceMetric._other_implementations,
     ],
 )

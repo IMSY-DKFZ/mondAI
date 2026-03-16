@@ -41,6 +41,11 @@ class MetricTemplate(FullReferenceMetric):  # TODO: rename to actual metric name
         prevent invalid configurations of the metric that could lead to incorrect
         results or errors during computation.
 
+        Store all parameters as instance attributes with the same name so that they can
+        be included in the fingerprint and string representation of the metric. This
+        ensures that the metric's configuration is fully captured and can be reproduced
+        accurately.
+
         :param parameter1: An example parameter for the metric, replace with actual
             parameters as needed.
         :type parameter1: int
@@ -98,22 +103,3 @@ class MetricTemplate(FullReferenceMetric):  # TODO: rename to actual metric name
 
         """
         return f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()} with parameter1={self.parameter1}"
-
-    def fingerprint(self) -> dict[str, str | bool | int]:
-        """Return a dictionary that uniquely identifies the metric.
-
-        TODO: replace with actual fingerprinting logic for the metric. This method should return a dictionary that
-        includes all relevant information about the metric, such as its name, abbreviation, whether higher values are
-        better, and any parameters that are used in the metric. The fingerprint is important for reproducibility, as it
-        allows users to uniquely identify the metric and its configuration when reporting results or sharing code.
-
-        :return: A dictionary that uniquely identifies the metric and its parameters for reproducibility.
-        :rtype: dict[str, str | bool | int]
-
-        """
-        return {
-            "name": self.name,
-            "abbreviation": self.abbreviation,
-            "higher_is_better": self.higher_is_better,
-            "parameter1": self.parameter1,
-        }

@@ -1,3 +1,4 @@
+import inspect
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Sequence
 
@@ -36,11 +37,27 @@ class Metric(ABC):
         and parameters for reproducible reporting."""
         raise NotImplementedError("Subclasses should implement this method.")
 
-    @abstractmethod
     def fingerprint(self) -> dict[str, Any]:
         """Return a dictionary that uniquely identifies the metric and its parameters
-        for reproducibility."""
-        raise NotImplementedError("Subclasses should implement this method.")
+        for reproducibility.
+
+        :return: A dictionary that uniquely identifies the metric and its parameters
+            for reproducibility.
+        :rtype: dict[str, Any]
+
+        """
+
+        signature = inspect.signature(self.__class__.__init__)
+        params = {name: getattr(self, name) for name in signature.parameters if name != "self"}
+
+        return {
+            "metric": type(self).__name__,
+            "name": self.name,
+            "abbreviation": self.abbreviation,
+            "higher_is_better": self.higher_is_better,
+            "expected_dimensions": [dim.value for dim in self.expected_dimensions],
+            **params,
+        }
 
     def _arrow_indicating_optimum(self) -> str:
         """Show an arrow indicating whether higher metric values are better.

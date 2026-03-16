@@ -30,11 +30,3 @@ class Test(NoReferenceMetric):
     def __str__(self) -> str:
         """Full text representation of the Test Metric."""
         return f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()}"
-
-    def fingerprint(self) -> dict[str, str | bool]:
-        """Return a dictionary that uniquely identifies the Test Metric."""
-        return {
-            "name": self.name,
-            "abbreviation": self.abbreviation,
-            "higher_is_better": self.higher_is_better,
-        }
