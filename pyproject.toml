@@ -44,6 +44,12 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra -q"
+[tool.coverage.run]
+omit = [
+    'src/mondAI/metrics/full_reference/haarpsi_original.py',
+    'src/mondAI/metrics/full_reference/haarpsi_ideal_iqa.py',
+    'src/mondAI/metrics/full_reference/compare_haarpsi.py',
+]
 
 
 [tool.ruff]

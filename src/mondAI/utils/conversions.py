@@ -4,7 +4,7 @@ import torch
 def rgb_to_yiq(image: torch.Tensor) -> torch.Tensor:
     """Convert an RGB image to YIQ color space.
 
-    :param image: Input RGB image as a torch.Tensor with shape (C, H, W) or (H, W, C)
+    :param image: Input RGB image as a torch.Tensor with shape (C, H, W, ...) or (H, W, ..., C)
         where C=3.
     :type image: torch.Tensor
     :return: Image converted to YIQ color space with the same shape as the input.
