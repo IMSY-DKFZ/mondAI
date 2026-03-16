@@ -10,6 +10,7 @@ values.
 
 import pytest
 
+from mondAI.logging import update_log_level
 from mondAI.settings import _Settings
 
 
@@ -80,3 +81,10 @@ def test_reset_to_defaults(settings: _Settings) -> None:
     assert settings.logging_level == "INFO"
     assert settings.tolerance == 1e-8
     assert settings.default_dims == ("H", "W")  # type: ignore[comparison-overlap]
+
+
+def test_update_log_level_invalid_input(settings: _Settings) -> None:
+    # extra test to ensure that update_log_level raises ValueError for invalid input,
+    # although it's also checked by the logging_level setter
+    with pytest.raises(ValueError):
+        update_log_level("invalid_level")

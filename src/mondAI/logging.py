@@ -1,8 +1,6 @@
 import logging
 import sys
 
-from mondAI.settings import settings
-
 _logger: logging.Logger | None = None
 
 
@@ -46,8 +44,27 @@ def get_logger() -> logging.Logger:
         logger.addHandler(console_handler)
         logger.addHandler(file_handler)
 
-        logger.setLevel(getattr(logging, settings.logging_level))
+        logger.setLevel(logging.INFO)
 
         _logger = logger
 
     return _logger
+
+
+def update_log_level(level: str) -> None:
+    """Updates the logging level of the singleton logger instance. This function is
+    called internally when :code:`settings.logging_level` is updated, but can also be
+    used directly to change the logging level of an existing logger.
+
+    Args:
+        level (str): The new logging level. Must be one of "DEBUG", "INFO", "WARNING", "ERROR".
+
+    Raises:
+        ValueError: If the provided logging level is not valid.
+
+    """
+    if level not in ["DEBUG", "INFO", "WARNING", "ERROR"]:
+        raise ValueError(f"logging_level must be one of 'DEBUG', 'INFO', 'WARNING', 'ERROR', but is {level}")
+
+    logger = get_logger()
+    logger.setLevel(getattr(logging, level))

@@ -1,3 +1,4 @@
+from mondAI.logging import update_log_level
 from mondAI.metrics.dimension import _DIMENSION_LOOKUP
 
 
@@ -35,6 +36,7 @@ class _Settings:
         if level not in ["DEBUG", "INFO", "WARNING", "ERROR"]:
             raise ValueError(f"logging_level must be one of 'DEBUG', 'INFO', 'WARNING', 'ERROR', but is {level}")
         self._logging_level = level
+        update_log_level(self._logging_level)
 
     @property
     def tolerance(self) -> float:
