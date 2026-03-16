@@ -11,8 +11,11 @@ This package provides image quality metric implementations which are:
 
 ## Installation
 
-To install the package in editable development mode, clone the repository, activate a virtual environment and run:
+To install the package in editable development mode with development dependencies, clone the repository, activate a virtual environment and run:
 > pip install -e .[dev]
+
+To be able to also call metric implementations from other packages and compare the scores, install additional dependencies:
+> pip install -e .[dev,comparison]
 
 In the long run mondAI will also be installable via PyPI:
 > pip install mondAI

@@ -15,11 +15,8 @@ authors = [
 requires-python = ">=3.10"
 
 dependencies = [
-    "torch>=2.10",         # BSD-3-Clause
-    "numpy",               # BSD-3-Clause and MIT
-    "scikit-learn==1.7.2", # BSD-3-Clause
-    "tensorflow==2.16.1",  # Apache-2.0
-    "monai==1.5.1",        # Apache-2.0
+    "torch>=2.10", # BSD-3-Clause
+    "numpy",       # BSD-3-Clause and MIT
 ]
 
 [project.optional-dependencies]
@@ -36,6 +33,11 @@ dev = [
     "scikit-image",        # BSD-3-Clause
     "pooch",               # BSD-3-Clause
     "matplotlib",          # PSF-2.0
+]
+comparison = [
+    "scikit-learn==1.7.2", # BSD-3-Clause
+    "tensorflow==2.16.1",  # Apache-2.0
+    "monai==1.5.1",        # Apache-2.0
 ]
 
 [tool.pytest.ini_options]

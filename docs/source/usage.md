@@ -13,7 +13,11 @@ score = mae(image, image)  # score = 0.0
 
 ## Comparison of metric implementations
 
-Sometimes you would like to compare the implementations of the same metric from different libraries. This can be done easily with mondAI:
+Sometimes you would like to compare the implementations of the same metric from different libraries. This can be done easily with mondAI, but requires additional dependencies to be installed:
+
+> pip install mondAI[comparison]
+
+Then you can set `compare_implementations=True`:
 
 ```python
 import torch

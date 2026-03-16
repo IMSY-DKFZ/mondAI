@@ -9,4 +9,4 @@ To install it from gitlab, run
 To install the development version, clone the repository and run
 > git clone https://gitlab.com/dkfz_imsy/mondai.git
 > cd mondai
-> pip install -e .[dev]
+> pip install -e .[dev,comparison]
