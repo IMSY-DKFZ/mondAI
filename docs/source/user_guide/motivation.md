@@ -2,7 +2,7 @@
 
 This metric library is motivated by good scientific practice. Researchers publish their algorithms every day and try to perform some benchmarking by computing metric scores, however, these are often not comparable, even though they might be called the same. In this example code you can find four computations of SSIM from torchmetrics, piq, seqar and monai packages with their corresponding default configurations. Unfortunately, when computing metric scores on an example image they yield four different scores. This might be due to different metric configurations, but could also be due to different implementations. Hence, to avoid such pitfalls, having a standardized metric library which provides validated implementations of all metrics would be useful.
 
-## Example Code
+# Example Code
 
 ```python
 import torch

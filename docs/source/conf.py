@@ -41,12 +41,20 @@ source_suffix = [".rst", ".md"]
 
 html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
-html_sidebars = {
-    "**": [
-        "searchfield.html",
-        "relations.html",
-    ]
-}
+html_sidebars = {}
+announcement = (
+    "This is a community-supported library. If you'd like to contribute, "
+    "<a href='https://git.dkfz.de/imsy/ispai/mondai' target='_blank'>check out our GitLab repository</a>. "
+    "Your contributions are welcome!"
+)
 html_theme_options = {
     # "description": "Correct, reproducible and tested metric implementations for image quality",
+    "announcement": announcement,
+    "secondary_sidebar_items": {
+        "**/*": [
+            "page-toc",
+            "sourcelink",
+        ],
+        "index": [],
+    },
 }

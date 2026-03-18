@@ -1,17 +1,4 @@
-# Usage
-
-## Simple computation of metric scores
-
-```python
-from mondAI.metrics import MAE
-
-mae = MAE()
-image = torch.random.rand((256,256))
-score = mae(image, image)  # score = 0.0
-
-```
-
-## Comparison of metric implementations
+# Comparison of implementations
 
 Sometimes you would like to compare the implementations of the same metric from different libraries. This can be done easily with mondAI, but requires additional dependencies to be installed:
 
