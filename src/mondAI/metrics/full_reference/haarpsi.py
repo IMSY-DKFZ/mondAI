@@ -15,7 +15,10 @@ class HaarPSI(FullReferenceMetric):
     """Haar wavelet-based perceptual similarity index (HaarPSI) computes the perceptual
     similarity between two images based on features from their Haar wavelet
     coefficients. It is designed to capture perceptual differences between images which
-    align with human visual perception.
+    align with human visual perception by optimizing the parameters C and alpha. While
+    for natural images C=30 and alpha=4.2 are recommended, for medical images C=5 and
+    alpha=4.9 are recommended, as shown in Karner et al. (2025), which are the default
+    in HaarPSI_MED.
 
     It expects two-dimensional grayscale or RGB (set `use_rgb` to True) images with pixel values in the range [0, 255].
     The resulting HaarPSI score ranges from 0 to 1, where a score of 1 indicates perfect
@@ -69,16 +72,10 @@ class HaarPSI(FullReferenceMetric):
     )  # for RGB images when `use_rgb == True` this chanes to (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
 
     def __init__(
-        self, preprocess_with_subsampling: bool = True, C: float = 5.0, alpha: float = 4.9, use_rgb: bool = False
+        self, preprocess_with_subsampling: bool = True, C: float = 30.0, alpha: float = 4.2, use_rgb: bool = False
     ) -> None:
-        """Initialize the Metric Template.
-
-        The constructor should include checks for any parameters that the metric uses
-        to ensure they are within valid ranges or meet certain conditions. For example,
-        if the metric has a parameter that must be non-negative, this method should
-        check that condition and raise a ValueError if it is not met. This helps to
-        prevent invalid configurations of the metric that could lead to incorrect
-        results or errors during computation.
+        """Initialize HaarPSI metric with parameter settings recommended for natural
+        images.
 
         :param preprocess_with_subsampling: Whether to preprocess the images with
             subsampling to accomodate for viewing distance in psychophysical
@@ -139,6 +136,12 @@ class HaarPSI(FullReferenceMetric):
                 "alpha should be set in the range [2, 8]. Please ensure that your choice of alpha "
                 "is appropriate for your use case."
             )
+
+        logger.info(
+            "HaarPSI_MED was selected with parameters C=5.0 and alpha=4.9, which are recommended for medical images "
+            "based on the publication by Karner et al. (2025). If you intended to use the parameter settings "
+            "recommended for natural images, please use HaarPSI with C=30.0 and alpha=4.2."
+        )
 
     def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
         """Compute the metric between image and reference.
@@ -600,3 +603,43 @@ class HaarPSI(FullReferenceMetric):
         local_similarity = (similarity_maps[0] + similarity_maps[1]) / 2
 
         return local_similarity
+
+
+class HaarPSI_MED(HaarPSI):
+    """Haar wavelet-based perceptual similarity index (HaarPSI) with parameter settings
+    recommended for medical images based on the publication by Karner et al (2025)."""
+
+    def __init__(
+        self, preprocess_with_subsampling: bool = True, C: float = 5.0, alpha: float = 4.9, use_rgb: bool = False
+    ) -> None:
+        """Initialize HaarPSI with parameter settings recommended for medical images
+        based on the publication by Karner et al. (2025).
+
+        :param preprocess_with_subsampling: Whether to preprocess the images with
+            subsampling to accomodate for viewing distance in psychophysical
+            experiments as described in the original publication. Default is True
+        :type preprocess_with_subsampling: bool
+        :param C: A positive constant used in the computation of HaarPSI to avoid
+            instability when the local similarity is close to zero. Default for medical
+            images is 5.0, for natural images 30.0. The authors suggest to set it in
+            the range [5.0, 100.0].
+        :type C: float
+        :param alpha: A positive constant used in the computation of HaarPSI to control
+            the logistic function of the local similarity map. Default for medical
+            images is 4.9, for natural images 4.2. The authors suggest to set it in the
+            range [2.0, 8.0].
+        :type alpha: float
+        :param use_rgb: Whether to use metric definition for RGB images instead of
+            grayscale definition. Note that the RGB definition is different from
+            applying the grayscale definition to each channel separately and then
+            aggregate. If True, the metric will expect 3-channel RGB images. Default is
+            False (grayscale).
+        :type use_rgb: bool
+
+        """
+        super().__init__(preprocess_with_subsampling=preprocess_with_subsampling, C=C, alpha=alpha, use_rgb=use_rgb)
+        logger.info(
+            "HaarPSI_MED was selected with parameters C=5.0 and alpha=4.9, which are recommended for medical images "
+            "based on the publication by Karner et al. (2025). If you intended to use the parameter settings "
+            "recommended for natural images, please use HaarPSI with C=30.0 and alpha=4.2."
+        )
