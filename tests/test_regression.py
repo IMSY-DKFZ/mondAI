@@ -27,7 +27,7 @@ def test_regression_phantom_flip(
     metric = metric_class()
     flipped = np.flip(phantom).copy()
     result = metric(phantom, flipped, dims=("H", "W"))
-    data_regression.check({metric.abbreviation: result})
+    data_regression.check({metric.abbreviation: result}, round_digits=12)
 
 
 @pytest.mark.parametrize("metric_class", NO_REFERENCE_METRICS)
@@ -36,7 +36,7 @@ def test_regression_phantom(
 ) -> None:
     metric = metric_class()
     result = metric(phantom, dims=("H", "W"))
-    data_regression.check({metric.abbreviation: result})
+    data_regression.check({metric.abbreviation: result}, round_digits=12)
 
 
 @pytest.mark.parametrize("metric_class", FULL_REFERENCE_METRICS)
