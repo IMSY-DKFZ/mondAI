@@ -14,6 +14,7 @@ user_guide/limitations
 user_guide/image_shapes
 user_guide/comparison
 user_guide/additional_returns
+user_guide/logger
 ```
 
 
