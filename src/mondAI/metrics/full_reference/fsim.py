@@ -359,19 +359,22 @@ class FSIM(FullReferenceMetric):
                 # piqa's implementation expects inputs with shape (N, C, H, W) and
                 # data_range parameter should correspond to pixel value range
 
+                image = image.unsqueeze(0)
+                reference = reference.unsqueeze(0)
+
                 if not self.use_rgb:
                     image = image.unsqueeze(0)
                     reference = reference.unsqueeze(0)
 
-                    filters_1 = pc_filters(image)
-                    filters_2 = pc_filters(reference)
-                    pc_1 = phase_congruency(image, filters_1)
-                    pc_2 = phase_congruency(reference, filters_2)
-                    kernel = gradient_kernel(scharr_kernel())
+                filters_1 = pc_filters(image)
+                filters_2 = pc_filters(reference)
+                pc_1 = phase_congruency(image[:, :1, :, :] if image.shape[1] == 3 else image, filters_1)
+                pc_2 = phase_congruency(reference[:, :1, :, :] if reference.shape[1] == 3 else reference, filters_2)
+                kernel = gradient_kernel(scharr_kernel().to(image.device))
 
                 return fsim_piqa(
-                    image * 255.0,
-                    reference + 255.0,
+                    image.float() * 255.0,
+                    reference.float() * 255.0,
                     pc_1,
                     pc_2,
                     kernel,
