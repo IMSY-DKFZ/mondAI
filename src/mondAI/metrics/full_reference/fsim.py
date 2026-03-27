@@ -46,7 +46,7 @@ class FSIM(FullReferenceMetric):
     expected_dimensions = (
         Dimension.HEIGHT,
         Dimension.WIDTH,
-    )  # for RGB images when `use_rgb == True` this chanes to (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
+    )  # for RGB images when `use_rgb == True` this changes to (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
 
     def __init__(
         self,
@@ -347,7 +347,7 @@ class FSIM(FullReferenceMetric):
             implementations["piq"] = piq_fsim
 
         except Exception:
-            logger.warning("piq or it's FSIM implementation is not available, skipping piq implementation of FSIM")
+            logger.warning("piq or its FSIM implementation is not available, skipping piq implementation of FSIM")
 
         ### PIQA ###
 
@@ -388,7 +388,7 @@ class FSIM(FullReferenceMetric):
 
             implementations["piqa"] = piqa_fsim
         except Exception:
-            logger.warning("piqa or it's FSIM implementation is not available, skipping piqa implementation of FSIM")
+            logger.warning("piqa or its FSIM implementation is not available, skipping piqa implementation of FSIM")
 
         return implementations
 
@@ -455,7 +455,7 @@ class FSIM(FullReferenceMetric):
 
         if torch.all(image >= 0) and torch.all(image <= 1) and torch.all(reference >= 0) and torch.all(reference <= 1):
             logger.warning(
-                "It hase been detected that all pixel values in both image and reference are in the range [0, 1]. "
+                "It has been detected that all pixel values in both image and reference are in the range [0, 1]. "
                 "FSIM expects pixel values in the range [0, 255]. Please ensure that your input images are "
                 "correctly scaled for accurate computation of FSIM."
             )
@@ -497,8 +497,8 @@ class FSIM(FullReferenceMetric):
 
         filter_weights = image.new_ones(1, 1, kernel_size, kernel_size) / kernel_size**2
         mean_filtered = torch.nn.functional.conv2d(image.unsqueeze(0), weight=filter_weights, padding="same")
-        subsumpled = mean_filtered.squeeze()[::kernel_size, ::kernel_size]
-        return subsumpled
+        subsampled = mean_filtered.squeeze()[::kernel_size, ::kernel_size]
+        return subsampled
 
     def _convolve2d(self, image: torch.Tensor, kernel: torch.Tensor) -> torch.Tensor:
         """Convolve the input image with the given kernel using 2D convolution.
