@@ -551,6 +551,9 @@ class FSIM(FullReferenceMetric):
         congruency is computed based on the local energy and amplitude, with a noise
         compensation step to suppress responses that are likely dominated by noise.
 
+        Adapted from Kovesi, Peter. "Image features from phase congruency."
+        Videre: Journal of computer vision research 1.3 (1999): 1-26.
+
         :param image: The input 2D image for which to compute the phase congruency,
             shape (H, W)
         :type image: torch.Tensor
