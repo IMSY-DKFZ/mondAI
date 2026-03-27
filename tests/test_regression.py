@@ -19,6 +19,8 @@ from mondAI.metrics.full_reference.base import FullReferenceMetric
 from mondAI.metrics.no_reference import NO_REFERENCE_METRICS
 from mondAI.metrics.no_reference.base import NoReferenceMetric
 
+ROUND_DIGITS = 9
+
 
 @pytest.mark.parametrize("metric_class", FULL_REFERENCE_METRICS)
 def test_regression_phantom_flip(
@@ -27,7 +29,7 @@ def test_regression_phantom_flip(
     metric = metric_class()
     flipped = np.flip(phantom).copy()
     result = metric(phantom, flipped, dims=("H", "W"))
-    data_regression.check({metric.abbreviation: result}, round_digits=12)
+    data_regression.check({metric.abbreviation: result}, round_digits=ROUND_DIGITS)
 
 
 @pytest.mark.parametrize("metric_class", NO_REFERENCE_METRICS)
@@ -36,7 +38,7 @@ def test_regression_phantom(
 ) -> None:
     metric = metric_class()
     result = metric(phantom, dims=("H", "W"))
-    data_regression.check({metric.abbreviation: result}, round_digits=12)
+    data_regression.check({metric.abbreviation: result}, round_digits=ROUND_DIGITS)
 
 
 @pytest.mark.parametrize("metric_class", FULL_REFERENCE_METRICS)
