@@ -26,7 +26,7 @@ from mondAI.metrics.no_reference.base import NoReferenceMetric
 
 
 @pytest.mark.parametrize("metric_class", FULL_REFERENCE_METRICS + NO_REFERENCE_METRICS)
-@pytest.mark.parametrize("image_fixture", ["phantom", "grayscale_image_W_H"])
+@pytest.mark.parametrize("image_fixture", ["phantom", "grayscale_image_W_H", "grayscale_image_odd_W_H"])
 def test_metric_call_without_dimensions_valid(
     request: pytest.FixtureRequest, metric_class: type[Metric], image_fixture: str
 ) -> None:
@@ -41,7 +41,12 @@ def test_metric_call_without_dimensions_valid(
 @pytest.mark.parametrize("metric_class", FULL_REFERENCE_METRICS + NO_REFERENCE_METRICS)
 @pytest.mark.parametrize(
     "image_fixture, dimensions",
-    [("phantom", ("W", "H")), ("grayscale_image_W_H", ("W", "H")), ("brain", ("D", "H", "W"))],
+    [
+        ("phantom", ("W", "H")),
+        ("grayscale_image_W_H", ("W", "H")),
+        ("grayscale_image_odd_W_H", ("W", "H")),
+        ("brain", ("D", "H", "W")),
+    ],
 )
 def test_metric_call_with_dimensions_valid(
     request: pytest.FixtureRequest,
@@ -136,7 +141,8 @@ def test_metric_call_with_wrong_dimension(phantom: np.ndarray, metric_class: typ
 
 @pytest.mark.parametrize("metric_class", FULL_REFERENCE_METRICS + NO_REFERENCE_METRICS)
 @pytest.mark.parametrize(
-    "image_fixture, dimensions", [("brain", ("D", "H", "W")), ("rgb_image_C_W_H", ("C", "W", "H"))]
+    "image_fixture, dimensions",
+    [("brain", ("D", "H", "W")), ("rgb_image_C_W_H", ("C", "W", "H")), ("rgb_image_odd_C_W_H", ("C", "W", "H"))],
 )
 def test_metric_call_with_dimensions_return_type_valid(
     request: pytest.FixtureRequest,
