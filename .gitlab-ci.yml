@@ -26,8 +26,8 @@ lint:
 tests:
   stage: test
   script:
-    - pip install .[dev]
-    - pytest --cov=mondAI --cov-report=term --cov-report=xml
+    - pip install .[dev,comparison]
+    - PYTHONPATH=src pytest tests --cov=mondAI --cov-report=term-missing --cov-report=xml --cov-config=pyproject.toml
   coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
   artifacts:
     reports:
