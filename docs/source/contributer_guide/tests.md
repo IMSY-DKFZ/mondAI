@@ -15,6 +15,8 @@ There are three different types of tests:
 
 Run tests with `pytest` and compute the coverage with
 
-> pytest --cov=mondAI --cov-report=term-missing
+```bash
+pytest --cov=mondAI --cov-report=term-missing
+```
 
 In addition to tests checking the correctness of the code, there are also regression tests defined in `test_regression.py` which ensure that the computed metrics scores don't change, e.g. when updating dependencies. These scores are computed on the first run of the test (which then fails and creates a reference file under `test_regression`) and then used for consecutive runs for testing. Use `pytest --force-regen` or `pytest --regen-all` to update a single or all test scores. The test scores under `test_regression` need to be committed.

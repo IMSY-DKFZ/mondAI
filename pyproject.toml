@@ -38,11 +38,20 @@ comparison = [
     "scikit-learn==1.7.2", # BSD-3-Clause
     "tensorflow==2.16.1",  # Apache-2.0
     "monai==1.5.1",        # Apache-2.0
+    "piq==0.8.0",          # Apache-2.0
+    "deepinv==0.4.0",      # BSD-3-Clause
+    "piqa==1.3.2",         # MIT
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra -q"
+[tool.coverage.run]
+omit = [
+    'src/mondAI/metrics/full_reference/haarpsi_original.py',
+    'src/mondAI/metrics/full_reference/haarpsi_ideal_iqa.py',
+    'src/mondAI/metrics/full_reference/compare_haarpsi.py',
+]
 
 
 [tool.ruff]

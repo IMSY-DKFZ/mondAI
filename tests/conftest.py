@@ -25,15 +25,19 @@ from mondAI.metrics.no_reference.base import NoReferenceMetric
 
 
 def load_shepp_logan_phantom() -> np.ndarray:
-    # Load the Shepp-Logan phantom (400, 400) pixel image
-    return shepp_logan_phantom()
+    # Load the Shepp-Logan phantom (400, 400) pixel image with values in [0, 255]
+    phantom = shepp_logan_phantom()
+    phantom = (phantom - phantom.min()) / (phantom.max() - phantom.min()) * 255.0
+    return phantom
 
 
 def load_brain() -> np.ndarray:
     # Load the brain volume (10, 256, 256) voxel image
     # TODO: Should this volume be normalized to [0, 1]?
     # TODO: Does this need to be converted from uint8 to float64?
-    return brain_volume()
+    brain = brain_volume()
+    brain = (brain - brain.min()) / (brain.max() - brain.min()) * 255.0
+    return brain
 
 
 def create_random_image(shape: tuple[int, ...], dtype: torch.dtype = torch.float64) -> torch.Tensor:
@@ -62,7 +66,17 @@ def grayscale_image_W_H() -> torch.Tensor:
 
 
 @fixture
+def grayscale_image_odd_W_H() -> torch.Tensor:
+    return create_random_image((257, 257))
+
+
+@fixture
 def rgb_image_C_W_H() -> torch.Tensor:
+    return create_random_image((3, 256, 256))
+
+
+@fixture
+def rgb_image_odd_C_W_H() -> torch.Tensor:
     return create_random_image((3, 256, 256))
 
 
