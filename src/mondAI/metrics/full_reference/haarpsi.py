@@ -17,7 +17,7 @@ class HaarPSI(FullReferenceMetric):
     coefficients. It is designed to capture perceptual differences between images which
     align with human visual perception by optimizing the parameters C and alpha. While
     for natural images C=30 and alpha=4.2 are recommended, for medical images C=5 and
-    alpha=4.9 are recommended, as shown in Karner et al. (2025), which are the default
+    alpha=4.9 are recommended, as shown in Karner et al. (2025), which are the defaults
     in HaarPSI_MED.
 
     It expects two-dimensional grayscale or RGB (set `use_rgb` to True) images with pixel values in the range [0, 255].
@@ -27,7 +27,7 @@ class HaarPSI(FullReferenceMetric):
     grayscale definition,
     but rather a different definition that considers the Y, I and Q channels of the YIQ color space separately.
 
-    HaarPSI used the magnitudes of high-frequency Haar wavelet coefficients to compute local similarities and the
+    HaarPSI uses the magnitudes of high-frequency Haar wavelet coefficients to compute local similarities and the
     magnitudes of low-frequency Haar wavelet coefficients to compute weights for these local similarities.
     For the mathematical formulation of the metric, please refer to
     the original publication
@@ -69,7 +69,7 @@ class HaarPSI(FullReferenceMetric):
     expected_dimensions = (
         Dimension.HEIGHT,
         Dimension.WIDTH,
-    )  # for RGB images when `use_rgb == True` this chanes to (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
+    )  # for RGB images when `use_rgb == True` this changes to (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
 
     def __init__(
         self, preprocess_with_subsampling: bool = True, C: float = 30.0, alpha: float = 4.2, use_rgb: bool = False
@@ -78,7 +78,7 @@ class HaarPSI(FullReferenceMetric):
         images.
 
         :param preprocess_with_subsampling: Whether to preprocess the images with
-            subsampling to accomodate for viewing distance in psychophysical
+            subsampling to accommodate for viewing distance in psychophysical
             experiments as described in the original publication. Default is True
         :type preprocess_with_subsampling: bool
         :param C: A positive constant used in the computation of HaarPSI to avoid
@@ -253,9 +253,7 @@ class HaarPSI(FullReferenceMetric):
             implementations["piq"] = piq_haarpsi
 
         except Exception:
-            logger.warning(
-                "piq or it's HaarPSI implementation is not available, skipping piq implementation of HaarPSI"
-            )
+            logger.warning("piq or its HaarPSI implementation is not available, skipping piq implementation of HaarPSI")
 
         ### PIQA ###
 
@@ -281,7 +279,7 @@ class HaarPSI(FullReferenceMetric):
             implementations["piqa"] = piqa_haarpsi
         except Exception:
             logger.warning(
-                "piqa or it's HaarPSI implementation is not available, skipping piqa implementation of HaarPSI"
+                "piqa or its HaarPSI implementation is not available, skipping piqa implementation of HaarPSI"
             )
 
         ### IdealIQA ###
@@ -306,7 +304,7 @@ class HaarPSI(FullReferenceMetric):
 
         except Exception:
             logger.warning(
-                "haarpsi_ideal_iqa or it's HaarPSI implementation is not available, "
+                "haarpsi_ideal_iqa or its HaarPSI implementation is not available, "
                 "skipping ideal_iqa implementation of HaarPSI"
             )
 
@@ -334,10 +332,10 @@ class HaarPSI(FullReferenceMetric):
 
         except Exception:
             logger.warning(
-                "deepinv or it's HaarPSI implementation is not available, skipping deepinv implementation of HaarPSI"
+                "deepinv or its HaarPSI implementation is not available, skipping deepinv implementation of HaarPSI"
             )
 
-        ### Origninal NumPy implementation by Rafael Reisenhofer and David Neumann ###
+        ### Original NumPy implementation by Rafael Reisenhofer and David Neumann ###
 
         try:
             from haarpsi_original import haar_psi as org_haarpsi
@@ -356,7 +354,7 @@ class HaarPSI(FullReferenceMetric):
             implementations["original_numpy"] = original_haarpsi
         except Exception:
             logger.warning(
-                "haarpsi_original or it's HaarPSI implementation is not available, "
+                "haarpsi_original or its HaarPSI implementation is not available, "
                 "skipping original_numpy implementation of HaarPSI"
             )
 
@@ -426,14 +424,13 @@ class HaarPSI(FullReferenceMetric):
 
         if torch.all(image >= 0) and torch.all(image <= 1) and torch.all(reference >= 0) and torch.all(reference <= 1):
             logger.warning(
-                "It hase been detected that all pixel values in both image and reference are in the range [0, 1]. "
+                "It has been detected that all pixel values in both image and reference are in the range [0, 1]. "
                 "HaarPSI expects pixel values in the range [0, 255]. Please ensure that your input images are "
                 "correctly scaled for accurate computation of HaarPSI."
             )
 
-        if (
-            reference.shape[self.expected_dimensions.index(Dimension.HEIGHT)] < 16
-            or reference.shape[self.expected_dimensions.index(Dimension.WIDTH)] < 16
+        if any(
+            [reference.shape[self.expected_dimensions.index(dim)] < 16 for dim in (Dimension.HEIGHT, Dimension.WIDTH)]
         ):
             logger.warning(
                 "Input image has height or width smaller than 16 pixels. HaarPSI uses a 16x16 kernel, "
@@ -484,8 +481,8 @@ class HaarPSI(FullReferenceMetric):
         kernel_size = 2
         filter_weights = image.new_ones(1, 1, kernel_size, kernel_size) / kernel_size**2
         mean_filtered = torch.nn.functional.conv2d(image.unsqueeze(0), weight=filter_weights, padding="same")
-        subsumpled = mean_filtered.squeeze()[::kernel_size, ::kernel_size]
-        return subsumpled
+        subsampled = mean_filtered.squeeze()[::kernel_size, ::kernel_size]
+        return subsampled
 
     def _convolve2d(self, image: torch.Tensor, kernel: torch.Tensor) -> torch.Tensor:
         """Convolve the input image with the given kernel using 2D convolution.
@@ -616,7 +613,7 @@ class HaarPSI_MED(HaarPSI):
         based on the publication by Karner et al. (2025).
 
         :param preprocess_with_subsampling: Whether to preprocess the images with
-            subsampling to accomodate for viewing distance in psychophysical
+            subsampling to accommodate for viewing distance in psychophysical
             experiments as described in the original publication. Default is True
         :type preprocess_with_subsampling: bool
         :param C: A positive constant used in the computation of HaarPSI to avoid
