@@ -66,7 +66,17 @@ def grayscale_image_W_H() -> torch.Tensor:
 
 
 @fixture
+def grayscale_image_odd_W_H() -> torch.Tensor:
+    return create_random_image((257, 257))
+
+
+@fixture
 def rgb_image_C_W_H() -> torch.Tensor:
+    return create_random_image((3, 256, 256))
+
+
+@fixture
+def rgb_image_odd_C_W_H() -> torch.Tensor:
     return create_random_image((3, 256, 256))
 
 
