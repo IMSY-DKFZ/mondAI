@@ -49,7 +49,7 @@ For further information on usage, please read the [documentation](https://imsy.p
 
 ## Contributing
 
-Any contributions to mondAI are appreciated. In particular, adding and reviewing implementations of metrics would be helpful. To reduce the burden of implementing a new metric, you can simply copy the `metric_template.py` file and follow the #TODO comments.
+Any contributions to mondAI are appreciated. In particular, adding and reviewing implementations of metrics would be helpful. To reduce the burden of implementing a new metric, you can simply copy the `.metric_template.py` file into `full_reference` or `no_reference` respectively and follow the #TODO comments.
 
 Please read the [contribution guidelines](CONTRIBUTING.md) once before you start contributing.
 
