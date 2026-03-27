@@ -375,24 +375,6 @@ class HaarPSI(FullReferenceMetric):
             f"{self.name} ({self.abbreviation}) {arrow} with C={self.C} and alpha={self.alpha}{preprocessing}{rgb_info}"
         )
 
-    def fingerprint(self) -> dict[str, str | bool | float]:
-        """Return a dictionary that uniquely identifies the metric.
-
-        :return: A dictionary that uniquely identifies the metric and its parameters
-            for reproducibility.
-        :rtype: dict[str, str | bool | float]
-
-        """
-        return {
-            "name": self.name,
-            "abbreviation": self.abbreviation,
-            "higher_is_better": self.higher_is_better,
-            "C": self.C,
-            "alpha": self.alpha,
-            "preprocess_with_subsampling": self.preprocess_with_subsampling,
-            "use_rgb": self.use_rgb,
-        }
-
     def _input_checks(self, image: torch.Tensor, reference: torch.Tensor) -> None:
         """Perform input checks specific to HaarPSI, such as checking for valid pixel
         value ranges and dimensions.
