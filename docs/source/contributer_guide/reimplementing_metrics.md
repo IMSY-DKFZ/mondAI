@@ -1,6 +1,6 @@
 # Implementing metrics
 
-To reduce the burden of implementing a new metric, you can simply copy the `metric_template.py` file and follow the #TODO comments.
+To reduce the burden of implementing a new metric, you can simply copy the `.metric_template.py` file into `full_reference` or `no_reference` respectively and follow the #TODO comments.
 
 ## Reimplementing metrics (license issues)
 

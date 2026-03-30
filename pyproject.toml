@@ -51,6 +51,7 @@ omit = [
     'src/mondAI/metrics/full_reference/haarpsi_original.py',
     'src/mondAI/metrics/full_reference/haarpsi_ideal_iqa.py',
     'src/mondAI/metrics/full_reference/compare_haarpsi.py',
+    'src/mondAI/metrics/.metric_template.py',
 ]
 
 
