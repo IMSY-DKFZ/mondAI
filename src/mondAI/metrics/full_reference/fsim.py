@@ -6,6 +6,7 @@ from mondAI.logging import get_logger
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
 from mondAI.utils.conversions import rgb_to_yiq
+from mondAI.utils.signal_processing import convolve2d
 from mondAI.utils.similarity_map import similarity_map
 
 logger = get_logger()
@@ -281,8 +282,8 @@ class FSIM(FullReferenceMetric):
         )
 
         def gradient_map(image: torch.Tensor, kernel: torch.Tensor) -> torch.Tensor:
-            gradient_x = self._convolve2d(image, kernel)
-            gradient_y = self._convolve2d(image, kernel.t())
+            gradient_x = convolve2d(image, kernel, padding="same")
+            gradient_y = convolve2d(image, kernel.t(), padding="same")
             return torch.sqrt(gradient_x**2 + gradient_y**2)
 
         gradient_map_image = gradient_map(image[0] if self.use_rgb else image, sharr_kernel)
@@ -484,22 +485,6 @@ class FSIM(FullReferenceMetric):
         mean_filtered = torch.nn.functional.conv2d(image.unsqueeze(0), weight=filter_weights, padding="same")
         subsampled = mean_filtered.squeeze()[::kernel_size, ::kernel_size]
         return subsampled
-
-    def _convolve2d(self, image: torch.Tensor, kernel: torch.Tensor) -> torch.Tensor:
-        """Convolve the input image with the given kernel using 2D convolution.
-
-        :param image: The input 2D image to be convolved, shape (H, W)
-        :type image: torch.Tensor
-        :param kernel: The 2D convolution kernel
-        :type kernel: torch.Tensor
-        :return: The convolved image, shape (H, W)
-        :rtype: torch.Tensor
-
-        """
-        convolved = torch.nn.functional.conv2d(
-            image.unsqueeze(0), weight=kernel.unsqueeze(0).unsqueeze(0), padding="same"
-        )
-        return convolved.squeeze()
 
     def _phase_congruency(
         self,

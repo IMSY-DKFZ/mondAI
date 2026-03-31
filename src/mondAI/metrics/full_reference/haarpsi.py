@@ -6,6 +6,7 @@ from mondAI.logging import get_logger
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
 from mondAI.utils.conversions import rgb_to_yiq
+from mondAI.utils.signal_processing import convolve2d
 from mondAI.utils.similarity_map import similarity_map
 
 logger = get_logger()
@@ -198,7 +199,7 @@ class HaarPSI(FullReferenceMetric):
         if self.use_rgb:
 
             def magnitude(image: torch.Tensor) -> torch.Tensor:
-                return torch.abs(self._convolve2d(image, image.new_ones((2, 2)) / 4.0))
+                return torch.abs(convolve2d(image, image.new_ones((2, 2)) / 4.0, padding="same"))
 
             coefficients_reference_I = magnitude(reference[1])
             coefficients_image_I = magnitude(image[1])
@@ -466,22 +467,6 @@ class HaarPSI(FullReferenceMetric):
         subsampled = mean_filtered.squeeze()[::kernel_size, ::kernel_size]
         return subsampled
 
-    def _convolve2d(self, image: torch.Tensor, kernel: torch.Tensor) -> torch.Tensor:
-        """Convolve the input image with the given kernel using 2D convolution.
-
-        :param image: The input 2D image to be convolved, shape (H, W)
-        :type image: torch.Tensor
-        :param kernel: The 2D convolution kernel
-        :type kernel: torch.Tensor
-        :return: The convolved image, shape (H, W)
-        :rtype: torch.Tensor
-
-        """
-        convolved = torch.nn.functional.conv2d(
-            image.unsqueeze(0), weight=kernel.unsqueeze(0).unsqueeze(0), padding="same"
-        )
-        return convolved.squeeze()
-
     def _haar_wavelet_decomposition(self, image: torch.Tensor, n_scales: int) -> torch.Tensor:
         """Perform a 2D Haar wavelet decomposition of the input image up to the
         specified number of scales.
@@ -512,8 +497,8 @@ class HaarPSI(FullReferenceMetric):
 
         for scale in range(n_scales):
             haar_filter = _get_haar_filter(scale + 1)
-            coefficients[scale] = self._convolve2d(image, haar_filter)
-            coefficients[scale + n_scales] = self._convolve2d(image, haar_filter.t())
+            coefficients[scale] = convolve2d(image, haar_filter, padding="same")
+            coefficients[scale + n_scales] = convolve2d(image, haar_filter.t(), padding="same")
         return coefficients
 
     def _get_weights_for_orientation(
