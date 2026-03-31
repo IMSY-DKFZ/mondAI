@@ -411,21 +411,6 @@ class FSIM(FullReferenceMetric):
             f"{self.noise_threshold_factor=}, {self.epsilon=}"
         )
 
-    def fingerprint(self) -> dict[str, str | bool | float]:
-        """Return a dictionary that uniquely identifies the metric.
-
-        :return: A dictionary that uniquely identifies the metric and its parameters
-            for reproducibility.
-        :rtype: dict[str, str | bool | float]
-
-        """
-        return {
-            "name": self.name,
-            "abbreviation": self.abbreviation,
-            "higher_is_better": self.higher_is_better,
-            "use_rgb": self.use_rgb,
-        }
-
     def _input_checks(self, image: torch.Tensor, reference: torch.Tensor) -> None:
         """Perform input checks specific to FSIM, such as checking for valid pixel
         value ranges and dimensions.
