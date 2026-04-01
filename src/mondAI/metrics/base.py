@@ -18,11 +18,37 @@ logger = get_logger()
 class Metric(ABC):
     """Abstract base class for all metrics."""
 
-    name: str
-    abbreviation: str
-    higher_is_better: bool
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """Full name of the metric for reporting."""
+        ...
 
-    expected_dimensions: tuple[Dimension, ...]
+    @property
+    @abstractmethod
+    def abbreviation(self) -> str:
+        """Short abbreviation of the metric for compact reporting."""
+        ...
+
+    @property
+    @abstractmethod
+    def higher_is_better(self) -> bool:
+        """Whether higher metric values indicate better quality."""
+        ...
+
+    @property
+    @abstractmethod
+    def expected_dimensions(self) -> tuple[Dimension, ...]:
+        """The dimensions that the metric expects to be present in the input images.
+
+        This should be a tuple of Dimension enums indicating which dimensions are relevant for the metric computation.
+        For example, a metric that operates on 2D spatial dimensions might expect (Dimension.HEIGHT, Dimension.WIDTH).
+
+        :return: A tuple of Dimension enums indicating the expected dimensions for the metric.
+        :rtype: tuple[Dimension, ...]
+
+        """
+        ...
 
     @abstractmethod
     def __call__(

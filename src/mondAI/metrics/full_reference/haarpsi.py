@@ -63,14 +63,23 @@ class HaarPSI(FullReferenceMetric):
 
     """
 
-    name = "Haar wavelet-based perceptual similarity index"
-    abbreviation = "HaarPSI"
-    higher_is_better = True
+    @property
+    def name(self) -> str:
+        return "Haar wavelet-based perceptual similarity index"
 
-    expected_dimensions = (
-        Dimension.HEIGHT,
-        Dimension.WIDTH,
-    )  # for RGB images when `use_rgb == True` this changes to (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
+    @property
+    def abbreviation(self) -> str:
+        return "HaarPSI"
+
+    @property
+    def higher_is_better(self) -> bool:
+        return True
+
+    @property
+    def expected_dimensions(self) -> tuple[Dimension, ...]:
+        if self.use_rgb:
+            return (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
+        return (Dimension.HEIGHT, Dimension.WIDTH)
 
     def __init__(
         self, preprocess_with_subsampling: bool = True, C: float = 30.0, alpha: float = 4.2, use_rgb: bool = False
@@ -106,8 +115,6 @@ class HaarPSI(FullReferenceMetric):
         self.C = C
         self.alpha = alpha
         self.use_rgb = use_rgb
-        if self.use_rgb:
-            self.expected_dimensions = (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)  # type: ignore[assignment]
 
         # Check parameter settings for validity
         if self.C <= 0:

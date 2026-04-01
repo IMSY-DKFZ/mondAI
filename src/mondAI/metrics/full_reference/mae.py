@@ -27,11 +27,21 @@ class MAE(FullReferenceMetric):
 
     """
 
-    name = "Mean Absolute Error"
-    abbreviation = "MAE"
-    higher_is_better = False
+    @property
+    def name(self) -> str:
+        return "Mean Absolute Error"
 
-    expected_dimensions = (Dimension.HEIGHT, Dimension.WIDTH)
+    @property
+    def abbreviation(self) -> str:
+        return "MAE"
+
+    @property
+    def higher_is_better(self) -> bool:
+        return False
+
+    @property
+    def expected_dimensions(self) -> tuple[Dimension, ...]:
+        return (Dimension.HEIGHT, Dimension.WIDTH)
 
     def __init__(self) -> None:
         """Initialize MAE metric."""

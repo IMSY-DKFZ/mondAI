@@ -9,11 +9,21 @@ from mondAI.metrics.no_reference.base import NoReferenceMetric
 class Test(NoReferenceMetric):
     """Test Metric which always returns 0."""
 
-    name = "Test Metric"
-    abbreviation = "TEST"
-    higher_is_better = False
+    @property
+    def name(self) -> str:
+        return "Test Metric"
 
-    expected_dimensions = (Dimension.HEIGHT, Dimension.WIDTH)
+    @property
+    def abbreviation(self) -> str:
+        return "TEST"
+
+    @property
+    def higher_is_better(self) -> bool:
+        return False
+
+    @property
+    def expected_dimensions(self) -> tuple[Dimension, ...]:
+        return (Dimension.HEIGHT, Dimension.WIDTH)
 
     def __init__(self) -> None:
         """Initialize Test metric."""

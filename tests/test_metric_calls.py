@@ -192,9 +192,21 @@ def test_metric_call_with_compare_implementations(
 
 def test_metric_call_with_vectorization_invalid_input_number(phantom: np.ndarray) -> None:
     class InvalidMetric(Metric):
-        name = "Invalid Metric"
-        abbreviation = "IM"
-        higher_is_better = True
+        @property
+        def name(self) -> str:
+            return "Invalid Metric"
+
+        @property
+        def abbreviation(self) -> str:
+            return "IM"
+
+        @property
+        def higher_is_better(self) -> bool:
+            return True
+
+        @property
+        def expected_dimensions(self) -> tuple[Dimension, ...]:
+            return (Dimension.HEIGHT, Dimension.WIDTH)
 
         def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
             return torch.Tensor(0.0)
@@ -204,13 +216,6 @@ def test_metric_call_with_vectorization_invalid_input_number(phantom: np.ndarray
 
         def __str__(self) -> str:
             return f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()}"
-
-        def fingerprint(self) -> dict[str, str | bool]:
-            return {
-                "name": self.name,
-                "abbreviation": self.abbreviation,
-                "higher_is_better": self.higher_is_better,
-            }
 
         def __call__(
             self,
