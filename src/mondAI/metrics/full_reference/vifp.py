@@ -40,13 +40,21 @@ class VIFP(FullReferenceMetric):
 
     """
 
-    name = "Visual Information Fidelity in Pixel domain"
-    abbreviation = "VIFP"
-    higher_is_better = True
-    expected_dimensions = (
-        Dimension.HEIGHT,
-        Dimension.WIDTH,
-    )
+    @property
+    def name(self) -> str:
+        return "Visual Information Fidelity in Pixel domain"
+
+    @property
+    def abbreviation(self) -> str:
+        return "VIFP"
+
+    @property
+    def higher_is_better(self) -> bool:
+        return True
+
+    @property
+    def expected_dimensions(self) -> tuple[Dimension, ...]:
+        return (Dimension.HEIGHT, Dimension.WIDTH)
 
     def __init__(self, sigma_n_squared: float = 2.0) -> None:
         """Initialize VIFP.

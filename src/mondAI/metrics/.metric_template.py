@@ -21,15 +21,26 @@ class MetricTemplate(FullReferenceMetric):  # TODO: rename to actual metric name
 
     """
 
-    name = "Metric Template"  # TODO: replace with actual metric name
-    abbreviation = "MT"  # TODO: replace with actual metric abbreviation
-    higher_is_better = False  # TODO: set to True if higher metric values indicate better performance, False otherwise
-    """TODO: replace with actual expected dimensions for the metric, e.g. (Dimension.HEIGHT, Dimension.WIDTH) for 2D
-    single channel metrics, or (Dimension.HEIGHT, Dimension.WIDTH, Dimension.CHANNEL) for RGB metrics. The expected
-    dimensions should be a tuple of Dimension enums that the metric is designed to work with. This will be used to
-    validate the input images and ensure that the metric is applied correctly.
-    """
-    expected_dimensions = (Dimension.HEIGHT, Dimension.WIDTH)
+    @property
+    def name(self) -> str:
+        return "Metric Template"  # TODO: replace with actual metric name
+
+    @property
+    def abbreviation(self) -> str:
+        return "MT"  # TODO: replace with actual metric abbreviation
+
+    @property
+    def higher_is_better(self) -> bool:
+        return False  # TODO: set to True if higher metric values indicate better performance, False otherwise
+
+    @property
+    def expected_dimensions(self) -> tuple[Dimension, ...]:
+        """TODO: replace with actual expected dimensions for the metric, e.g. (Dimension.HEIGHT, Dimension.WIDTH) for 2D
+        single channel metrics, or (Dimension.HEIGHT, Dimension.WIDTH, Dimension.CHANNEL) for RGB metrics. The expected
+        dimensions should be a tuple of Dimension enums that the metric is designed to work with. This will be used to
+        validate the input images and ensure that the metric is applied correctly.
+        """
+        return (Dimension.HEIGHT, Dimension.WIDTH)
 
     def __init__(self, parameter1: int = 100) -> None:
         """Initialize the Metric Template.

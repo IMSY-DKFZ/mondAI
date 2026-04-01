@@ -40,14 +40,23 @@ class FSIM(FullReferenceMetric):
 
     """
 
-    name = "Feature SIMilarity Index"
-    abbreviation = "FSIM"
-    higher_is_better = True
+    @property
+    def name(self) -> str:
+        return "Feature SIMilarity Index"
 
-    expected_dimensions = (
-        Dimension.HEIGHT,
-        Dimension.WIDTH,
-    )  # for RGB images when `use_rgb == True` this changes to (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
+    @property
+    def abbreviation(self) -> str:
+        return "FSIM"
+
+    @property
+    def higher_is_better(self) -> bool:
+        return True
+
+    @property
+    def expected_dimensions(self) -> tuple[Dimension, ...]:
+        if self.use_rgb:
+            return (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
+        return (Dimension.HEIGHT, Dimension.WIDTH)
 
     def __init__(
         self,
@@ -130,8 +139,6 @@ class FSIM(FullReferenceMetric):
         super().__init__()
 
         self.use_rgb = use_rgb
-        if self.use_rgb:
-            self.expected_dimensions = (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)  # type: ignore[assignment]
 
         self.T1 = T1
         self.T2 = T2

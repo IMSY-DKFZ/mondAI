@@ -88,9 +88,24 @@ def rgb_image_W_H_C() -> torch.Tensor:
 @fixture
 def dummy_full_reference_metric() -> FullReferenceMetric:
     class DummyFullReferenceMetric(FullReferenceMetric):
-        name = "Dummy Full Reference Metric"
-        abbreviation = "DFRM"
-        higher_is_better = True
+        @property
+        def name(self) -> str:
+            return "Dummy Full Reference Metric"
+
+        @property
+        def abbreviation(self) -> str:
+            return "DFRM"
+
+        @property
+        def higher_is_better(self) -> bool:
+            return True
+
+        @property
+        def expected_dimensions(self) -> tuple[Dimension, ...]:
+            return (Dimension.HEIGHT, Dimension.WIDTH)
+
+        def __init__(self) -> None:
+            super().__init__()
 
         def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
             return torch.Tensor(0.0)
@@ -101,22 +116,27 @@ def dummy_full_reference_metric() -> FullReferenceMetric:
         def __str__(self) -> str:
             return f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()}"
 
-        def fingerprint(self) -> dict[str, str | bool]:
-            return {
-                "name": self.name,
-                "abbreviation": self.abbreviation,
-                "higher_is_better": self.higher_is_better,
-            }
-
     return DummyFullReferenceMetric()
 
 
 @fixture
 def dummy_no_reference_metric() -> NoReferenceMetric:
     class DummyNoReferenceMetric(NoReferenceMetric):
-        name = "Dummy No Reference Metric"
-        abbreviation = "DNRM"
-        higher_is_better = True
+        @property
+        def name(self) -> str:
+            return "Dummy Full Reference Metric"
+
+        @property
+        def abbreviation(self) -> str:
+            return "DFRM"
+
+        @property
+        def higher_is_better(self) -> bool:
+            return True
+
+        @property
+        def expected_dimensions(self) -> tuple[Dimension, ...]:
+            return (Dimension.HEIGHT, Dimension.WIDTH)
 
         def _compute(self, image: torch.Tensor) -> torch.Tensor:
             return torch.Tensor(0.0)
@@ -127,13 +147,6 @@ def dummy_no_reference_metric() -> NoReferenceMetric:
         def __str__(self) -> str:
             return f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()}"
 
-        def fingerprint(self) -> dict[str, str | bool]:
-            return {
-                "name": self.name,
-                "abbreviation": self.abbreviation,
-                "higher_is_better": self.higher_is_better,
-            }
-
     return DummyNoReferenceMetric()
 
 
@@ -141,11 +154,21 @@ def dummy_no_reference_metric() -> NoReferenceMetric:
 def output_shape_test_metric_factory() -> Callable[[tuple[Dimension, ...]], FullReferenceMetric]:
     def _make_metric(metric_dimensions: tuple[Dimension, ...]) -> FullReferenceMetric:
         class OutputShapeTestMetric(FullReferenceMetric):
-            name = "Output Shape Test Metric"
-            abbreviation = "OSTM"
-            higher_is_better = True
+            @property
+            def name(self) -> str:
+                return "Output Shape Test Metric"
 
-            expected_dimensions = metric_dimensions
+            @property
+            def abbreviation(self) -> str:
+                return "OSTM"
+
+            @property
+            def higher_is_better(self) -> bool:
+                return True
+
+            @property
+            def expected_dimensions(self) -> tuple[Dimension, ...]:
+                return metric_dimensions
 
             def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
                 return torch.mean(image)  # dummy computation
@@ -155,13 +178,6 @@ def output_shape_test_metric_factory() -> Callable[[tuple[Dimension, ...]], Full
 
             def __str__(self) -> str:
                 return f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()}"
-
-            def fingerprint(self) -> dict[str, str | bool]:
-                return {
-                    "name": self.name,
-                    "abbreviation": self.abbreviation,
-                    "higher_is_better": self.higher_is_better,
-                }
 
         return OutputShapeTestMetric()
 
