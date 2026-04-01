@@ -23,7 +23,7 @@ def test_k2_valid(k2: float) -> None:
 @pytest.mark.parametrize("parameter, value", [("k1", -1e-6), ("k2", -1e-6)])
 def test_k_parameters_invalid(parameter: str, value: float) -> None:
     with pytest.raises(ValueError):
-        SSIM(**{parameter: value})
+        SSIM(**{parameter: value})  # type: ignore[arg-type]
 
 
 @pytest.mark.parametrize("kernel_size", [3, 5, 11, 15])
