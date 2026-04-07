@@ -11,9 +11,9 @@ logger = get_logger()
 
 
 class SSIM(FullReferenceMetric):
-    r"""Structural Similarity Index Measure (SSIM).
+    r"""Structural SIMilarity (SSIM) Index.
 
-    The Structural Similarity Index Measure (SSIM) compares two images by combining
+    The Structural SIMilarity (SSIM) index compares two images by combining
     local luminance, contrast, and structure comparisons. It computes local means,
     variances, and covariance using a sliding window and then averages the resulting
     local SSIM map to obtain the final score. The metric is defined for grayscale
@@ -53,8 +53,8 @@ class SSIM(FullReferenceMetric):
 
     Differences to some other implementations:
 
-    - this implementation is grayscale-only for now,
-    - it uses valid convolution exactly like the original MATLAB code, so the local
+    - this implementation is grayscale-only,
+    - it uses convolution with valid padding exactly like the original MATLAB code, so the local
       SSIM map is smaller than the input image,
     - it expects images in ``[0, dynamic_range]`` and defaults to ``dynamic_range=255``.
 
@@ -109,7 +109,7 @@ class SSIM(FullReferenceMetric):
         if self.k1 < 0 or self.k2 < 0:
             raise ValueError("k1 and k2 must be non-negative.")
         if self.kernel_size % 2 == 0:
-            raise ValueError("kernel_size must be odd.")
+            raise ValueError(f"kernel_size must be odd, got {self.kernel_size}.")
         if self.kernel_size * self.kernel_size < 4:
             raise ValueError("kernel_size must define a window with at least 4 elements.")
         if self.kernel_sigma <= 0:
@@ -126,32 +126,26 @@ class SSIM(FullReferenceMetric):
         c1 = (self.k1 * self.dynamic_range) ** 2
         c2 = (self.k2 * self.dynamic_range) ** 2
 
-        image = image.to(torch.float64)
-        reference = reference.to(torch.float64)
-        kernel = kernel.to(torch.float64)
-
         mu_image = convolve2d(image, kernel, padding="valid")
         mu_reference = convolve2d(reference, kernel, padding="valid")
 
-        mu_image_sq = mu_image * mu_image
-        mu_reference_sq = mu_reference * mu_reference
+        mu_image_squared = mu_image * mu_image
+        mu_reference_squared = mu_reference * mu_reference
         mu_image_reference = mu_image * mu_reference
 
-        sigma_image_sq = convolve2d(image * image, kernel, padding="valid") - mu_image_sq
-        sigma_reference_sq = convolve2d(reference * reference, kernel, padding="valid") - mu_reference_sq
+        sigma_image_squared = convolve2d(image * image, kernel, padding="valid") - mu_image_squared
+        sigma_reference_squared = convolve2d(reference * reference, kernel, padding="valid") - mu_reference_squared
         sigma_image_reference = convolve2d(image * reference, kernel, padding="valid") - mu_image_reference
 
         if c1 > 0 and c2 > 0:
-            ssim_map = (
-                (2 * mu_image_reference + c1)
-                * (2 * sigma_image_reference + c2)
-                / ((mu_image_sq + mu_reference_sq + c1) * (sigma_image_sq + sigma_reference_sq + c2))
+            ssim_map = ((2 * mu_image_reference + c1) * (2 * sigma_image_reference + c2)) / (
+                (mu_image_squared + mu_reference_squared + c1) * (sigma_image_squared + sigma_reference_squared + c2)
             )
         else:
             numerator1 = 2 * mu_image_reference + c1
             numerator2 = 2 * sigma_image_reference + c2
-            denominator1 = mu_image_sq + mu_reference_sq + c1
-            denominator2 = sigma_image_sq + sigma_reference_sq + c2
+            denominator1 = mu_image_squared + mu_reference_squared + c1
+            denominator2 = sigma_image_squared + sigma_reference_squared + c2
 
             ssim_map = torch.ones_like(mu_image)
             valid_index = denominator1 * denominator2 > 0
@@ -164,9 +158,7 @@ class SSIM(FullReferenceMetric):
             fallback_index = (denominator1 != 0) & (denominator2 == 0)
             ssim_map[fallback_index] = numerator1[fallback_index] / denominator1[fallback_index]
 
-        return ssim_map.mean().to(
-            dtype=image.dtype
-        )  # TODO: Also expose the raw SSIM map (and possibly gradients; cf. scikit-image).
+        return ssim_map.mean()  # TODO: Also expose the raw SSIM map (and possibly gradients; cf. scikit-image).
 
     def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
         """Return other SSIM implementations for comparison."""
@@ -220,7 +212,7 @@ class SSIM(FullReferenceMetric):
                     k2=self.k2,
                     return_full_image=False,
                     return_contrast_sensitivity=False,
-                ).to(image.dtype)
+                )
 
             implementations["torchmetrics"] = torchmetrics_ssim
         except Exception:
@@ -244,7 +236,7 @@ class SSIM(FullReferenceMetric):
                     k1=self.k1,
                     k2=self.k2,
                 ).numpy()
-                return torch.tensor(score.item(), device=image.device, dtype=image.dtype)
+                return torch.tensor(score, device=image.device, dtype=image.dtype)
 
             implementations["tensorflow"] = tensorflow_ssim
         except Exception:
@@ -268,7 +260,7 @@ class SSIM(FullReferenceMetric):
                     downsample=False,
                     k1=self.k1,
                     k2=self.k2,
-                ).to(image.dtype)
+                )
 
             implementations["piq"] = piq_ssim
         except Exception:
@@ -291,7 +283,7 @@ class SSIM(FullReferenceMetric):
                 # PIQA exposes SSIM as a module. It expects NCHW tensors and an
                 # explicit channel count. In practice, it behaves very similarly to
                 # scikit-image for the parameter settings used here.
-                return metric(image.unsqueeze(0).unsqueeze(0), reference.unsqueeze(0).unsqueeze(0)).to(image.dtype)
+                return metric(image.unsqueeze(0).unsqueeze(0), reference.unsqueeze(0).unsqueeze(0))
 
             implementations["piqa"] = piqa_ssim
         except Exception:
@@ -338,7 +330,7 @@ class SSIM(FullReferenceMetric):
             def monai_ssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
                 # MONAI exposes SSIM as a metric object and expects NCHW tensors.
                 # It uses valid padding, source of differences still unclear.
-                return metric(reference.unsqueeze(0).unsqueeze(0), image.unsqueeze(0).unsqueeze(0)).to(image.dtype)
+                return metric(reference.unsqueeze(0).unsqueeze(0), image.unsqueeze(0).unsqueeze(0))
 
             implementations["monai"] = monai_ssim
         except Exception:
@@ -386,7 +378,7 @@ class SSIM(FullReferenceMetric):
             def deepinv_ssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
                 # deepinv wraps torchmetrics-style SSIM for inverse-problems workflows,
                 # so its results are expected to match torchmetrics very closely.
-                return metric(image.unsqueeze(0).unsqueeze(0), reference.unsqueeze(0).unsqueeze(0)).to(image.dtype)
+                return metric(image.unsqueeze(0).unsqueeze(0), reference.unsqueeze(0).unsqueeze(0))
 
             implementations["deepinv"] = deepinv_ssim
         except Exception:
