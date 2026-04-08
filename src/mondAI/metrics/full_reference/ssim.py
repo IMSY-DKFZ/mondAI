@@ -269,7 +269,7 @@ class SSIM(FullReferenceMetric):
         try:
             from piqa import SSIM as PIQASSIM
 
-            metric = PIQASSIM(
+            piqa_metric = PIQASSIM(
                 window_size=self.kernel_size,
                 sigma=self.kernel_sigma,
                 n_channels=1,
@@ -283,7 +283,8 @@ class SSIM(FullReferenceMetric):
                 # PIQA exposes SSIM as a module. It expects NCHW tensors and an
                 # explicit channel count. In practice, it behaves very similarly to
                 # scikit-image for the parameter settings used here.
-                return metric(image.unsqueeze(0).unsqueeze(0), reference.unsqueeze(0).unsqueeze(0))
+                piqa_metric.to(image.device)
+                return piqa_metric(image.float().unsqueeze(0).unsqueeze(0), reference.float().unsqueeze(0).unsqueeze(0))
 
             implementations["piqa"] = piqa_ssim
         except Exception:
@@ -317,7 +318,7 @@ class SSIM(FullReferenceMetric):
         try:
             from monai.metrics import SSIMMetric
 
-            metric = SSIMMetric(
+            monai_metric = SSIMMetric(
                 spatial_dims=2,
                 data_range=self.dynamic_range,
                 kernel_type="gaussian",
@@ -330,39 +331,16 @@ class SSIM(FullReferenceMetric):
             def monai_ssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
                 # MONAI exposes SSIM as a metric object and expects NCHW tensors.
                 # It uses valid padding, source of differences still unclear.
-                return metric(reference.unsqueeze(0).unsqueeze(0), image.unsqueeze(0).unsqueeze(0))
+                return monai_metric(reference.unsqueeze(0).unsqueeze(0), image.unsqueeze(0).unsqueeze(0))
 
             implementations["monai"] = monai_ssim
         except Exception:
             logger.warning("monai or its SSIM implementation is not available, skipping monai implementation of SSIM")
 
         try:
-            import pyiqa
-
-            metric = pyiqa.create_metric(
-                "ssim",
-                as_loss=False,
-                device="cpu",
-                win=None,
-                crop_border=0,
-                downsample=False,
-                test_y_channel=False,
-            )
-
-            def pyiqa_ssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # pyiqa exposes SSIM through a model-style factory. It uses valid
-                # convolution together with its own Gaussian kernel implementation,
-                # which may lead to small deviations.
-                return metric(image.unsqueeze(0).unsqueeze(0), reference.unsqueeze(0).unsqueeze(0)).to(image.dtype)
-
-            implementations["pyiqa"] = pyiqa_ssim
-        except Exception:
-            logger.warning("pyiqa or its SSIM implementation is not available, skipping pyiqa implementation of SSIM")
-
-        try:
             from deepinv.loss.metric import SSIM as DeepInvSSIM
 
-            metric = DeepInvSSIM(
+            deepinv_metric = DeepInvSSIM(
                 multiscale=False,
                 max_pixel=self.dynamic_range,
                 min_pixel=0.0,
@@ -378,7 +356,7 @@ class SSIM(FullReferenceMetric):
             def deepinv_ssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
                 # deepinv wraps torchmetrics-style SSIM for inverse-problems workflows,
                 # so its results are expected to match torchmetrics very closely.
-                return metric(image.unsqueeze(0).unsqueeze(0), reference.unsqueeze(0).unsqueeze(0))
+                return deepinv_metric(image.unsqueeze(0).unsqueeze(0), reference.unsqueeze(0).unsqueeze(0))
 
             implementations["deepinv"] = deepinv_ssim
         except Exception:
@@ -387,14 +365,20 @@ class SSIM(FullReferenceMetric):
             )
 
         try:
-            # Source: https://github.com/Bayer-Group/mr-image-metrics/blob/main/medimetrics/metrics/ssim.py
-            from medimetrics.metrics import SSIM as MediMetricsSSIM
+            from mondAI.metrics.third_party.medimetrics.ssim import SSIM as MediMetricsSSIM
 
-            metric = MediMetricsSSIM()
+            medimetric = MediMetricsSSIM()
 
             def medimetrics_ssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # NOTE: medimetrics currently not installable via pip.
-                score = metric.compute(reference.cpu().numpy(), image.cpu().numpy())
+                score = medimetric.compute(
+                    reference.cpu().numpy(),
+                    image.cpu().numpy(),
+                    data_range=self.dynamic_range,
+                    kernel_size=self.kernel_size,
+                    sigma=self.kernel_sigma,
+                    k1=self.k1,
+                    k2=self.k2,
+                )
                 return torch.tensor(score, device=image.device, dtype=image.dtype)
 
             implementations["medimetrics"] = medimetrics_ssim
@@ -402,8 +386,6 @@ class SSIM(FullReferenceMetric):
             logger.warning(
                 "medimetrics or its SSIM implementation is not available, skipping medimetrics implementation of SSIM"
             )
-        # NOTE: Further, non-installable implementations:
-        # - IQA-Eval: https://github.com/ideal-iqa/iqa-eval/blob/main/IQA%20metrics%20python/SSIM_PSNR_MSSSIM_VIF/runssim.py
 
         return implementations
 
