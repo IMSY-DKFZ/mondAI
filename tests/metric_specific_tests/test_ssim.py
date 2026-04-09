@@ -94,6 +94,13 @@ def test_image_too_small() -> None:
         ssim(img1, img2)
 
 
+def test_large_image_with_downsampling() -> None:
+    ssim = SSIM(downsample=True)
+    img1 = torch.rand(1024, 780) * 255.0
+    img2 = torch.rand(1024, 780) * 255.0
+    ssim(img1, img2)
+
+
 def test_identical_images_are_one() -> None:
     ssim = SSIM()
     img = torch.rand(64, 64) * 255.0

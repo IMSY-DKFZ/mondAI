@@ -5,7 +5,7 @@ import torch
 from mondAI.logging import get_logger
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
-from mondAI.utils.signal_processing import convolve2d, gaussian_filter_kernel
+from mondAI.utils.signal_processing import convolve2d, gaussian_filter_kernel, subsample
 
 logger = get_logger()
 
@@ -83,6 +83,7 @@ class SSIM(FullReferenceMetric):
         kernel_size: int = 11,
         kernel_sigma: float = 1.5,
         dynamic_range: float = 255.0,
+        downsample: bool = False,
     ) -> None:
         """Initialize SSIM with defaults matching the original implementation.
 
@@ -96,6 +97,11 @@ class SSIM(FullReferenceMetric):
         :type kernel_sigma: float
         :param dynamic_range: Dynamic range ``L`` of the images, default is 255.0.
         :type dynamic_range: float
+        :param downsample: Whether to downsample the input images as suggested by the authors for large images.
+        The original implementation did not use downsampling but was also only meant for signle scale images.
+        If True, the images will be adaptively downsampled to a scale where the smaller dimension is
+        approximately 256 pixels, as recommended by the authors for large images. Default is False.
+        :type downsample: bool
         :raises ValueError: If parameters are invalid.
 
         """
@@ -105,7 +111,7 @@ class SSIM(FullReferenceMetric):
         self.kernel_size = kernel_size
         self.kernel_sigma = kernel_sigma
         self.dynamic_range = dynamic_range
-
+        self.downsample = downsample
         if self.k1 < 0 or self.k2 < 0:
             raise ValueError("k1 and k2 must be non-negative.")
         if self.kernel_size % 2 == 0:
@@ -120,6 +126,13 @@ class SSIM(FullReferenceMetric):
     def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
         """Compute SSIM between image and reference."""
         self._input_checks(image, reference)
+
+        # Downsample the images
+        if self.downsample:
+            min_dimension = min(image.shape)
+            scaling_factor = max(1, round(min_dimension / 256))
+            image = subsample(image, kernel_size=scaling_factor)
+            reference = subsample(reference, kernel_size=scaling_factor)
 
         kernel = gaussian_filter_kernel(self.kernel_size, self.kernel_sigma, device=image.device, dtype=image.dtype)
 
@@ -394,7 +407,8 @@ class SSIM(FullReferenceMetric):
         arrow = self._arrow_indicating_optimum()
         return (
             f"{self.name} ({self.abbreviation}) {arrow} with parameters: "
-            f"{self.k1=}, {self.k2=}, {self.kernel_size=}, {self.kernel_sigma=}, {self.dynamic_range=}"
+            f"{self.k1=}, {self.k2=}, {self.kernel_size=}, {self.kernel_sigma=}, "
+            f"{self.dynamic_range=}, {self.downsample=}"
         )
 
     def _input_checks(self, image: torch.Tensor, reference: torch.Tensor) -> None:
