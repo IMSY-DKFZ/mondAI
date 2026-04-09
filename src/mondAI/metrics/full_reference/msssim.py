@@ -1,4 +1,4 @@
-from typing import Callable, Sequence
+from typing import Callable
 
 import torch
 
@@ -10,16 +10,15 @@ from mondAI.utils.signal_processing import convolve2d, gaussian_filter_kernel
 logger = get_logger()
 
 
-# TODO: Revisit docstrings
 class MSSSIM(FullReferenceMetric):
-    r"""Multi-Scale Structural Similarity Index Measure (MS-SSIM).
+    r"""Multi-Scale Structural SIMilarity (MS-SSIM) index.
 
-    The Multi-Scale Structural Similarity Index Measure (MS-SSIM) extends SSIM by
+    The Multi-Scale Structural Similarity (MS-SSIM) index extends SSIM by
     evaluating image similarity across multiple scales. At each scale, the images are
-    compared using local luminance, contrast, and structure statistics, and then
-    downsampled for the next coarser scale. The final score combines the contrast-
-    structure terms from the coarser levels with the full SSIM score from the final
-    level.
+    compared using local contrast and structure statistics, and then downsampled
+    for the next coarser scale. The final score combines the contrast-structure terms
+    from the coarser scales with the full SSIM score (including luminance) from the final
+    scale.
 
     This implementation follows the original MATLAB function ``msssim.m`` by Zhou
     Wang as closely as possible in both style and functionality: it uses the same
@@ -62,13 +61,13 @@ class MSSSIM(FullReferenceMetric):
 
     Differences to some other implementations:
 
-    - this implementation is grayscale-only for now,
-    - it uses valid convolution for the per-scale SSIM computation, matching the
+    - this implementation is grayscale-only,
+    - it uses convolution with valid padding for the per-scale SSIM computation, matching the
       original MATLAB implementation,
     - it uses symmetric-padding downsampling with a 2x2 averaging filter between
       scales,
     - it supports both the original weighted ``product`` aggregation and the
-      alternative ``wtd_sum`` mode from the MATLAB reference code,
+      alternative ``weighted sum`` mode from the MATLAB reference code,
     - it expects images in ``[0, dynamic_range]`` and defaults to ``dynamic_range=255``.
 
     """
@@ -77,11 +76,11 @@ class MSSSIM(FullReferenceMetric):
 
     @property
     def name(self) -> str:
-        return "Multi-Scale Structural Similarity Index Measure"
+        return "Multi-Scale Structural Similarity Index"
 
     @property
     def abbreviation(self) -> str:
-        return "MSSSIM"
+        return "MS-SSIM"
 
     @property
     def higher_is_better(self) -> bool:
@@ -98,19 +97,41 @@ class MSSSIM(FullReferenceMetric):
         kernel_size: int = 11,
         kernel_sigma: float = 1.5,
         dynamic_range: float = 255.0,
-        levels: int = 5,
-        weights: Sequence[float] | None = None,
+        scales: int = 5,
+        weights: tuple[float, ...] = DEFAULT_WEIGHTS,
         method: str = "product",
     ) -> None:
-        """Initialize MS-SSIM with defaults matching the original implementation."""
+        """Initialize MS-SSIM with defaults matching the original implementation.
+
+        :param k1: First stability constant coefficient, default is 0.01.
+        :type k1: float
+        :param k2: Second stability constant coefficient, default is 0.03.
+        :type k2: float
+        :param kernel_size: Size of the Gaussian window, default is 11.
+        :type kernel_size: int
+        :param kernel_sigma: Standard deviation of the Gaussian window, default is 1.5.
+        :type kernel_sigma: float
+        :param dynamic_range: Dynamic range ``L`` of the images, default is 255.0.
+        :type dynamic_range: float
+        :param scales: Number of scales, needs to be a positive integer,
+         setting this to 1 results in scores equal to SSIM, default is 5.
+        :type scales: int
+        :param weights: Weights for each scale, default to (0.0448, 0.2856, 0.3001, 0.2363, 0.1333),
+          which were derived emperically by the original authors.
+          The length of weights must match the number of scales, and they will be normalized.
+        :type weights: tuple[float, ...]
+        :param method: Aggregation method, either 'product' or 'weighted sum', default is 'product'.
+        :type method: str
+
+        """
         super().__init__()
         self.k1 = k1
         self.k2 = k2
         self.kernel_size = kernel_size
         self.kernel_sigma = kernel_sigma
         self.dynamic_range = dynamic_range
-        self.levels = levels
-        self.weights = tuple(weights) if weights is not None else self.DEFAULT_WEIGHTS
+        self.scales = scales
+        self.weights = weights
         self.method = method
 
         if self.k1 < 0 or self.k2 < 0:
@@ -123,31 +144,26 @@ class MSSSIM(FullReferenceMetric):
             raise ValueError("kernel_sigma must be positive.")
         if self.dynamic_range <= 0:
             raise ValueError("dynamic_range must be positive.")
-        if self.levels < 1:
-            raise ValueError("levels must be at least 1.")
-        if len(self.weights) != self.levels:
-            raise ValueError("weights must have the same length as levels.")
+        if self.scales < 1:
+            raise ValueError("scales must be at least 1.")
+        if len(self.weights) != self.scales:
+            raise ValueError("weights must have the same length as scales.")
         if sum(self.weights) == 0:
             raise ValueError("weights must not sum to zero.")
-        if self.method not in ("product", "wtd_sum"):
-            raise ValueError("method must be either 'product' or 'wtd_sum'.")
+        if self.method not in ("product", "weighted sum"):
+            raise ValueError("method must be either 'product' or 'weighted sum'.")
 
     def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
         """Compute MS-SSIM between image and reference."""
         self._input_checks(image, reference)
 
-        image = image.to(torch.float64)
-        reference = reference.to(torch.float64)
+        mean_ssims = image.new_zeros((self.scales,))
+        mean_contrasts_and_structures = image.new_zeros((self.scales,))
 
-        mssim_values: list[torch.Tensor] = []
-        mcs_values: list[torch.Tensor] = []
+        downsample_filter = image.new_ones((2, 2)) / 4.0
 
-        downsample_filter = torch.ones((2, 2), device=image.device, dtype=image.dtype) / 4.0
-
-        for _ in range(self.levels):
-            mssim, mcs = self._compute_ssim_and_cs(image, reference)
-            mssim_values.append(mssim)
-            mcs_values.append(mcs)
+        for scale in range(self.scales):
+            mean_ssims[scale], mean_contrasts_and_structures[scale] = self._compute_ssim_and_cs(image, reference)
 
             filtered_image = convolve2d(image, downsample_filter, padding="same")
             filtered_reference = convolve2d(reference, downsample_filter, padding="same")
@@ -156,27 +172,27 @@ class MSSSIM(FullReferenceMetric):
             reference = filtered_reference[::2, ::2]
 
         weights = torch.tensor(self.weights, device=image.device, dtype=image.dtype)
-        mssim_tensor = torch.stack(mssim_values)
-        mcs_tensor = torch.stack(mcs_values)
+        terms = torch.cat((mean_contrasts_and_structures[:-1], mean_ssims[-1:]))
 
         if self.method == "product":
-            if self.levels == 1:
-                result = mssim_tensor[0] ** weights[0]
-            else:
-                result = torch.prod(mcs_tensor[:-1] ** weights[:-1]) * (mssim_tensor[-1] ** weights[-1])
-        else:
-            normalized_weights = weights / weights.sum()
-            if self.levels == 1:
-                result = mssim_tensor[0]
-            else:
-                result = (
-                    torch.sum(mcs_tensor[:-1] * normalized_weights[:-1]) + mssim_tensor[-1] * normalized_weights[-1]
-                )
+            return torch.prod(terms**weights)
 
-        return result.to(dtype=torch.float64)
+        elif self.method == "weighted sum":
+            normalized_weights = weights / weights.sum()
+            return torch.sum(terms * normalized_weights)
 
     def _compute_ssim_and_cs(self, image: torch.Tensor, reference: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Compute the mean SSIM and contrast-structure terms for one scale."""
+        """Compute the mean SSIM and mean contrast-structure terms for image and
+        reference at one scale.
+
+        :param image: The input image at the current scale.
+        :type image: torch.Tensor
+        :param reference: The reference image at the current scale.
+        :type reference: torch.Tensor
+        :return: A tuple containing the mean SSIM and mean contrast-structure values.
+        :rtype: tuple[torch.Tensor, torch.Tensor]
+
+        """
         kernel = gaussian_filter_kernel(self.kernel_size, self.kernel_sigma, device=image.device, dtype=image.dtype)
 
         c1 = (self.k1 * self.dynamic_range) ** 2
@@ -185,44 +201,50 @@ class MSSSIM(FullReferenceMetric):
         mu_image = convolve2d(image, kernel, padding="valid")
         mu_reference = convolve2d(reference, kernel, padding="valid")
 
-        mu_image_sq = mu_image * mu_image
-        mu_reference_sq = mu_reference * mu_reference
+        mu_image_squared = mu_image * mu_image
+        mu_reference_squared = mu_reference * mu_reference
         mu_image_reference = mu_image * mu_reference
 
-        sigma_image_sq = convolve2d(image * image, kernel, padding="valid") - mu_image_sq
-        sigma_reference_sq = convolve2d(reference * reference, kernel, padding="valid") - mu_reference_sq
+        sigma_image_squared = convolve2d(image * image, kernel, padding="valid") - mu_image_squared
+        sigma_reference_squared = convolve2d(reference * reference, kernel, padding="valid") - mu_reference_squared
         sigma_image_reference = convolve2d(image * reference, kernel, padding="valid") - mu_image_reference
 
         if c1 > 0 and c2 > 0:
-            cs_map = (2 * sigma_image_reference + c2) / (sigma_image_sq + sigma_reference_sq + c2)
+            contrast_structure_map = (2 * sigma_image_reference + c2) / (
+                sigma_image_squared + sigma_reference_squared + c2
+            )
             ssim_map = (
                 (2 * mu_image_reference + c1)
                 * (2 * sigma_image_reference + c2)
-                / ((mu_image_sq + mu_reference_sq + c1) * (sigma_image_sq + sigma_reference_sq + c2))
+                / (
+                    (mu_image_squared + mu_reference_squared + c1)
+                    * (sigma_image_squared + sigma_reference_squared + c2)
+                )
             )
         else:
             numerator1 = 2 * mu_image_reference + c1
             numerator2 = 2 * sigma_image_reference + c2
-            denominator1 = mu_image_sq + mu_reference_sq + c1
-            denominator2 = sigma_image_sq + sigma_reference_sq + c2
+            denominator1 = mu_image_squared + mu_reference_squared + c1
+            denominator2 = sigma_image_squared + sigma_reference_squared + c2
 
-            cs_map = torch.ones_like(mu_image)
+            contrast_structure_map = torch.ones_like(mu_image)
             ssim_map = torch.ones_like(mu_image)
 
-            valid_cs = denominator2 > 0
-            cs_map[valid_cs] = numerator2[valid_cs] / denominator2[valid_cs]
+            valid_indices = denominator2 > 0
+            contrast_structure_map[valid_indices] = numerator2[valid_indices] / denominator2[valid_indices]
 
-            valid_ssim = denominator1 * denominator2 > 0
-            ssim_map[valid_ssim] = (
-                numerator1[valid_ssim] * numerator2[valid_ssim] / (denominator1[valid_ssim] * denominator2[valid_ssim])
+            valid_indices = denominator1 * denominator2 > 0
+            ssim_map[valid_indices] = (
+                numerator1[valid_indices]
+                * numerator2[valid_indices]
+                / (denominator1[valid_indices] * denominator2[valid_indices])
             )
 
             fallback_ssim = (denominator1 != 0) & (denominator2 == 0)
             ssim_map[fallback_ssim] = numerator1[fallback_ssim] / denominator1[fallback_ssim]
 
-        return ssim_map.mean(), cs_map.mean()
+        return ssim_map.mean(), contrast_structure_map.mean()
 
-    # TODO: Revisit comments on other implementations
     def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
         """Return other MS-SSIM implementations for comparison."""
         implementations = {}
@@ -245,13 +267,13 @@ class MSSSIM(FullReferenceMetric):
                     k2=self.k2,
                     betas=self.weights,
                     normalize=None,
-                ).to(image.dtype)
+                )
 
             implementations["torchmetrics"] = torchmetrics_msssim
         except Exception:
             logger.warning(
                 "torchmetrics or its MS-SSIM implementation is not available, "
-                "skipping torchmetrics implementation of MSSSIM"
+                "skipping torchmetrics implementation of MS-SSIM"
             )
 
         try:
@@ -269,11 +291,11 @@ class MSSSIM(FullReferenceMetric):
                     k1=self.k1,
                     k2=self.k2,
                 ).numpy()
-                return torch.tensor(score.item(), device=image.device, dtype=image.dtype)
+                return torch.tensor(score, device=image.device, dtype=image.dtype)
 
             implementations["tensorflow"] = tensorflow_msssim
         except Exception:
-            logger.warning("tensorflow is not available, skipping tensorflow implementation of MSSSIM")
+            logger.warning("tensorflow is not available, skipping tensorflow implementation of MS-SSIM")
 
         try:
             from piq import multi_scale_ssim
@@ -290,34 +312,34 @@ class MSSSIM(FullReferenceMetric):
                     scale_weights=torch.tensor(self.weights, device=image.device, dtype=image.dtype),
                     k1=self.k1,
                     k2=self.k2,
-                ).to(image.dtype)
+                )
 
             implementations["piq"] = piq_msssim
         except Exception:
-            logger.warning("piq or its MS-SSIM implementation is not available, skipping piq implementation of MSSSIM")
+            logger.warning("piq or its MS-SSIM implementation is not available, skipping piq implementation of MS-SSIM")
 
         try:
             from piqa import MS_SSIM
 
-            metric = MS_SSIM(
-                window_size=self.kernel_size,
-                sigma=self.kernel_sigma,
-                n_channels=1,
-                reduction="mean",
-                value_range=self.dynamic_range,
-                weights=self.weights,
-                k1=self.k1,
-                k2=self.k2,
-            )
-
             def piqa_msssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
                 # PIQA exposes MS-SSIM as a module and expects NCHW tensors.
-                return metric(image.unsqueeze(0).unsqueeze(0), reference.unsqueeze(0).unsqueeze(0)).to(image.dtype)
+                piqa_metric = MS_SSIM(
+                    window_size=self.kernel_size,
+                    sigma=self.kernel_sigma,
+                    n_channels=1,
+                    reduction="mean",
+                    value_range=self.dynamic_range,
+                    weights=torch.tensor(self.weights, device=image.device, dtype=image.dtype),
+                    k1=self.k1,
+                    k2=self.k2,
+                ).to(image.device)
+
+                return piqa_metric(image.float().unsqueeze(0).unsqueeze(0), reference.float().unsqueeze(0).unsqueeze(0))
 
             implementations["piqa"] = piqa_msssim
         except Exception:
             logger.warning(
-                "piqa or its MS-SSIM implementation is not available, skipping piqa implementation of MSSSIM"
+                "piqa or its MS-SSIM implementation is not available, skipping piqa implementation of MS-SSIM"
             )
 
         try:
@@ -339,17 +361,17 @@ class MSSSIM(FullReferenceMetric):
             implementations["sewar"] = sewar_msssim
         except Exception:
             logger.warning(
-                "sewar or its MS-SSIM implementation is not available, skipping sewar implementation of MSSSIM"
+                "sewar or its MS-SSIM implementation is not available, skipping sewar implementation of MS-SSIM"
             )
 
         try:
             from monai.metrics import MultiScaleSSIMMetric
 
-            metric = MultiScaleSSIMMetric(
+            monai_metric = MultiScaleSSIMMetric(
                 spatial_dims=2,
                 data_range=self.dynamic_range,
                 kernel_type="gaussian",
-                win_size=self.kernel_size,
+                kernel_size=self.kernel_size,
                 kernel_sigma=self.kernel_sigma,
                 weights=self.weights,
                 k1=self.k1,
@@ -358,12 +380,14 @@ class MSSSIM(FullReferenceMetric):
 
             def monai_msssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
                 # MONAI exposes MS-SSIM as a metric object for batched medical imaging.
-                return metric(reference.unsqueeze(0).unsqueeze(0), image.unsqueeze(0).unsqueeze(0)).to(image.dtype)
+                return monai_metric(reference.unsqueeze(0).unsqueeze(0), image.unsqueeze(0).unsqueeze(0)).to(
+                    image.dtype
+                )
 
             implementations["monai"] = monai_msssim
         except Exception:
             logger.warning(
-                "monai or its MS-SSIM implementation is not available, skipping monai implementation of MSSSIM"
+                "monai or its MS-SSIM implementation is not available, skipping monai implementation of MS-SSIM"
             )
 
         try:
@@ -381,7 +405,7 @@ class MSSSIM(FullReferenceMetric):
         except Exception:
             logger.warning(
                 "medimetrics or its MS-SSIM implementation is not available, "
-                "skipping medimetrics implementation of MSSSIM"
+                "skipping medimetrics implementation of MS-SSIM"
             )
 
         return implementations
@@ -392,7 +416,7 @@ class MSSSIM(FullReferenceMetric):
         return (
             f"{self.name} ({self.abbreviation}) {arrow} with parameters: "
             f"{self.k1=}, {self.k2=}, {self.kernel_size=}, {self.kernel_sigma=}, "
-            f"{self.dynamic_range=}, {self.levels=}, {self.weights=}, {self.method=}"
+            f"{self.dynamic_range=}, {self.scales=}, {self.weights=}, {self.method=}"
         )
 
     def _input_checks(self, image: torch.Tensor, reference: torch.Tensor) -> None:
@@ -407,19 +431,19 @@ class MSSSIM(FullReferenceMetric):
             if self.dynamic_range != 1.0:
                 logger.warning(
                     "It has been detected that all pixel values in both image and reference are "
-                    "in the range [0, 1]. MSSSIM defaults to dynamic_range=255. Please ensure that "
+                    "in the range [0, 1]. MS-SSIM defaults to dynamic_range=255. Please ensure that "
                     "your input images are correctly scaled or set dynamic_range=1.0 for normalized inputs."
                 )
 
         if image.shape[-2] < self.kernel_size or image.shape[-1] < self.kernel_size:
             raise ValueError(
                 f"Images have spatial dimensions {image.shape[-2:]} which are smaller than the required window size "
-                f"{self.kernel_size}x{self.kernel_size} for MSSSIM."
+                f"{self.kernel_size}x{self.kernel_size} for MS-SSIM."
             )
 
-        minimum_image_width = min(image.shape[-2], image.shape[-1]) / (2 ** (self.levels - 1))
+        minimum_image_width = min(image.shape[-2], image.shape[-1]) / (2 ** (self.scales - 1))
         if minimum_image_width < self.kernel_size:
             raise ValueError(
-                "Images become too small for the requested number of MS-SSIM levels and window size after repeated "
+                "Images become too small for the requested number of MS-SSIM scales and window size after repeated "
                 "downsampling."
             )

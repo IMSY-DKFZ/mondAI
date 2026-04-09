@@ -68,34 +68,52 @@ def test_dynamic_range_invalid(dynamic_range: float) -> None:
         MSSSIM(dynamic_range=dynamic_range)
 
 
-@pytest.mark.parametrize("levels", [1, 3, 5])
-def test_levels_valid(levels: int) -> None:
-    weights = MSSSIM.DEFAULT_WEIGHTS[:levels]
-    metric = MSSSIM(levels=levels, weights=weights)
+@pytest.mark.parametrize("factor", [256.0, -1.0])
+def test_invalid_value_range_image(factor: float) -> None:
+    with pytest.raises(ValueError):
+        ssim = MSSSIM()
+        img1 = torch.ones(64, 64) * factor
+        img2 = torch.ones(64, 64)
+        ssim(img1, img2)
+
+
+@pytest.mark.parametrize("factor", [256.0, -1.0])
+def test_invalid_value_range_reference(factor: float) -> None:
+    with pytest.raises(ValueError):
+        ssim = MSSSIM()
+        img1 = torch.ones(64, 64)
+        img2 = torch.ones(64, 64) * factor
+        ssim(img1, img2)
+
+
+@pytest.mark.parametrize("scales", [1, 3, 5])
+def test_scales_valid(scales: int) -> None:
+    weights = (0.0448, 0.2856, 0.3001, 0.2363, 0.1333)[:scales]
+    metric = MSSSIM(scales=scales, weights=weights)
     img1 = torch.rand(256, 256) * 255.0
     img2 = torch.rand(256, 256) * 255.0
     metric(img1, img2)
 
 
-@pytest.mark.parametrize("levels", [0, -1])
-def test_levels_invalid(levels: int) -> None:
+@pytest.mark.parametrize("scales", [0, -1])
+def test_scales_invalid(scales: int) -> None:
     with pytest.raises(ValueError):
-        MSSSIM(levels=levels)
+        MSSSIM(scales=scales)
 
 
 def test_weights_length_invalid() -> None:
     with pytest.raises(ValueError):
-        MSSSIM(levels=5, weights=(0.5, 0.5))
+        MSSSIM(scales=5, weights=(0.5, 0.5))
 
 
 def test_weights_sum_invalid() -> None:
     with pytest.raises(ValueError):
-        MSSSIM(levels=2, weights=(0.0, 0.0))
+        MSSSIM(scales=2, weights=(0.0, 0.0))
 
 
-@pytest.mark.parametrize("method", ["product", "wtd_sum"])
+@pytest.mark.parametrize("method", ["product", "weighted sum"])
 def test_method_valid(method: str) -> None:
-    metric = MSSSIM(levels=2, weights=(0.5, 0.5), method=method)
+    metric = MSSSIM(scales=2, weights=(0.5, 0.5), method=method)
     img1 = torch.rand(256, 256) * 255.0
     img2 = torch.rand(256, 256) * 255.0
     metric(img1, img2)
@@ -107,15 +125,15 @@ def test_method_invalid() -> None:
 
 
 def test_image_too_small_for_window() -> None:
-    metric = MSSSIM(kernel_size=11, levels=1, weights=(1.0,))
+    metric = MSSSIM(kernel_size=11, scales=1, weights=(1.0,))
     img1 = torch.ones(10, 10)
     img2 = torch.ones(10, 10)
     with pytest.raises(ValueError):
         metric(img1, img2)
 
 
-def test_image_too_small_for_levels() -> None:
-    metric = MSSSIM(levels=5)
+def test_image_too_small_for_scales() -> None:
+    metric = MSSSIM(scales=5)
     img1 = torch.ones(64, 64)
     img2 = torch.ones(64, 64)
     with pytest.raises(ValueError):
