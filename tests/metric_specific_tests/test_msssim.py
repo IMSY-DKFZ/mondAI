@@ -2,6 +2,7 @@ import pytest
 import torch
 
 from mondAI.metrics.full_reference.msssim import MSSSIM
+from mondAI.metrics.full_reference.ssim import SSIM
 
 
 @pytest.mark.parametrize("k1", [0.0, 0.001, 0.01, 0.05])
@@ -145,3 +146,13 @@ def test_identical_images_are_one() -> None:
     img = torch.rand(256, 256) * 255.0
     result = metric(img, img)
     assert torch.isclose(torch.as_tensor(result), torch.tensor(1.0, dtype=torch.as_tensor(result).dtype))
+
+
+def test_single_scale_same_as_ssim() -> None:
+    msssim = MSSSIM(scales=1, weights=(1.0,))
+    ssim = SSIM()
+    img1 = torch.rand(256, 256) * 255.0
+    img2 = torch.rand(256, 256) * 255.0
+    score_msssim = msssim(img1, img2)
+    score_ssim = ssim(img1, img2)
+    assert torch.isclose(torch.as_tensor(score_msssim), torch.tensor(score_ssim))
