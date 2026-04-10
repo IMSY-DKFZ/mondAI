@@ -391,9 +391,9 @@ class MSSSIM(FullReferenceMetric):
             )
 
         try:
-            from medimetrics.metrics import SSIM as MediMetricsSSIM
+            from mondAI.metrics.third_party.medimetrics.ssim import MSSSIM as MediMetricsMSSSIM
 
-            metric = MediMetricsSSIM()
+            metric = MediMetricsMSSSIM()
 
             def medimetrics_msssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
                 # medimetrics exposes MS-SSIM through the SSIM metric class using a
