@@ -10,20 +10,20 @@ logger = get_logger()
 
 
 class MAE(FullReferenceMetric):
-    r"""Mean Absolute Error (MAE) metric implementation.
+    r"""Mean Absolute Error (MAE).
 
-    The Mean Absolute Error (MAE) is a measure of errors between paired observations
-    expressed as the average absolute difference between the predicted values and the
-    actual values. It is defined mathematically as:
+    The Mean Absolute Error (MAE) is a measure of errors between paired images
+    expressed as the average absolute difference between the given and reference pixel
+    values. It is defined mathematically as:
 
     .. math::
-        \operatorname {MAE} = \frac{1}{n} \sum_{i=1}^{n} |y_i - \hat{y}_i|
+        \operatorname {MAE} = \frac{1}{N} \sum_{i=1}^{N} |y_i - \hat{y}_i|
 
     where:
 
     * \\(y_i\\) is the actual value,
     * \\(\\hat{y}_i \\) is the predicted value,
-    * \\(n\\) is the number of observations.
+    * \\(N\\) is the number of observations.
 
     """
 
