@@ -156,3 +156,51 @@ def test_single_scale_same_as_ssim() -> None:
     score_msssim = msssim(img1, img2)
     score_ssim = ssim(img1, img2)
     assert torch.isclose(torch.as_tensor(score_msssim), torch.tensor(score_ssim))
+
+
+def test_zero_constants_constant_images_follow_fallback_path() -> None:
+    metric = MSSSIM(k1=0.0, k2=0.0, scales=1, weights=(1.0,))
+    img = torch.full((64, 64), 5.0)
+
+    mean_ssim, mean_cs = metric._compute_ssim_and_cs(img, img)
+
+    assert torch.isclose(mean_ssim, torch.tensor(1.0, dtype=mean_ssim.dtype))
+    assert torch.isclose(mean_cs, torch.tensor(1.0, dtype=mean_cs.dtype))
+
+
+def test_normalized_inputs_warn_for_default_dynamic_range(caplog: pytest.LogCaptureFixture) -> None:
+    metric = MSSSIM(scales=1, weights=(1.0,))
+    img = torch.rand(64, 64)
+
+    with caplog.at_level("WARNING", logger="mondAI"):
+        metric(img, img)
+
+    assert "MS-SSIM defaults to dynamic_range=255" in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("method", "expected"),
+    [
+        ("product", 0.8**0.2 * 0.6**0.3 * 0.5**0.5),
+        ("weighted sum", 0.8 * 0.2 + 0.6 * 0.3 + 0.5 * 0.5),
+    ],
+)
+def test_aggregation_uses_expected_terms(monkeypatch: pytest.MonkeyPatch, method: str, expected: float) -> None:
+    metric = MSSSIM(scales=3, weights=(0.2, 0.3, 0.5), method=method)
+    values = iter(
+        [
+            (torch.tensor(0.9), torch.tensor(0.8)),
+            (torch.tensor(0.7), torch.tensor(0.6)),
+            (torch.tensor(0.5), torch.tensor(0.4)),
+        ]
+    )
+
+    def fake_compute_ssim_and_cs(image: torch.Tensor, reference: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        return next(values)
+
+    monkeypatch.setattr(metric, "_compute_ssim_and_cs", fake_compute_ssim_and_cs)
+
+    img = torch.rand(64, 64) * 255.0
+    result = metric(img, img)
+
+    assert torch.isclose(torch.as_tensor(result), torch.tensor(expected, dtype=torch.as_tensor(result).dtype))
