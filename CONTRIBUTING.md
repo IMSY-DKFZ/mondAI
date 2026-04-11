@@ -51,3 +51,4 @@ There are three different types of tests:
 
 * Tom Rix
 * Marco Hübner
+* Vaishnavi Shirbhate
