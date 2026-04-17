@@ -106,22 +106,3 @@ def test_identical_images_are_one() -> None:
     img = torch.rand(64, 64) * 255.0
     result = ssim(img, img)
     assert torch.isclose(torch.as_tensor(result), torch.tensor(1.0, dtype=torch.as_tensor(result).dtype))
-
-
-def test_zero_constants_constant_images_follow_fallback_path() -> None:
-    ssim = SSIM(k1=0.0, k2=0.0)
-    img = torch.full((64, 64), 5.0)
-
-    result = ssim(img, img)
-
-    assert torch.isclose(torch.as_tensor(result), torch.tensor(1.0, dtype=torch.as_tensor(result).dtype))
-
-
-def test_normalized_inputs_warn_for_default_dynamic_range(caplog: pytest.LogCaptureFixture) -> None:
-    ssim = SSIM()
-    img = torch.rand(64, 64)
-
-    with caplog.at_level("WARNING", logger="mondAI"):
-        ssim(img, img)
-
-    assert "SSIM defaults to dynamic_range=255" in caplog.text

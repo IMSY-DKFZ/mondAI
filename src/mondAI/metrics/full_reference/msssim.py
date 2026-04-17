@@ -5,7 +5,8 @@ import torch
 from mondAI.logging import get_logger
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
-from mondAI.utils.signal_processing import convolve2d, gaussian_filter_kernel
+from mondAI.utils.signal_processing import convolve2d
+from mondAI.utils.similarity_map import ssim_and_cs_maps
 
 logger = get_logger()
 
@@ -163,7 +164,16 @@ class MSSSIM(FullReferenceMetric):
         downsample_filter = image.new_ones((2, 2)) / 4.0
 
         for scale in range(self.scales):
-            mean_ssims[scale], mean_contrasts_and_structures[scale] = self._compute_ssim_and_cs(image, reference)
+            ssim_map, cs_map = ssim_and_cs_maps(
+                image,
+                reference,
+                kernel_size=self.kernel_size,
+                kernel_sigma=self.kernel_sigma,
+                dynamic_range=self.dynamic_range,
+                k1=self.k1,
+                k2=self.k2,
+            )
+            mean_ssims[scale], mean_contrasts_and_structures[scale] = ssim_map.mean(), cs_map.mean()
 
             filtered_image = convolve2d(image, downsample_filter, padding="same")
             filtered_reference = convolve2d(reference, downsample_filter, padding="same")
@@ -180,70 +190,6 @@ class MSSSIM(FullReferenceMetric):
         elif self.method == "weighted sum":
             normalized_weights = weights / weights.sum()
             return torch.sum(terms * normalized_weights)
-
-    def _compute_ssim_and_cs(self, image: torch.Tensor, reference: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Compute the mean SSIM and mean contrast-structure terms for image and
-        reference at one scale.
-
-        :param image: The input image at the current scale.
-        :type image: torch.Tensor
-        :param reference: The reference image at the current scale.
-        :type reference: torch.Tensor
-        :return: A tuple containing the mean SSIM and mean contrast-structure values.
-        :rtype: tuple[torch.Tensor, torch.Tensor]
-
-        """
-        kernel = gaussian_filter_kernel(self.kernel_size, self.kernel_sigma, device=image.device, dtype=image.dtype)
-
-        c1 = (self.k1 * self.dynamic_range) ** 2
-        c2 = (self.k2 * self.dynamic_range) ** 2
-
-        mu_image = convolve2d(image, kernel, padding="valid")
-        mu_reference = convolve2d(reference, kernel, padding="valid")
-
-        mu_image_squared = mu_image * mu_image
-        mu_reference_squared = mu_reference * mu_reference
-        mu_image_reference = mu_image * mu_reference
-
-        sigma_image_squared = convolve2d(image * image, kernel, padding="valid") - mu_image_squared
-        sigma_reference_squared = convolve2d(reference * reference, kernel, padding="valid") - mu_reference_squared
-        sigma_image_reference = convolve2d(image * reference, kernel, padding="valid") - mu_image_reference
-
-        if c1 > 0 and c2 > 0:
-            contrast_structure_map = (2 * sigma_image_reference + c2) / (
-                sigma_image_squared + sigma_reference_squared + c2
-            )
-            ssim_map = (
-                (2 * mu_image_reference + c1)
-                * (2 * sigma_image_reference + c2)
-                / (
-                    (mu_image_squared + mu_reference_squared + c1)
-                    * (sigma_image_squared + sigma_reference_squared + c2)
-                )
-            )
-        else:
-            numerator1 = 2 * mu_image_reference + c1
-            numerator2 = 2 * sigma_image_reference + c2
-            denominator1 = mu_image_squared + mu_reference_squared + c1
-            denominator2 = sigma_image_squared + sigma_reference_squared + c2
-
-            contrast_structure_map = torch.ones_like(mu_image)
-            ssim_map = torch.ones_like(mu_image)
-
-            valid_indices = denominator2 > 0
-            contrast_structure_map[valid_indices] = numerator2[valid_indices] / denominator2[valid_indices]
-
-            valid_indices = denominator1 * denominator2 > 0
-            ssim_map[valid_indices] = (
-                numerator1[valid_indices]
-                * numerator2[valid_indices]
-                / (denominator1[valid_indices] * denominator2[valid_indices])
-            )
-
-            fallback_ssim = (denominator1 != 0) & (denominator2 == 0)
-            ssim_map[fallback_ssim] = numerator1[fallback_ssim] / denominator1[fallback_ssim]
-
-        return ssim_map.mean(), contrast_structure_map.mean()
 
     def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
         """Return other MS-SSIM implementations for comparison."""
