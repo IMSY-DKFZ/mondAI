@@ -162,10 +162,8 @@ def test_zero_constants_constant_images_follow_fallback_path() -> None:
     metric = MSSSIM(k1=0.0, k2=0.0, scales=1, weights=(1.0,))
     img = torch.full((64, 64), 5.0)
 
-    mean_ssim, mean_cs = metric._compute_ssim_and_cs(img, img)
-
-    assert torch.isclose(mean_ssim, torch.tensor(1.0, dtype=mean_ssim.dtype))
-    assert torch.isclose(mean_cs, torch.tensor(1.0, dtype=mean_cs.dtype))
+    score = metric(img, img)
+    assert torch.isclose(torch.as_tensor(score), torch.tensor(1.0, dtype=torch.as_tensor(score).dtype))
 
 
 def test_normalized_inputs_warn_for_default_dynamic_range(caplog: pytest.LogCaptureFixture) -> None:
@@ -195,10 +193,19 @@ def test_aggregation_uses_expected_terms(monkeypatch: pytest.MonkeyPatch, method
         ]
     )
 
-    def fake_compute_ssim_and_cs(image: torch.Tensor, reference: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def fake_ssim_and_cs_maps(
+        image: torch.Tensor,
+        reference: torch.Tensor,
+        *,
+        kernel_size: int,
+        kernel_sigma: float,
+        dynamic_range: float,
+        k1: float,
+        k2: float,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         return next(values)
 
-    monkeypatch.setattr(metric, "_compute_ssim_and_cs", fake_compute_ssim_and_cs)
+    monkeypatch.setattr("mondAI.metrics.full_reference.msssim.ssim_and_cs_maps", fake_ssim_and_cs_maps)
 
     img = torch.rand(64, 64) * 255.0
     result = metric(img, img)
