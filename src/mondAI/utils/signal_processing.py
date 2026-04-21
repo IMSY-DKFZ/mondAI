@@ -34,8 +34,6 @@ def gaussian_filter_kernel(kernel_size: int, sigma: float, device: torch.device,
     :rtype: torch.Tensor
 
     """
-    if kernel_size % 2 == 0:
-        raise ValueError("Kernel size must be odd.")
     ax = torch.arange(-kernel_size // 2 + 1, kernel_size // 2 + 1, device=device, dtype=dtype)
     xx, yy = torch.meshgrid(ax, ax, indexing="ij")
     kernel = torch.exp(-(xx**2 + yy**2) / (2.0 * sigma**2))
