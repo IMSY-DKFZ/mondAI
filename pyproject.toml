@@ -43,6 +43,7 @@ comparison = [
     "deepinv==0.4.0",      # BSD-3-Clause
     "piqa==1.3.2",         # MIT
     "sewar==0.4.6",        # MIT
+    "pyrtools==1.0.10",    # MIT
 ]
 
 [tool.pytest.ini_options]
