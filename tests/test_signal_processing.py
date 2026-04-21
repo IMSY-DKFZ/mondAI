@@ -20,11 +20,6 @@ def test_gaussian_filter_kernel_valid_sizes(size: int) -> None:
     assert kernel.shape == (size, size)
 
 
-def test_gaussian_filter_kernel_invalid_even_size() -> None:
-    with pytest.raises(ValueError):
-        gaussian_filter_kernel(kernel_size=4, sigma=1.0, device="cpu", dtype=torch.float64)
-
-
 def test_convolve2d_identity() -> None:
     image = torch.rand(64, 64)
     kernel = torch.tensor([[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 0.0]])

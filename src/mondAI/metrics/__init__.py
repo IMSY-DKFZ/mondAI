@@ -1,3 +1,4 @@
+from mondAI.metrics.full_reference.cwssim import CWSSIM as CWSSIM
 from mondAI.metrics.full_reference.haarpsi import HaarPSI as HaarPSI
 from mondAI.metrics.full_reference.iwssim import IWSSIM as IWSSIM
 from mondAI.metrics.full_reference.mae import MAE as MAE
