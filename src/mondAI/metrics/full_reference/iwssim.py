@@ -472,7 +472,7 @@ class IWSSIM(FullReferenceMetric):
                     blSzY=self.block_size,
                     parent=self.include_parent,
                     sigma_nsq=self.sigma_n_squared,
-                    use_cuda=True,
+                    use_cuda=image.device.type == "cuda",
                     use_double=True,
                 )  # type: ignore[no-untyped-call]
 
