@@ -15,8 +15,9 @@ authors = [
 requires-python = ">=3.10"
 
 dependencies = [
-    "torch>=2.10", # BSD-3-Clause
-    "numpy",       # BSD-3-Clause and MIT
+    "torch>=2.10",          # BSD-3-Clause
+    "numpy",                # BSD-3-Clause and MIT
+    "torchvision>=0.25.0",  # BSD-3-Clause
 ]
 
 [project.optional-dependencies]
