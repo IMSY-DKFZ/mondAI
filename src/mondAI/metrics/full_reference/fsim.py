@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 
@@ -354,7 +354,7 @@ class FSIM(FullReferenceMetric):
 
             implementations["piq"] = piq_fsim
 
-        except Exception:
+        except ImportError:
             logger.warning("piq or its FSIM implementation is not available, skipping piq implementation of FSIM")
 
         ### PIQA ###
@@ -395,7 +395,7 @@ class FSIM(FullReferenceMetric):
                 )
 
             implementations["piqa"] = piqa_fsim
-        except Exception:
+        except ImportError:
             logger.warning("piqa or its FSIM implementation is not available, skipping piqa implementation of FSIM")
 
         return implementations
@@ -490,8 +490,7 @@ class FSIM(FullReferenceMetric):
 
         filter_weights = image.new_ones(1, 1, kernel_size, kernel_size) / kernel_size**2
         mean_filtered = torch.nn.functional.conv2d(image.unsqueeze(0), weight=filter_weights, padding="same")
-        subsampled = mean_filtered.squeeze()[::kernel_size, ::kernel_size]
-        return subsampled
+        return mean_filtered.squeeze()[::kernel_size, ::kernel_size]
 
     def _phase_congruency(
         self,
@@ -596,7 +595,7 @@ class FSIM(FullReferenceMetric):
         center_frequencies = 1.0 / (minimal_wavelength * scaling_factor ** torch.arange(scales, device=image.device))
         log_sigma_f = torch.log(torch.tensor(sigma_f, device=image.device))
         log_gabor = low_pass_filter * torch.exp(
-            (-(torch.log(radius / (center_frequencies[:, None, None])) ** 2) / (2 * log_sigma_f**2))
+            -(torch.log(radius / (center_frequencies[:, None, None])) ** 2) / (2 * log_sigma_f**2)
         )
         log_gabor[:, 0, 0] = 0  # undo radius fudge
 

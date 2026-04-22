@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 
@@ -175,7 +175,7 @@ class SSIM(FullReferenceMetric):
                 return torch.tensor(score, device=image.device, dtype=image.dtype)
 
             implementations["scikit-image"] = skimage_ssim
-        except Exception:
+        except ImportError:
             logger.warning(
                 "scikit-image or its SSIM implementation is not available, skipping scikit-image implementation of SSIM"
             )
@@ -202,7 +202,7 @@ class SSIM(FullReferenceMetric):
                 )
 
             implementations["torchmetrics"] = torchmetrics_ssim
-        except Exception:
+        except ImportError:
             logger.warning(
                 "torchmetrics or its SSIM implementation is not available, skipping torchmetrics implementation of SSIM"
             )
@@ -226,7 +226,7 @@ class SSIM(FullReferenceMetric):
                 return torch.tensor(score, device=image.device, dtype=image.dtype)
 
             implementations["tensorflow"] = tensorflow_ssim
-        except Exception:
+        except ImportError:
             logger.warning("tensorflow is not available, skipping tensorflow implementation of SSIM")
 
         try:
@@ -250,7 +250,7 @@ class SSIM(FullReferenceMetric):
                 )
 
             implementations["piq"] = piq_ssim
-        except Exception:
+        except ImportError:
             logger.warning("piq or its SSIM implementation is not available, skipping piq implementation of SSIM")
 
         try:
@@ -274,7 +274,7 @@ class SSIM(FullReferenceMetric):
                 return piqa_metric(image.float().unsqueeze(0).unsqueeze(0), reference.float().unsqueeze(0).unsqueeze(0))
 
             implementations["piqa"] = piqa_ssim
-        except Exception:
+        except ImportError:
             logger.warning("piqa or its SSIM implementation is not available, skipping piqa implementation of SSIM")
 
         try:
@@ -299,7 +299,7 @@ class SSIM(FullReferenceMetric):
                 return torch.tensor(score, device=image.device, dtype=image.dtype)
 
             implementations["sewar"] = sewar_ssim
-        except Exception:
+        except ImportError:
             logger.warning("sewar or its SSIM implementation is not available, skipping sewar implementation of SSIM")
 
         try:
@@ -321,7 +321,7 @@ class SSIM(FullReferenceMetric):
                 return monai_metric(reference.unsqueeze(0).unsqueeze(0), image.unsqueeze(0).unsqueeze(0))
 
             implementations["monai"] = monai_ssim
-        except Exception:
+        except ImportError:
             logger.warning("monai or its SSIM implementation is not available, skipping monai implementation of SSIM")
 
         try:
@@ -346,7 +346,7 @@ class SSIM(FullReferenceMetric):
                 return deepinv_metric(image.unsqueeze(0).unsqueeze(0), reference.unsqueeze(0).unsqueeze(0))
 
             implementations["deepinv"] = deepinv_ssim
-        except Exception:
+        except ImportError:
             logger.warning(
                 "deepinv or its SSIM implementation is not available, skipping deepinv implementation of SSIM"
             )
@@ -369,7 +369,7 @@ class SSIM(FullReferenceMetric):
                 return torch.tensor(score, device=image.device, dtype=image.dtype)
 
             implementations["medimetrics"] = medimetrics_ssim
-        except Exception:
+        except ImportError:
             logger.warning(
                 "medimetrics or its SSIM implementation is not available, skipping medimetrics implementation of SSIM"
             )
@@ -393,13 +393,18 @@ class SSIM(FullReferenceMetric):
         if torch.any(reference < 0) or torch.any(reference > self.dynamic_range):
             raise ValueError(f"Reference image contains pixel values outside the range [0, {self.dynamic_range}].")
 
-        if torch.all(image >= 0) and torch.all(image <= 1) and torch.all(reference >= 0) and torch.all(reference <= 1):
-            if self.dynamic_range != 1.0:
-                logger.warning(
-                    "It has been detected that all pixel values in both image and reference are in the range [0, 1]. "
-                    "SSIM defaults to dynamic_range=255. Please ensure that your input images are correctly scaled or "
-                    "set dynamic_range=1.0 for normalized inputs."
-                )
+        if (
+            torch.all(image >= 0)
+            and torch.all(image <= 1)
+            and torch.all(reference >= 0)
+            and torch.all(reference <= 1)
+            and self.dynamic_range > 1.0
+        ):
+            logger.warning(
+                "It has been detected that all pixel values in both image and reference are in the range [0, 1]. "
+                "SSIM defaults to dynamic_range=255. Please ensure that your input images are correctly scaled or "
+                "set dynamic_range=1.0 for normalized inputs."
+            )
 
         if image.shape[-2] < self.kernel_size or image.shape[-1] < self.kernel_size:
             raise ValueError(

@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 
@@ -222,7 +222,7 @@ class HaarPSI(FullReferenceMetric):
         pre_logit = torch.sum(torch.sigmoid(self.alpha * local_similarities) * weights) / torch.sum(weights)
         similarity = (torch.log(pre_logit / (1 - pre_logit)) / self.alpha) ** 2
 
-        return similarity  # , local_similarities, weights
+        return similarity  # noqa: RET504  # , local_similarities, weights
 
     def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
         """Return a dictionary of other implementations of the metric. This will be
@@ -260,7 +260,7 @@ class HaarPSI(FullReferenceMetric):
 
             implementations["piq"] = piq_haarpsi
 
-        except Exception:
+        except ImportError:
             logger.warning("piq or its HaarPSI implementation is not available, skipping piq implementation of HaarPSI")
 
         ### PIQA ###
@@ -285,7 +285,7 @@ class HaarPSI(FullReferenceMetric):
                 )
 
             implementations["piqa"] = piqa_haarpsi
-        except Exception:
+        except ImportError:
             logger.warning(
                 "piqa or its HaarPSI implementation is not available, skipping piqa implementation of HaarPSI"
             )
@@ -293,13 +293,13 @@ class HaarPSI(FullReferenceMetric):
         ### IdealIQA ###
 
         try:
-            from haarpsi_ideal_iqa import haarpsi as haarpsi_ideal
+            from mondAI.metrics.third_party.others.haarpsi_ideal_iqa import haarpsi as haarpsi_ideal
 
             def ideal_iqa_haarpsi(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
                 # ideal_iqa's implementation expects inputs with shape (N, C, H, W) and
                 # pixel values in [0, 1], while the original implementation expects images with pixel values in [0, 255]
 
-                score, _, _ = haarpsi_ideal(
+                score, _, _ = haarpsi_ideal(  # type: ignore [no-untyped-call]
                     reference / 255.0,
                     image / 255.0,
                     C=self.C,
@@ -310,7 +310,7 @@ class HaarPSI(FullReferenceMetric):
 
             implementations["ideal_iqa"] = ideal_iqa_haarpsi
 
-        except Exception:
+        except ImportError:
             logger.warning(
                 "haarpsi_ideal_iqa or its HaarPSI implementation is not available, "
                 "skipping ideal_iqa implementation of HaarPSI"
@@ -338,7 +338,7 @@ class HaarPSI(FullReferenceMetric):
 
             implementations["deepinv"] = deepinv_haarpsi
 
-        except Exception:
+        except ImportError:
             logger.warning(
                 "deepinv or its HaarPSI implementation is not available, skipping deepinv implementation of HaarPSI"
             )
@@ -346,13 +346,13 @@ class HaarPSI(FullReferenceMetric):
         ### Original NumPy implementation by Rafael Reisenhofer and David Neumann ###
 
         try:
-            from haarpsi_original import haar_psi as org_haarpsi
+            from mondAI.metrics.third_party.others.haarpsi_original import haar_psi as org_haarpsi
 
             def original_haarpsi(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
                 # The original implementation by Rafael Reisenhofer and David Neumann expects images with pixel values
                 # in [0, 255] and uses double precision floating point format.
 
-                score, _, _ = org_haarpsi(
+                score, _, _ = org_haarpsi(  # type: ignore [no-untyped-call]
                     reference.numpy(force=True),
                     image.numpy(force=True),
                     preprocess_with_subsampling=self.preprocess_with_subsampling,
@@ -360,7 +360,7 @@ class HaarPSI(FullReferenceMetric):
                 return torch.tensor(score)
 
             implementations["original_numpy"] = original_haarpsi
-        except Exception:
+        except ImportError:
             logger.warning(
                 "haarpsi_original or its HaarPSI implementation is not available, "
                 "skipping original_numpy implementation of HaarPSI"
@@ -471,8 +471,7 @@ class HaarPSI(FullReferenceMetric):
         kernel_size = 2
         filter_weights = image.new_ones(1, 1, kernel_size, kernel_size) / kernel_size**2
         mean_filtered = torch.nn.functional.conv2d(image.unsqueeze(0), weight=filter_weights, padding="same")
-        subsampled = mean_filtered.squeeze()[::kernel_size, ::kernel_size]
-        return subsampled
+        return mean_filtered.squeeze()[::kernel_size, ::kernel_size]
 
     def _haar_wavelet_decomposition(self, image: torch.Tensor, n_scales: int) -> torch.Tensor:
         """Perform a 2D Haar wavelet decomposition of the input image up to the
@@ -532,11 +531,10 @@ class HaarPSI(FullReferenceMetric):
         :rtype: torch.Tensor
 
         """
-        maximum_magnitude = torch.maximum(
+        return torch.maximum(
             coefficients_reference[len(coefficients_reference) // n_scales + orientation * n_scales].abs(),
             coefficients_image[len(coefficients_image) // n_scales + orientation * n_scales].abs(),
         )
-        return maximum_magnitude
 
     def _get_local_similarity_for_orientation(
         self,
@@ -571,9 +569,7 @@ class HaarPSI(FullReferenceMetric):
         ]
 
         similarity_maps = similarity_map(coefficients_reference_magnitude, coefficients_image_magnitude, self.C)
-        local_similarity = (similarity_maps[0] + similarity_maps[1]) / 2
-
-        return local_similarity
+        return (similarity_maps[0] + similarity_maps[1]) / 2
 
 
 class HaarPSI_MED(HaarPSI):

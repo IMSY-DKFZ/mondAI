@@ -1,5 +1,3 @@
-from typing import List
-
 import pytest
 import torch
 
@@ -79,7 +77,7 @@ def test_invalid_value_range_reference(factor: float) -> None:
 )
 def test_parameter_valid(
     parameter: str,
-    values: List[int | float],
+    values: list[int | float],
 ) -> None:
     for value in values:
         kwargs = {parameter: value}
@@ -105,7 +103,7 @@ def test_parameter_valid(
 )
 def test_parameter_invalid(
     parameter: str,
-    values: List[int | float],
+    values: list[int | float],
 ) -> None:
     for value in values:
         kwargs = {parameter: value}

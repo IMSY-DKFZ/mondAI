@@ -12,7 +12,8 @@ It verifies the following aspects of the metric base classes:
 
 """
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 import pytest

@@ -1,7 +1,7 @@
 """Tests the `check_*` functions in `utils/checks.py`."""
 
 import re
-from typing import Callable, Sequence
+from collections.abc import Callable, Sequence
 
 import numpy as np
 import pytest
@@ -47,7 +47,7 @@ def test_check_nan_values_with_nan(image: np.ndarray | torch.Tensor, reference: 
 @pytest.mark.parametrize("reference", [False, True])
 def test_check_nan_values_with_invalid_input(image: None | str, reference: bool) -> None:
     image = None
-    with pytest.raises(TypeError, match="Input must be a numpy array or a torch tensor."):
+    with pytest.raises(TypeError, match=r"Input must be a numpy array or a torch tensor\."):
         check_nan_values(image, reference=reference)
 
 
@@ -101,13 +101,13 @@ def test_check_invalid_dimension_string() -> None:
 
 def test_check_dimensions_invalid_num_dims() -> None:
     image = np.zeros((64, 64))
-    with pytest.raises(ValueError, match="Number of specified dimensions 3 does not match image dimensions 2."):
+    with pytest.raises(ValueError, match=r"Number of specified dimensions 3 does not match image dimensions 2\."):
         check_dimensions(("H", "W", "C"), image)
 
 
 def test_check_dimensions_invalid_num_dims_singular_dim() -> None:
     image = np.zeros((1, 64, 64))
-    with pytest.raises(ValueError, match="Number of specified dimensions 2 does not match image dimensions 3."):
+    with pytest.raises(ValueError, match=r"Number of specified dimensions 2 does not match image dimensions 3\."):
         check_dimensions(("H", "W"), image)
 
 
@@ -150,7 +150,7 @@ def test_check_same_shape_numpy_invalid(
     shape_mismatch[-1] -= 1
     shape = tuple(shape_mismatch)
     image2 = image_generator(shape)
-    with pytest.raises(ValueError, match="Image shape .* and reference shape .* do not match."):
+    with pytest.raises(ValueError, match=r"Image shape .* and reference shape .* do not match\."):
         check_same_shape(image1, image2)
 
 
@@ -171,5 +171,5 @@ def test_check_same_type_valid(
 def test_check_same_type_invalid(shape: tuple[int, ...]) -> None:
     image1 = np.zeros(shape)
     image2 = torch.zeros(shape)
-    with pytest.raises(TypeError, match="Image type .* and reference type .* do not match."):
+    with pytest.raises(TypeError, match=r"Image type .* and reference type .* do not match\."):
         check_same_type(image1, image2)

@@ -10,7 +10,7 @@ types of input data.
 
 """
 
-from typing import Callable
+from collections.abc import Callable
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -27,8 +27,7 @@ from mondAI.metrics.no_reference.base import NoReferenceMetric
 def load_shepp_logan_phantom() -> np.ndarray:
     # Load the Shepp-Logan phantom (400, 400) pixel image with values in [0, 255]
     phantom = shepp_logan_phantom()
-    phantom = (phantom - phantom.min()) / (phantom.max() - phantom.min()) * 255.0
-    return phantom
+    return (phantom - phantom.min()) / (phantom.max() - phantom.min()) * 255.0
 
 
 def load_brain() -> np.ndarray:
@@ -36,8 +35,7 @@ def load_brain() -> np.ndarray:
     # TODO: Should this volume be normalized to [0, 1]?
     # TODO: Does this need to be converted from uint8 to float64?
     brain = brain_volume()
-    brain = (brain - brain.min()) / (brain.max() - brain.min()) * 255.0
-    return brain
+    return (brain - brain.min()) / (brain.max() - brain.min()) * 255.0
 
 
 def create_random_image(shape: tuple[int, ...], dtype: torch.dtype = torch.float64) -> torch.Tensor:

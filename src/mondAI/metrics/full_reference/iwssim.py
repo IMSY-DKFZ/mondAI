@@ -1,5 +1,5 @@
 import math
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 
@@ -455,7 +455,7 @@ class IWSSIM(FullReferenceMetric):
                 )
 
             implementations["piq"] = piq_iwssim
-        except Exception:
+        except ImportError:
             logger.warning("piq or its IW-SSIM implementation is not available, skipping piq implementation of IW-SSIM")
 
         try:
@@ -479,7 +479,7 @@ class IWSSIM(FullReferenceMetric):
                 return metric.test(reference.numpy(force=True), image.numpy(force=True))  # type: ignore[no-untyped-call]
 
             implementations["iwssim_pytorch"] = iwssim_pytorch
-        except Exception:
+        except ImportError:
             logger.warning("iwssim_pytorch is not available, skipping iwssim_pytorch implementation of IW-SSIM")
 
         return implementations

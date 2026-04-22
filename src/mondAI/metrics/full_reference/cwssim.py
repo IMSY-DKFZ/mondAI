@@ -1,5 +1,5 @@
 import math
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 
@@ -290,7 +290,7 @@ class CWSSIM(FullReferenceMetric):
                 return torch.tensor(score, device=image.device, dtype=image.dtype)
 
             implementations["medimetrics"] = medimetrics_cwssim
-        except Exception:
+        except ImportError:
             logger.warning(
                 "medimetrics or its CW-SSIM implementation is not available, "
                 "skipping medimetrics implementation of CWSSIM"

@@ -65,7 +65,8 @@ omit = [
 line-length = 120
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B"]
+select = ["E", "F", "I", "B", "BLE", "RET", "RUF", "SIM", "UP"]
+ignore = ["RET505"]
 
 [tool.docformatter]
 wrap-summaries = 87

@@ -1,6 +1,7 @@
 # mypy: ignore-errors
 # taken from Clemens Karner and Anna Breger: https://github.com/ideal-iqa/haarpsi-pytorch,
 # commit: a64b753b1b95a826996fcc035ce3f4dc4c630a5f
+# license: MIT
 """This is a Python PyTorch implementation of the HaarPSI algorithm as presented in "A
 Haar wavelet-based perceptual similarity index for image quality assessment" by Rafael
 Reisenhofer, Sebastian Bosse, Gitta Kutyniok and Thomas Wiegand.

@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 
@@ -69,7 +69,7 @@ class MSE(FullReferenceMetric):
 
             implementations["skimage"] = skimage_mse
 
-        except Exception:
+        except ImportError:
             logger.warning("scikit-image is not available, skipping scikit-image implementation of MSE.")
 
         ### sklearn ###
@@ -85,7 +85,7 @@ class MSE(FullReferenceMetric):
 
             implementations["sklearn"] = sklearn_mse
 
-        except Exception:
+        except ImportError:
             logger.warning("sklearn is not available, skipping sklearn implementation of MSE.")
 
         ### torchmetrics ###
@@ -97,7 +97,7 @@ class MSE(FullReferenceMetric):
 
             implementations["torchmetrics"] = torchmetrics_mse
 
-        except Exception:
+        except ImportError:
             logger.warning("torchmetrics is not available, skipping torchmetrics implementation of MSE.")
 
         ### tensorflow ###
@@ -114,7 +114,7 @@ class MSE(FullReferenceMetric):
 
             implementations["tensorflow"] = tensorflow_mse
 
-        except Exception:
+        except ImportError:
             logger.warning("tensorflow is not available, skipping tensorflow implementation of MSE.")
 
         ### monai ###
@@ -128,7 +128,7 @@ class MSE(FullReferenceMetric):
 
             implementations["monai"] = monai_mse
 
-        except Exception:
+        except ImportError:
             logger.warning("monai is not available, skipping monai implementation of MSE.")
 
         ### deepinv ###
@@ -142,7 +142,7 @@ class MSE(FullReferenceMetric):
 
             implementations["deepinv"] = deepinv_mse
 
-        except Exception:
+        except ImportError:
             logger.warning("deepinv is not available, skipping deepinv implementation of MSE.")
 
         return implementations

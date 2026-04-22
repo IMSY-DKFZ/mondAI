@@ -21,8 +21,8 @@ def similarity_map(x: torch.Tensor, y: torch.Tensor, constant: float) -> torch.T
 
     numerator = 2.0 * x * y + constant
     denominator = x**2 + y**2 + constant
-    similarity = numerator / denominator
-    return similarity
+
+    return numerator / denominator
 
 
 def ssim_and_cs_maps(
