@@ -55,5 +55,4 @@ def subsample(image: torch.Tensor, kernel_size: int = 2) -> torch.Tensor:
 
     filter_weights = image.new_ones(1, 1, kernel_size, kernel_size) / kernel_size**2
     mean_filtered = torch.nn.functional.conv2d(image.unsqueeze(0), weight=filter_weights, padding="same")
-    subsampled = mean_filtered.squeeze()[::kernel_size, ::kernel_size]
-    return subsampled
+    return mean_filtered.squeeze()[::kernel_size, ::kernel_size]  # subsampled

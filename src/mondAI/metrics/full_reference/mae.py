@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 
@@ -69,7 +69,7 @@ class MAE(FullReferenceMetric):
 
             implementations["sklearn"] = sklearn_mae
 
-        except Exception:
+        except ImportError:
             logger.warning("sklearn is not available, skipping sklearn implementation of MAE.")
 
         ### tensorflow ###
@@ -88,7 +88,7 @@ class MAE(FullReferenceMetric):
 
             implementations["tensorflow"] = tensorflow_mae
 
-        except Exception:
+        except ImportError:
             logger.warning("tensorflow is not available, skipping tensorflow implementation of MAE.")
 
         ### monai ###
@@ -102,7 +102,7 @@ class MAE(FullReferenceMetric):
 
             implementations["monai"] = monai_mae
 
-        except Exception:
+        except ImportError:
             logger.warning("monai is not available, skipping monai implementation of MAE.")
 
         return implementations

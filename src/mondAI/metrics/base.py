@@ -1,6 +1,7 @@
 import inspect
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Sequence
+from collections.abc import Callable, Sequence
+from typing import Any
 
 import numpy as np
 import torch

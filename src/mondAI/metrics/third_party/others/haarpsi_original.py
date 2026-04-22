@@ -1,5 +1,7 @@
 # mypy: ignore-errors
-# taken from David Naumann: https://github.com/rgcda/haarpsi, commit: 2c2793108477deb81971658a7666d5f85ba2587b
+# taken from David Naumann: https://github.com/rgcda/haarpsi,
+# commit: 2c2793108477deb81971658a7666d5f85ba2587b
+# license: MIT
 """This module contains a Python and NumPy implementation of the HaarPSI perceptual
 similarity index algorithm, as described in "A Haar Wavelet-Based Perceptual Similarity
 Index for Image Quality Assessment" by R. Reisenhofer, S. Bosse, G. Kutyniok and T.
@@ -11,8 +13,6 @@ Reisenhofer.
 Last updated on 08/01/2018 by David Neumann.
 
 """
-
-from __future__ import division, print_function
 
 import os
 
@@ -117,9 +117,7 @@ def haar_psi_numpy(reference_image, distorted_image, preprocess_with_subsampling
     # Checks if the image is a grayscale or an RGB image
     if reference_image.shape != distorted_image.shape:
         raise ValueError("The shapes of the reference image and the distorted image do not match.")
-    if len(reference_image.shape) == 2:
-        is_color_image = False
-    elif reference_image.shape[2] == 1:
+    if len(reference_image.shape) == 2 or reference_image.shape[2] == 1:
         is_color_image = False
     else:
         is_color_image = True
@@ -279,9 +277,7 @@ def haar_psi_tensorflow(reference_image, distorted_image, preprocess_with_subsam
     # Checks if the image is a grayscale or an RGB image
     if reference_image.get_shape().as_list() != distorted_image.get_shape().as_list():
         raise ValueError("The shapes of the reference image and the distorted image do not match.")
-    if len(reference_image.get_shape().as_list()) == 2:
-        is_color_image = False
-    elif reference_image.get_shape().as_list()[2] == 1:
+    if len(reference_image.get_shape().as_list()) == 2 or reference_image.get_shape().as_list()[2] == 1:
         is_color_image = False
     else:
         is_color_image = True

@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 
@@ -97,7 +97,7 @@ class PSNR(FullReferenceMetric):
                 return torch.tensor(value, device=image.device, dtype=image.dtype)
 
             implementations["scikit-image"] = skimage_psnr
-        except Exception:
+        except ImportError:
             logger.warning("scikit-image is not available, skipping scikit-image implementation of PSNR.")
 
         try:
@@ -112,7 +112,7 @@ class PSNR(FullReferenceMetric):
                 )
 
             implementations["torchmetrics"] = torchmetrics_psnr
-        except Exception:
+        except ImportError:
             logger.warning("torchmetrics is not available, skipping torchmetrics implementation of PSNR.")
 
         try:
@@ -128,7 +128,7 @@ class PSNR(FullReferenceMetric):
                 return torch.tensor(value.item(), device=image.device, dtype=image.dtype)
 
             implementations["tensorflow"] = tensorflow_psnr
-        except Exception:
+        except ImportError:
             logger.warning("tensorflow is not available, skipping tensorflow implementation of PSNR.")
 
         try:
@@ -145,7 +145,7 @@ class PSNR(FullReferenceMetric):
                 )
 
             implementations["piq"] = piq_psnr
-        except Exception:
+        except ImportError:
             logger.warning("piq is not available, skipping piq implementation of PSNR.")
 
         try:
@@ -158,7 +158,7 @@ class PSNR(FullReferenceMetric):
                 return piqa_metric(image.unsqueeze(0).unsqueeze(0), reference.unsqueeze(0).unsqueeze(0))
 
             implementations["piqa"] = piqa_psnr
-        except Exception:
+        except ImportError:
             logger.warning("piqa is not available, skipping piqa implementation of PSNR.")
 
         try:
@@ -170,7 +170,7 @@ class PSNR(FullReferenceMetric):
                 return torch.tensor(value, device=image.device, dtype=image.dtype)
 
             implementations["sewar"] = sewar_psnr_impl
-        except Exception:
+        except ImportError:
             logger.warning("sewar is not available, skipping sewar implementation of PSNR.")
 
         try:
@@ -186,7 +186,7 @@ class PSNR(FullReferenceMetric):
                 )
 
             implementations["monai"] = monai_psnr
-        except Exception:
+        except ImportError:
             logger.warning("monai is not available, skipping monai implementation of PSNR.")
 
         try:
@@ -206,7 +206,7 @@ class PSNR(FullReferenceMetric):
                 )
 
             implementations["deepinv"] = deepinv_psnr
-        except Exception:
+        except ImportError:
             logger.warning("deepinv is not available, skipping deepinv implementation of PSNR.")
 
         try:
@@ -220,7 +220,7 @@ class PSNR(FullReferenceMetric):
                 return torch.tensor(value, device=image.device, dtype=image.dtype)
 
             implementations["medimetrics"] = medimetrics_psnr
-        except Exception:
+        except ImportError:
             logger.warning("medimetrics is not available, skipping medimetrics implementation of PSNR.")
 
         return implementations
@@ -238,10 +238,15 @@ class PSNR(FullReferenceMetric):
         if torch.any(reference < 0) or torch.any(reference > self.dynamic_range):
             raise ValueError(f"Reference image contains pixel values outside the range [0, {self.dynamic_range}].")
 
-        if torch.all(image >= 0) and torch.all(image <= 1) and torch.all(reference >= 0) and torch.all(reference <= 1):
-            if self.dynamic_range == 255.0:
-                logger.warning(
-                    "It has been detected that all pixel values in both image and reference are in the range [0, 1]. "
-                    "PSNR defaults to dynamic_range=255. Please ensure that your input images are correctly scaled or "
-                    "set dynamic_range=1.0 for normalized inputs."
-                )
+        if (
+            torch.all(image >= 0)
+            and torch.all(image <= 1)
+            and torch.all(reference >= 0)
+            and torch.all(reference <= 1)
+            and self.dynamic_range > 1.0
+        ):
+            logger.warning(
+                "It has been detected that all pixel values in both image and reference are in the range [0, 1]. "
+                "PSNR defaults to dynamic_range=255. Please ensure that your input images are correctly scaled or "
+                "set dynamic_range=1.0 for normalized inputs."
+            )

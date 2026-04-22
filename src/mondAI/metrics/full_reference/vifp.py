@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 
@@ -167,7 +167,7 @@ class VIFP(FullReferenceMetric):
 
             implementations["piq"] = piq_vifp
 
-        except Exception:
+        except ImportError:
             logger.warning("piq or its VIFP implementation is not available, skipping piq implementation of VIFP")
 
         # torchmetrics implementation
@@ -185,7 +185,7 @@ class VIFP(FullReferenceMetric):
 
             implementations["torchmetrics"] = torchmetrics_vifp
 
-        except Exception:
+        except ImportError:
             logger.warning(
                 "torchmetrics or its VIFP implementation is not available, skipping torchmetrics implementation of VIFP"
             )
@@ -202,7 +202,7 @@ class VIFP(FullReferenceMetric):
 
             implementations["sewar"] = sewar_vifp
 
-        except Exception:
+        except ImportError:
             logger.warning("sewar or its VIFP implementation is not available, skipping sewar implementation of VIFP")
 
         return implementations

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Sequence
+from collections.abc import Callable, Sequence
 
 import numpy as np
 import torch

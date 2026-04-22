@@ -10,7 +10,7 @@ It verifies the following aspects of the metrics:
 """
 
 import re
-from typing import Callable, Sequence
+from collections.abc import Callable, Sequence
 
 import numpy as np
 import pytest
@@ -82,7 +82,7 @@ def test_metric_call_with_more_than_one_dimension_invalid(
     phantom: np.ndarray, metric_class: type[Metric], dimensions: Sequence[str]
 ) -> None:
     metric = metric_class()
-    with raises(ValueError, match="Number of specified dimensions 1 does not match image dimensions 2."):
+    with raises(ValueError, match=r"Number of specified dimensions 1 does not match image dimensions 2\."):
         if isinstance(metric, FullReferenceMetric):
             metric(phantom, phantom, dims=dimensions)
         elif isinstance(metric, NoReferenceMetric):
@@ -92,7 +92,7 @@ def test_metric_call_with_more_than_one_dimension_invalid(
 @pytest.mark.parametrize("metric_class", FULL_REFERENCE_METRICS + NO_REFERENCE_METRICS)
 def test_metric_call_with_more_than_two_dimensions_invalid(brain: np.ndarray, metric_class: type[Metric]) -> None:
     metric = metric_class()
-    with raises(ValueError, match="Number of specified dimensions 2 does not match image dimensions 3."):
+    with raises(ValueError, match=r"Number of specified dimensions 2 does not match image dimensions 3\."):
         if isinstance(metric, FullReferenceMetric):
             metric(brain, brain, dims=("H", "W"))
         elif isinstance(metric, NoReferenceMetric):
@@ -102,7 +102,7 @@ def test_metric_call_with_more_than_two_dimensions_invalid(brain: np.ndarray, me
 @pytest.mark.parametrize("metric_class", FULL_REFERENCE_METRICS + NO_REFERENCE_METRICS)
 def test_metric_call_with_dimensions_invalid(phantom: np.ndarray, metric_class: type[Metric]) -> None:
     metric = metric_class()
-    with raises(ValueError, match="Number of specified dimensions 3 does not match image dimensions 2."):
+    with raises(ValueError, match=r"Number of specified dimensions 3 does not match image dimensions 2\."):
         if isinstance(metric, FullReferenceMetric):
             metric(phantom, phantom, dims=("H,", "W", "D"))
         elif isinstance(metric, NoReferenceMetric):
@@ -275,7 +275,7 @@ def test_metric_call_with_vectorization_invalid_input_number(phantom: np.ndarray
             )
 
     metric = InvalidMetric()
-    with raises(ValueError, match="InvalidMetric supports 1 or 2 input images, got 3."):
+    with raises(ValueError, match=r"InvalidMetric supports 1 or 2 input images, got 3\."):
         metric(phantom, phantom, dims=("H", "W"))
 
 

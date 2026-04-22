@@ -1,5 +1,5 @@
 import os
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 import torchvision as tv
@@ -114,9 +114,10 @@ class PaQ2PiQ(NoReferenceMetric):
         image = image.float().unsqueeze(0)  # convert to float and add batch dimension
         self.model.input_block_rois(block_size=(20, 20), img_size=image.shape[-2:], device=image.device)
         output = self.model(image)
-        global_score = output[0, 0]
+        # global_score = output[0, 0]
         # local_scores = output[0, 1:].reshape(20, 20)
-        return global_score  # ,local_scores
+        # return global_score  ,local_scores
+        return output[0, 0]
 
     def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
         """Return a dictionary of other implementations of the metric. This will be

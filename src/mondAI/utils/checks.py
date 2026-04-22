@@ -1,4 +1,4 @@
-from typing import Sequence
+from collections.abc import Sequence
 
 import numpy as np
 import torch
@@ -87,7 +87,7 @@ def check_dimensions(dims: Sequence[str], image: np.ndarray | torch.Tensor) -> b
 
     # test that specified dimensions are valid
     for dim in dims:
-        if dim not in _DIMENSION_LOOKUP.keys():
+        if dim not in _DIMENSION_LOOKUP:
             raise ValueError(f"Invalid dimension '{dim}' specified. Valid dimensions are {_DIMENSION_LOOKUP.keys()}.")
 
     # test that specified dimensions are unique

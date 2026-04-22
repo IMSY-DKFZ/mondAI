@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 import torch
 
@@ -191,6 +191,9 @@ class MSSSIM(FullReferenceMetric):
             normalized_weights = weights / weights.sum()
             return torch.sum(terms * normalized_weights)
 
+        else:
+            return None  # This should never happen due to the check in __init__
+
     def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
         """Return other MS-SSIM implementations for comparison."""
         implementations = {}
@@ -216,7 +219,7 @@ class MSSSIM(FullReferenceMetric):
                 )
 
             implementations["torchmetrics"] = torchmetrics_msssim
-        except Exception:
+        except ImportError:
             logger.warning(
                 "torchmetrics or its MS-SSIM implementation is not available, "
                 "skipping torchmetrics implementation of MS-SSIM"
@@ -240,7 +243,7 @@ class MSSSIM(FullReferenceMetric):
                 return torch.tensor(score, device=image.device, dtype=image.dtype)
 
             implementations["tensorflow"] = tensorflow_msssim
-        except Exception:
+        except ImportError:
             logger.warning("tensorflow is not available, skipping tensorflow implementation of MS-SSIM")
 
         try:
@@ -261,7 +264,7 @@ class MSSSIM(FullReferenceMetric):
                 )
 
             implementations["piq"] = piq_msssim
-        except Exception:
+        except ImportError:
             logger.warning("piq or its MS-SSIM implementation is not available, skipping piq implementation of MS-SSIM")
 
         try:
@@ -283,7 +286,7 @@ class MSSSIM(FullReferenceMetric):
                 return piqa_metric(image.float().unsqueeze(0).unsqueeze(0), reference.float().unsqueeze(0).unsqueeze(0))
 
             implementations["piqa"] = piqa_msssim
-        except Exception:
+        except ImportError:
             logger.warning(
                 "piqa or its MS-SSIM implementation is not available, skipping piqa implementation of MS-SSIM"
             )
@@ -305,7 +308,7 @@ class MSSSIM(FullReferenceMetric):
                 return torch.tensor(score, device=image.device, dtype=image.dtype)
 
             implementations["sewar"] = sewar_msssim
-        except Exception:
+        except ImportError:
             logger.warning(
                 "sewar or its MS-SSIM implementation is not available, skipping sewar implementation of MS-SSIM"
             )
@@ -331,7 +334,7 @@ class MSSSIM(FullReferenceMetric):
                 )
 
             implementations["monai"] = monai_msssim
-        except Exception:
+        except ImportError:
             logger.warning(
                 "monai or its MS-SSIM implementation is not available, skipping monai implementation of MS-SSIM"
             )
@@ -348,7 +351,7 @@ class MSSSIM(FullReferenceMetric):
                 return torch.tensor(score, device=image.device, dtype=image.dtype)
 
             implementations["medimetrics"] = medimetrics_msssim
-        except Exception:
+        except ImportError:
             logger.warning(
                 "medimetrics or its MS-SSIM implementation is not available, "
                 "skipping medimetrics implementation of MS-SSIM"
@@ -373,13 +376,18 @@ class MSSSIM(FullReferenceMetric):
         if torch.any(reference < 0) or torch.any(reference > self.dynamic_range):
             raise ValueError(f"Reference image contains pixel values outside the range [0, {self.dynamic_range}].")
 
-        if torch.all(image >= 0) and torch.all(image <= 1) and torch.all(reference >= 0) and torch.all(reference <= 1):
-            if self.dynamic_range != 1.0:
-                logger.warning(
-                    "It has been detected that all pixel values in both image and reference are "
-                    "in the range [0, 1]. MS-SSIM defaults to dynamic_range=255. Please ensure that "
-                    "your input images are correctly scaled or set dynamic_range=1.0 for normalized inputs."
-                )
+        if (
+            torch.all(image >= 0)
+            and torch.all(image <= 1)
+            and torch.all(reference >= 0)
+            and torch.all(reference <= 1)
+            and self.dynamic_range > 1.0
+        ):
+            logger.warning(
+                "It has been detected that all pixel values in both image and reference are "
+                "in the range [0, 1]. MS-SSIM defaults to dynamic_range=255. Please ensure that "
+                "your input images are correctly scaled or set dynamic_range=1.0 for normalized inputs."
+            )
 
         if image.shape[-2] < self.kernel_size or image.shape[-1] < self.kernel_size:
             raise ValueError(

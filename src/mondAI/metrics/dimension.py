@@ -1,5 +1,5 @@
+from collections.abc import Sequence
 from enum import Enum, auto
-from typing import Sequence
 
 
 class Dimension(Enum):
@@ -48,4 +48,5 @@ _DIMENSION_LOOKUP = {
     "w": Dimension.WIDTH,
 }
 
-__all__ = ["Dimension", "_DIMENSION_LOOKUP", "is_compatible"]
+
+__all__ = ["_DIMENSION_LOOKUP", "Dimension", "is_compatible"]
