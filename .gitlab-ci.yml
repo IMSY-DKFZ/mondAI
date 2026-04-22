@@ -44,7 +44,6 @@ slow_tests:
   allow_failure: false
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: never
 
 build:
   stage: build
