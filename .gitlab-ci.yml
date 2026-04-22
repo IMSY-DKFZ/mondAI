@@ -42,7 +42,10 @@ all_tests:
     - PYTHONPATH=src pytest tests --cov=mondAI --cov-report=term-missing --cov-report=xml --cov-config=pyproject.toml
   allow_failure: false
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    # run in merge requests
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    # run again after merge on default branch
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
   coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
   artifacts:
     reports:

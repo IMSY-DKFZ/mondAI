@@ -30,13 +30,14 @@ dev = [
     "sphinx",              # BSD-2-Clause
     "pydata-sphinx-theme", # BSD-3-Clause
     "myst-parser",         # BSD-2-Clause
-    "scikit-image",        # BSD-3-Clause
+    "scikit-image",        # BSD-3-Clause, BSD-2-Clause, MIT
     "pooch",               # BSD-3-Clause
     "matplotlib",          # PSF-2.0
 ]
 comparison = [
     "scikit-learn==1.7.2", # BSD-3-Clause
     "torchmetrics==1.8.2", # Apache-2.0
+    "scikit-image==0.25.2",# BSD-3-Clause, BSD-2-Clause, MIT
     "tensorflow==2.16.1",  # Apache-2.0
     "monai==1.5.1",        # Apache-2.0
     "piq==0.8.0",          # Apache-2.0
