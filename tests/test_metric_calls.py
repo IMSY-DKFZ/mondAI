@@ -161,6 +161,7 @@ def test_metric_call_with_dimensions_return_type_valid(
     assert isinstance(result, type(image))  # output type should match input type
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("metric_class", FULL_REFERENCE_METRICS + NO_REFERENCE_METRICS)
 @pytest.mark.parametrize(
     "image_fixture, dimensions",

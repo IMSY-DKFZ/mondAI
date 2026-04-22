@@ -50,4 +50,5 @@ There are three different types of tests:
 ## List of Contributers
 
 * Tom Rix
+* Marco Hübner
 * Vaishnavi Shirbhate

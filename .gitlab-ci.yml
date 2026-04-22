@@ -23,11 +23,26 @@ lint:
     - pip install pre-commit
     - pre-commit run --all-files
 
-tests:
+fast_tests:
+  stage: test
+  script:
+    - pip install .[dev]
+    - PYTHONPATH=src pytest tests -m "not slow" --cov=mondAI --cov-report=term-missing --cov-report=xml --cov-config=pyproject.toml
+  coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+
+all_tests:
   stage: test
   script:
     - pip install .[dev,comparison]
     - PYTHONPATH=src pytest tests --cov=mondAI --cov-report=term-missing --cov-report=xml --cov-config=pyproject.toml
+  allow_failure: false
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
   artifacts:
     reports:
