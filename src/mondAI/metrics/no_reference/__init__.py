@@ -1,3 +1,3 @@
-from .test import Test
+from mondAI.metrics.no_reference.paq2piq import PaQ2PiQ
 
-NO_REFERENCE_METRICS = [Test]
+NO_REFERENCE_METRICS = [PaQ2PiQ]

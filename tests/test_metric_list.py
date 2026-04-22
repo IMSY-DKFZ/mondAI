@@ -13,6 +13,7 @@ import numpy as np
 import pytest
 
 from mondAI.metrics.base import Metric, MetricList
+from mondAI.metrics.dimension import is_compatible
 from mondAI.metrics.full_reference.base import FullReferenceMetric
 from mondAI.metrics.no_reference.base import NoReferenceMetric
 
@@ -46,13 +47,21 @@ def test_metric_list_fingerprint() -> None:
 
 @pytest.mark.parametrize("metric_class", METRICS)
 def test_metric_list_call(phantom: np.ndarray, metric_class: type[Metric]) -> None:
-    metric_list = MetricList(metrics=[metric_class()])
+    metric = metric_class()
+    metric_list = MetricList(metrics=[metric])
+
+    if not is_compatible(("H", "W"), metric.expected_dimensions):
+        pytest.skip(
+            f"Skipping test for {metric.abbreviation} with expected dimensions "
+            f"{metric.expected_dimensions} and phantom image because they are incompatible."
+        )
+
     if issubclass(metric_class, FullReferenceMetric):
         results = metric_list(phantom, phantom)
     elif issubclass(metric_class, NoReferenceMetric):
         results = metric_list(phantom)
     else:
-        raise ValueError(f"Unknown metric class {metric_class}")
+        raise ValueError(f"Unknown metric super class {metric_class}")
     assert len(results) == 1
 
 

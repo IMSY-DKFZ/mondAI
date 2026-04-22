@@ -18,7 +18,7 @@ import torch
 from pytest import raises
 
 from mondAI.metrics.base import Metric
-from mondAI.metrics.dimension import Dimension
+from mondAI.metrics.dimension import Dimension, is_compatible
 from mondAI.metrics.full_reference import FULL_REFERENCE_METRICS
 from mondAI.metrics.full_reference.base import FullReferenceMetric
 from mondAI.metrics.no_reference import NO_REFERENCE_METRICS
@@ -32,6 +32,13 @@ def test_metric_call_without_dimensions_valid(
 ) -> None:
     image = request.getfixturevalue(image_fixture)
     metric = metric_class()
+
+    if not is_compatible(("W", "H"), metric.expected_dimensions):
+        pytest.skip(
+            f"Skipping test for {metric.abbreviation} with expected dimensions {metric.expected_dimensions}"
+            f"and image {image_fixture} because they are incompatible."
+        )
+
     if isinstance(metric, FullReferenceMetric):
         metric(image, image)  # assumes dims=("W", "H") by default
     elif isinstance(metric, NoReferenceMetric):
@@ -56,6 +63,13 @@ def test_metric_call_with_dimensions_valid(
 ) -> None:
     image = request.getfixturevalue(image_fixture)
     metric = metric_class()
+
+    if not is_compatible(dimensions, metric.expected_dimensions):
+        pytest.skip(
+            f"Skipping test for {metric.abbreviation} with expected dimensions {metric.expected_dimensions}"
+            f"and image {image_fixture} with dimensions {dimensions} because they are incompatible."
+        )
+
     if isinstance(metric, FullReferenceMetric):
         metric(image, image, dims=dimensions)
     elif isinstance(metric, NoReferenceMetric):
@@ -126,6 +140,13 @@ def test_metric_call_with_invalid_dimensions(phantom: np.ndarray, metric_class: 
 @pytest.mark.parametrize("metric_class", FULL_REFERENCE_METRICS + NO_REFERENCE_METRICS)
 def test_metric_call_with_wrong_dimension(phantom: np.ndarray, metric_class: type[Metric]) -> None:
     metric = metric_class()
+
+    if not is_compatible(("D", "W"), metric.expected_dimensions):
+        pytest.skip(
+            f"Skipping test for {metric.abbreviation} with expected dimensions {metric.expected_dimensions}"
+            f"and phantom image because they are incompatible."
+        )
+
     with raises(
         ValueError,
         match=re.escape(
@@ -153,12 +174,19 @@ def test_metric_call_with_dimensions_return_type_valid(
     image = request.getfixturevalue(image_fixture)
     metric = metric_class()
 
+    if not is_compatible(dimensions, metric.expected_dimensions):
+        pytest.skip(
+            f"Skipping test for {metric.abbreviation} with expected dimensions {metric.expected_dimensions}"
+            f"and image {image_fixture} with dimensions {dimensions} because they are incompatible."
+        )
+
     if isinstance(metric, FullReferenceMetric):
         result = metric(image, image, dims=dimensions)
     elif isinstance(metric, NoReferenceMetric):
         result = metric(image, dims=dimensions)
 
-    assert isinstance(result, type(image))  # output type should match input type
+    # output type should match input type, except for scalar outputs which should be float regardless of input type
+    assert isinstance(result, (type(image), float)), f"Expected {type(image)}, got {type(result)}"
 
 
 @pytest.mark.slow
@@ -180,6 +208,12 @@ def test_metric_call_with_compare_implementations(
 ) -> None:
     image = request.getfixturevalue(image_fixture)
     metric = metric_class()
+
+    if not is_compatible(dimensions, metric.expected_dimensions):
+        pytest.skip(
+            f"Skipping test for {metric.abbreviation} with expected dimensions {metric.expected_dimensions}"
+            f"and image {image_fixture} with dimensions {dimensions} because they are incompatible."
+        )
 
     if isinstance(metric, FullReferenceMetric):
         result = metric(image, image, dims=dimensions, compare_implementations=True)
