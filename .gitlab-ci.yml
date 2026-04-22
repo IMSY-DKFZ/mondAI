@@ -35,15 +35,20 @@ fast_tests:
         coverage_format: cobertura
         path: coverage.xml
 
-slow_tests:
+all_tests:
   stage: test
   script:
     - pip install .[dev,comparison]
-    - PYTHONPATH=src pytest tests -m "slow" --cov=mondAI --cov-report=term-missing --cov-report=xml --cov-config=pyproject.toml
-  when: manual
+    - PYTHONPATH=src pytest tests --cov=mondAI --cov-report=term-missing --cov-report=xml --cov-config=pyproject.toml
   allow_failure: false
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
 
 build:
   stage: build

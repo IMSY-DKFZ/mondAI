@@ -23,4 +23,4 @@ In addition to tests checking the correctness of the code, there are also regres
 
 ## Slow tests
 
-Some of the tests are computationally expensive (especially when running external implementations) and their slow execution disturbs fast CI/CD pipelines. Therefore only fast tests are run automatically (`-m "not slow"`). You can manually run slow tests with `-m "slow"` or by triggering them in a merge request manually.
+Some of the tests are computationally expensive (especially when running external implementations) and their slow execution disturbs fast CI/CD pipelines. Therefore only fast tests are run automatically (`-m "not slow"`) on push, but on merge requests all tests are run to compute the entire coverage. With `-m "slow"` you can manually run the slow tests locally or leave it out to run all tests.
