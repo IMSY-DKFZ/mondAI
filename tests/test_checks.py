@@ -47,7 +47,10 @@ def test_check_nan_values_with_nan(image: np.ndarray | torch.Tensor, reference: 
 @pytest.mark.parametrize("reference", [False, True])
 def test_check_nan_values_with_invalid_input(image: None | str, reference: bool) -> None:
     image = None
-    with pytest.raises(TypeError, match=r"Input must be a numpy array or a torch tensor\."):
+    with pytest.raises(
+        TypeError,
+        match=re.escape(f"Input must be a numpy array or a torch tensor, but got <class '{type(image).__name__}'>."),
+    ):
         check_nan_values(image, reference=reference)
 
 
