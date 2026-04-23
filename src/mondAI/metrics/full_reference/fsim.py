@@ -158,30 +158,43 @@ class FSIM(FullReferenceMetric):
 
         # Check parameter settings for validity
         if self.T1 <= 0 or self.T2 <= 0 or self.T3 <= 0 or self.T4 <= 0:
-            raise ValueError("T1, T2, T3 and T4 must be positive to avoid instability in similarity calculations.")
+            raise ValueError(
+                "T1, T2, T3 and T4 must be positive to avoid instability in similarity calculations, "
+                f"but got {self.T1}, {self.T2}, {self.T3}, and {self.T4}."
+            )
         if self._lambda < 0:
             raise ValueError(
-                "Lambda must be non-negative as it is used as an exponent for weighting chromatic similarity."
+                "Lambda must be non-negative as it is used as an exponent for weighting chromatic similarity, "
+                f"but got {self._lambda}."
             )
         if self.scales <= 0:
-            raise ValueError("Number of scales must be positive.")
+            raise ValueError(f"Number of scales must be positive, but got {self.scales}.")
         if self.orientations <= 0:
-            raise ValueError("Number of orientations must be positive.")
+            raise ValueError(f"Number of orientations must be positive, but got {self.orientations}.")
         if self.minimal_wavelength <= 0:
-            raise ValueError("Minimal wavelength must be positive.")
+            raise ValueError(f"Minimal wavelength must be positive, but got {self.minimal_wavelength}.")
         if self.scaling_factor <= 1:
             raise ValueError(
-                "Scaling factor must be greater than 1 to ensure that filters are properly spaced in frequency domain."
+                "Scaling factor must be greater than 1 to ensure that filters are properly spaced in frequency domain, "
+                f"but got {self.scaling_factor}."
             )
         if self.sigma_f <= 0:
-            raise ValueError("Sigma_f must be positive to ensure a valid log Gabor filter shape.")
+            raise ValueError(
+                f"Sigma_f must be positive to ensure a valid log Gabor filter shape, but got {self.sigma_f}."
+            )
         if self.delta_theta <= 0:
-            raise ValueError("Delta_theta must be positive to ensure a valid log Gabor filter shape.")
+            raise ValueError(
+                f"Delta_theta must be positive to ensure a valid log Gabor filter shape, but got {self.delta_theta}."
+            )
         if self.noise_threshold_factor <= 0:
-            raise ValueError("Noise threshold factor must be positive to ensure proper noise compensation.")
+            raise ValueError(
+                "Noise threshold factor must be positive to ensure proper noise compensation, "
+                f"but got {self.noise_threshold_factor}."
+            )
         if self.epsilon <= 0 or self.epsilon >= 0.1:
             raise ValueError(
-                "Epsilon must be positive to avoid division by zero and less than 0.1 for numerical stability."
+                "Epsilon must be positive to avoid division by zero and less than 0.1 for numerical stability, "
+                f"but got {self.epsilon}."
             )
 
         # warnings for non-default parameter settings
@@ -713,11 +726,12 @@ class FSIM(FullReferenceMetric):
 
         if cutoff < 0 or cutoff > 0.5:
             raise ValueError(
-                "Cutoff frequency must be in the range [0, 0.5], where 0.5 corresponds to the Nyquist frequency."
+                "Cutoff frequency must be in the range [0, 0.5], where 0.5 corresponds to the Nyquist frequency, "
+                f"but got {cutoff}."
             )
 
         if sharpness < 1 or not isinstance(sharpness, int):
-            raise ValueError("Sharpness must be a integer >= 1")
+            raise ValueError(f"Sharpness must be a integer >= 1, but got {sharpness}.")
 
         x, y = self._get_meshgrid_like(image)
         radius = torch.sqrt(x**2 + y**2)

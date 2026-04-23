@@ -114,15 +114,17 @@ class SSIM(FullReferenceMetric):
         self.dynamic_range = dynamic_range
         self.downsample = downsample
         if self.k1 < 0 or self.k2 < 0:
-            raise ValueError("k1 and k2 must be non-negative.")
+            raise ValueError(f"k1 and k2 must be non-negative, but got {self.k1} and {self.k2}.")
         if self.kernel_size % 2 == 0:
             raise ValueError(f"kernel_size must be odd, got {self.kernel_size}.")
         if self.kernel_size * self.kernel_size < 4:
-            raise ValueError("kernel_size must define a window with at least 4 elements.")
+            raise ValueError(
+                f"kernel_size must define a window with at least 4 elements, but got {self.kernel_size**2}."
+            )
         if self.kernel_sigma <= 0:
-            raise ValueError("kernel_sigma must be positive.")
+            raise ValueError(f"kernel_sigma must be positive, but got {self.kernel_sigma}.")
         if self.dynamic_range <= 0:
-            raise ValueError("dynamic_range must be positive.")
+            raise ValueError(f"dynamic_range must be positive, but got {self.dynamic_range}.")
 
     def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
         """Compute SSIM between image and reference."""

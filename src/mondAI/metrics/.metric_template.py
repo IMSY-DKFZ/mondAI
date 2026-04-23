@@ -67,7 +67,7 @@ class MetricTemplate(FullReferenceMetric):  # TODO: rename to actual metric name
 
         # TODO: replace with actual checks for the metric's parameters.
         if self.parameter1 < 0:
-            raise ValueError("parameter1 must be non-negative.")
+            raise ValueError(f"parameter1 must be non-negative, but got {self.parameter1}.")
 
     def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
         """Compute the metric between image and reference.

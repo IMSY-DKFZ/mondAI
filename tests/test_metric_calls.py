@@ -339,7 +339,7 @@ def test_output_shape_depending_on_image_and_metric_dimensions(
         )
         assert all(dim == 4 for dim in result.shape), f"Expected result shape to contain only 4, but got {result.shape}"
     else:
-        raise ValueError("Expected output dimensions cannot be negative.")
+        raise ValueError(f"Expected output dimensions cannot be negative, got {expected_output_dims}.")
 
 
 @pytest.mark.parametrize(

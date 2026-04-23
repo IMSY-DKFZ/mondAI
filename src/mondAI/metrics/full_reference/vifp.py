@@ -69,7 +69,7 @@ class VIFP(FullReferenceMetric):
         self.sigma_n_squared = sigma_n_squared
 
         if self.sigma_n_squared < 0:
-            raise ValueError("sigma_n_squared must be non-negative.")
+            raise ValueError(f"sigma_n_squared must be non-negative, but got {self.sigma_n_squared}.")
 
     def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
         """Compute the metric between image and reference. Images must be at least

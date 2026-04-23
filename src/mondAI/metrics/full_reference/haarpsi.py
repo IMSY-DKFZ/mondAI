@@ -118,31 +118,31 @@ class HaarPSI(FullReferenceMetric):
 
         # Check parameter settings for validity
         if self.C <= 0:
-            raise ValueError("C must be a positive float.")
+            raise ValueError(f"C must be a positive float, but got {self.C}.")
 
         if not isinstance(self.C, float):
             if isinstance(self.C, int):
                 self.C = float(self.C)
             else:
-                raise ValueError("C must be a float.")
+                raise ValueError(f"C must be a float, but got {type(self.C)}.")
 
         if self.alpha <= 0:
-            raise ValueError("alpha must be a positive float.")
+            raise ValueError(f"alpha must be a positive float {self.alpha}.")
 
         if not isinstance(self.alpha, float):
-            raise ValueError("alpha must be a float.")
+            raise ValueError(f"alpha must be a float, but got {type(self.alpha)}.")
 
         # Warnings for parameter choices outside of recommended ranges, but still valid
         if not 5 <= self.C <= 100:
             logger.warning(
                 "C should be set in the range [5, 100]. Please ensure that your choice of C "
-                "is appropriate for your use case."
+                f"is appropriate for your use case, got {self.C}."
             )
 
         if not 2 <= self.alpha <= 8:
             logger.warning(
                 "alpha should be set in the range [2, 8]. Please ensure that your choice of alpha "
-                "is appropriate for your use case."
+                f"is appropriate for your use case, got {self.alpha}."
             )
 
         logger.info(

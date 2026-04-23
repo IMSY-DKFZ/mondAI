@@ -76,7 +76,7 @@ def check_nan_values(image: np.ndarray | torch.Tensor, reference: bool = False) 
         if torch.isnan(image).any():
             raise ValueError(f"{'Reference image' if reference else 'Image'} contains NaN values.")
     else:
-        raise TypeError("Input must be a numpy array or a torch tensor.")
+        raise TypeError(f"Input must be a numpy array or a torch tensor, but got {type(image)}.")
     return False
 
 

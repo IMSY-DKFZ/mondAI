@@ -89,13 +89,13 @@ class CWSSIM(FullReferenceMetric):
         self.k = k
 
         if self.levels < 1:
-            raise ValueError("levels must be at least 1.")
+            raise ValueError(f"levels must be at least 1, but got {self.levels}.")
         if self.orientations < 1:
-            raise ValueError("orientations must be at least 1.")
+            raise ValueError(f"orientations must be at least 1, but got {self.orientations}.")
         if self.guard_boundary < 0:
-            raise ValueError("guard_boundary must be non-negative.")
+            raise ValueError(f"guard_boundary must be non-negative, but got {self.guard_boundary}.")
         if self.k < 0:
-            raise ValueError("k must be non-negative.")
+            raise ValueError(f"k must be non-negative, but got {self.k}.")
 
     def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
         """Compute CW-SSIM between image and reference."""

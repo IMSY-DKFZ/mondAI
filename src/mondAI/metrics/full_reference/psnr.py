@@ -68,7 +68,7 @@ class PSNR(FullReferenceMetric):
         self.dynamic_range = dynamic_range
 
         if self.dynamic_range <= 0:
-            raise ValueError("dynamic_range must be positive.")
+            raise ValueError(f"dynamic_range must be positive, but got {self.dynamic_range}.")
 
     def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
         """Compute PSNR between image and reference."""

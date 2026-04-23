@@ -132,27 +132,31 @@ class IWSSIM(FullReferenceMetric):
         self.sigma_n_squared = sigma_n_squared
 
         if self.k1 < 0 or self.k2 < 0:
-            raise ValueError("k1 and k2 must be non-negative.")
+            raise ValueError(f"k1 and k2 must be non-negative, but got {self.k1} and {self.k2}.")
         if self.kernel_size % 2 == 0:
-            raise ValueError("kernel_size must be odd.")
+            raise ValueError(f"kernel_size must be odd, but got {self.kernel_size}.")
         if self.kernel_size * self.kernel_size < 4:
-            raise ValueError("kernel_size must define a window with at least 4 elements.")
+            raise ValueError(
+                f"kernel_size must define a window with at least 4 elements, but got {self.kernel_size**2}."
+            )
         if self.kernel_sigma <= 0:
-            raise ValueError("kernel_sigma must be positive.")
+            raise ValueError(f"kernel_sigma must be positive, but got {self.kernel_sigma}.")
         if self.dynamic_range <= 0:
-            raise ValueError("dynamic_range must be positive.")
+            raise ValueError(f"dynamic_range must be positive, but got {self.dynamic_range}.")
         if self.scales < 1:
-            raise ValueError("scales must be at least 1.")
+            raise ValueError(f"scales must be at least 1, but got {self.scales}.")
         if len(self.weights) < self.scales:
-            raise ValueError("weights must contain at least as many entries as scales.")
+            raise ValueError(
+                f"weights must contain at least as many entries as scales, but got {len(self.weights)} < {self.scales}."
+            )
         if sum(self.weights[: self.scales]) == 0:
-            raise ValueError("weights must not sum to zero.")
+            raise ValueError(f"weights must not sum to zero, but got {sum(self.weights[: self.scales])}.")
         if self.block_size < 1:
-            raise ValueError("block_size must be at least 1.")
+            raise ValueError(f"block_size must be at least 1, but got {self.block_size}.")
         if self.block_size % 2 == 0:
-            raise ValueError("block_size must be odd.")
+            raise ValueError(f"block_size must be odd, but got {self.block_size}.")
         if self.sigma_n_squared < 0:
-            raise ValueError("sigma_n_squared must be non-negative.")
+            raise ValueError(f"sigma_n_squared must be non-negative, but got {self.sigma_n_squared}.")
 
     def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
         """Compute the metric between image and reference. Inputs must be at least
