@@ -146,9 +146,9 @@ class HaarPSI(FullReferenceMetric):
             )
 
         logger.info(
-            "HaarPSI_MED was selected with parameters C=5.0 and alpha=4.9, which are recommended for medical images "
-            "based on the publication by Karner et al. (2025). If you intended to use the parameter settings "
-            "recommended for natural images, please use HaarPSI with C=30.0 and alpha=4.2."
+            "HaarPSI was selected with parameters C=30.0 and alpha=4.2, which are recommended for natural images. "
+            "If you intended to use the parameter settings recommended for medical images,based on the publication "
+            "by Karner et al. (2025), please use HaarPSI_MED with C=5.0 and alpha=4.9."
         )
 
     def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
@@ -573,8 +573,12 @@ class HaarPSI(FullReferenceMetric):
 
 
 class HaarPSI_MED(HaarPSI):
-    """Haar wavelet-based perceptual similarity index (HaarPSI) with parameter settings
+    """Haar wavelet-based perceptual similarity index with parameter settings
     recommended for medical images based on the publication by Karner et al (2025)."""
+
+    @property
+    def abbreviation(self) -> str:
+        return "HaarPSI_MED"
 
     def __init__(
         self, preprocess_with_subsampling: bool = True, C: float = 5.0, alpha: float = 4.9, use_rgb: bool = False
