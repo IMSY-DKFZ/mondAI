@@ -131,6 +131,20 @@ class MSE(FullReferenceMetric):
         except ImportError:
             logger.warning("monai is not available, skipping monai implementation of MSE.")
 
+        ### medimetrics ###
+        try:
+            from mondAI.metrics.third_party.medimetrics.mse import MSE as MSEMedimetrics
+
+            def medimetric_mse(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+                medimetrics_metric = MSEMedimetrics()
+                mse_value = medimetrics_metric.compute(image.numpy(force=True), reference.numpy(force=True))
+                return torch.as_tensor(mse_value, device=image.device)
+
+            implementations["medimetrics"] = medimetric_mse
+
+        except ImportError:
+            logger.warning("medimetrics is not available, skipping medimetrics implementation of MSE.")
+
         ### deepinv ###
         try:
             from deepinv.loss.metric import MSE as MSEDeepInv
