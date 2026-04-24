@@ -4,6 +4,7 @@ Currently, the package does not support
 * masked image metrics
 * images with `NaN` values
 * temporal images (such as videos or longitudinal images)
+* distribution-based metrics such as FID, IS, KL divergence
 
 At the moment the user is responsible for **normalizing** the images to the correct value ranges which are expected by metrics. Metrics inform the user if values are outside of valid ranges by throwing errors, and sometimes even give warnings if they detect that for example all values are between [0, 1] but should be between [0, 255].
 
