@@ -88,22 +88,23 @@ class SSIM(FullReferenceMetric):
     ) -> None:
         """Initialize SSIM with defaults matching the original implementation.
 
-        :param k1: First stability constant coefficient, default is 0.01.
+        :param k1: First stability constant coefficient, default is 0.01, must be non-negative.
         :type k1: float
-        :param k2: Second stability constant coefficient, default is 0.03.
+        :param k2: Second stability constant coefficient, default is 0.03, must be non-negative.
         :type k2: float
-        :param kernel_size: Size of the Gaussian window, default is 11.
+        :param kernel_size: Size of the Gaussian window, default is 11, must be odd and at least 3.
         :type kernel_size: int
-        :param kernel_sigma: Standard deviation of the Gaussian window, default is 1.5.
+        :param kernel_sigma: Standard deviation of the Gaussian window, default is 1.5, must be positive.
         :type kernel_sigma: float
-        :param dynamic_range: Dynamic range ``L`` of the images, default is 255.0.
+        :param dynamic_range: Dynamic range ``L`` of the images, default is 255.0, must be positive.
         :type dynamic_range: float
         :param downsample: Whether to downsample the input images as suggested by the authors for large images.
         The original implementation did not use downsampling but was also only meant for signle scale images.
         If True, the images will be adaptively downsampled to a scale where the smaller dimension is
         approximately 256 pixels, as recommended by the authors for large images. Default is False.
         :type downsample: bool
-        :raises ValueError: If parameters are invalid.
+        :raises ValueError: If any of the parameters are out of their valid ranges such as negative values for k1 or k2,
+          even kernel size, kernel size too small, non-positive kernel_sigma or dynamic_range.
 
         """
         super().__init__()

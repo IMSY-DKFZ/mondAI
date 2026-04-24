@@ -80,6 +80,8 @@ class CWSSIM(FullReferenceMetric):
         :type guard_boundary: int
         :param k: Stabilizing constant, needs to be non-negative (default: 0.0)
         :type k: float
+        :raises ValueError: If levels is not positive, orientations is not positive,
+            guard_boundary is negative, or k is negative.
 
         """
         super().__init__()

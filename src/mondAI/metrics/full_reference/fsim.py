@@ -81,58 +81,63 @@ class FSIM(FullReferenceMetric):
         :param use_rgb: Whether to use metric definition for RGB images instead of
             grayscale definition. Note that the RGB definition is different from
             applying the grayscale definition to each channel separately and then
-            aggregate. If True, the metric will expect 3-channel RGB images. Default is
+            aggregating. If True, the metric will expect 3-channel RGB images. Default is
             False (grayscale).
         :type use_rgb: bool
         :param T1: The constant used in the phase congruency similarity function to
             avoid instability when the denominator is close to zero, default is 0.85 as
-            in original implementation
+            in original implementation, must be positive
         :type T1: float
         :param T2: The constant used in the gradient magnitude similarity function to
             avoid instability when the denominator is close to zero, default is 160.0
-            as in original implementation
+            as in original implementation, must be positive
         :type T2: float
         :param T3: The constant used in the similarity function for the I channel when
             using RGB images to avoid instability when the denominator is close to
-            zero, default is 200.0 as in original implementation
+            zero, default is 200.0 as in original implementation, must be positive
         :type T3: float
         :param T4: The constant used in the similarity function for the Q channel when
             using RGB images to avoid instability when the denominator is close to
-            zero, default is 200.0 as in original implementation
+            zero, default is 200.0 as in original implementation, must be positive
         :type T4: float
         :param _lambda: The exponent used to weight the chromatic similarity in the
             final FSIM score when using RGB images, default is 0.03 as in original
-            implementation
+            implementation, must be non-negative
         :type _lambda: float
         :param scales: Number of wavelet scales, default is 4 as in original
-            implementation
+            implementation, must be positive
         :type scales: int
         :param orientations: Number of filter orientations, default is 4 as in original
-            implementation
+            implementation, must be positive
         :type orientations: int
         :param minimal_wavelength: The wavelength of the smallest scale filter, default
-            is 6 as in original implementation
+            is 6 as in original implementation, must be positive
         :type minimal_wavelength: int
         :param scaling_factor: The scaling factor between successive filters, default
-            is 2 as in original implementation
+            is 2 as in original implementation,
+            must be greater than 1 to ensure proper spacing of filters in frequency domain
         :type scaling_factor: int
         :param sigma_f: The ratio of the standard deviation of the Gaussian describing
             the log Gabor filter's transfer function in the frequency domain to the
-            filter center frequency, default is 0.55 as in original implementation
+            filter center frequency, default is 0.55 as in original implementation, must be positive
         :type sigma_f: float
         :param delta_theta: The ratio of the angular interval between filter
             orientations to the standard deviation of the Gaussian describing the log
             Gabor filter's transfer function in the frequency domain, default is 1.2 as
-            in original implementation
+            in original implementation, must be positive
         :type delta_theta: float
         :param noise_threshold_factor: Number of standard deviations above the noise
             mean for the noise compensation threshold, default is 2.0 as in original
             implementation. Below this threshold the response is considered to be
-            dominated by noise and is suppressed.
+            dominated by noise and is suppressed. Must be positive to ensure proper noise compensation.
         :type noise_threshold_factor: float
         :param epsilon: A small constant to avoid division by zero, default is 1e-4 as
-            in original implementation
+            in original implementation, must be positive and less than 0.1 for numerical stability
         :type epsilon: float
+        : raises ValueError: If any of the parameters are outside their valid ranges, such as negative values
+          for T1, T2, T3, T4, or _lambda, or non-positive values for scales, orientations, minimal_wavelength,
+          scaling_factor, sigma_f, delta_theta, noise_threshold_factor, or epsilon.
+          Also raises ValueError if epsilon is greater than or equal to 0.1 for numerical stability reasons.
 
         """
 

@@ -107,6 +107,10 @@ class HaarPSI(FullReferenceMetric):
             aggregate. If True, the metric will expect 3-channel RGB images. Default is
             False (grayscale).
         :type use_rgb: bool
+        : raises ValueError: If C is not a positive float.
+        : raises ValueError: If alpha is not a positive float.
+        : raises ValueError: If use_rgb is True but the images do not have 3 channels, which
+            is required for the RGB definition of HaarPSI.
 
         """
 

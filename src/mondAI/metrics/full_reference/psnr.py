@@ -59,7 +59,7 @@ class PSNR(FullReferenceMetric):
         """Initialize PSNR.
 
         :param dynamic_range: Dynamic range ``L`` of the images, which is given by the difference between the maximum
-        and minimum possible values (255.0 for unit8, 1.0 for normalized images), default is 255.0.
+        and minimum possible values (255.0 for unit8, 1.0 for normalized images), default is 255.0, must be positive.
         :type dynamic_range: float
         :raises ValueError: If ``dynamic_range`` is not positive.
 

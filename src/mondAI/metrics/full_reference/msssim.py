@@ -104,15 +104,15 @@ class MSSSIM(FullReferenceMetric):
     ) -> None:
         """Initialize MS-SSIM with defaults matching the original implementation.
 
-        :param k1: First stability constant coefficient, default is 0.01.
+        :param k1: First stability constant coefficient, default is 0.01, must be non-negative.
         :type k1: float
-        :param k2: Second stability constant coefficient, default is 0.03.
+        :param k2: Second stability constant coefficient, default is 0.03, must be non-negative.
         :type k2: float
-        :param kernel_size: Size of the Gaussian window, default is 11.
+        :param kernel_size: Size of the Gaussian window, default is 11, must be odd and at least 3.
         :type kernel_size: int
-        :param kernel_sigma: Standard deviation of the Gaussian window, default is 1.5.
+        :param kernel_sigma: Standard deviation of the Gaussian window, default is 1.5, must be positive.
         :type kernel_sigma: float
-        :param dynamic_range: Dynamic range ``L`` of the images, default is 255.0.
+        :param dynamic_range: Dynamic range ``L`` of the images, default is 255.0, must be positive.
         :type dynamic_range: float
         :param scales: Number of scales, needs to be a positive integer,
          setting this to 1 results in scores equal to SSIM, default is 5.
@@ -123,6 +123,9 @@ class MSSSIM(FullReferenceMetric):
         :type weights: tuple[float, ...]
         :param method: Aggregation method, either 'product' or 'weighted sum', default is 'product'.
         :type method: str
+        :raises ValueError: If any of the parameters are out of their valid ranges such as negative values for k1 or k2,
+          even kernel size, non-positive kernel sigma or dynamic range, scales less than 1, mismatched weights length,
+            zero-sum weights, or invalid method choice.
 
         """
         super().__init__()
