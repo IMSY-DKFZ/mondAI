@@ -5,6 +5,10 @@ import torch
 from mondAI.logging import get_logger
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
+from mondAI.metrics.third_party.deepinv import get_deepinv_haarpsi
+from mondAI.metrics.third_party.others import get_ideal_iqa_haarpsi, get_original_numpy_haarpsi
+from mondAI.metrics.third_party.piq import get_piq_haarpsi
+from mondAI.metrics.third_party.piqa import get_piqa_haarpsi
 from mondAI.utils.conversions import rgb_to_yiq
 from mondAI.utils.signal_processing import convolve2d
 from mondAI.utils.similarity_map import similarity_map
@@ -107,6 +111,10 @@ class HaarPSI(FullReferenceMetric):
             aggregate. If True, the metric will expect 3-channel RGB images. Default is
             False (grayscale).
         :type use_rgb: bool
+        : raises ValueError: If C is not a positive float.
+        : raises ValueError: If alpha is not a positive float.
+        : raises ValueError: If use_rgb is True but the images do not have 3 channels, which
+            is required for the RGB definition of HaarPSI.
 
         """
 
@@ -118,37 +126,37 @@ class HaarPSI(FullReferenceMetric):
 
         # Check parameter settings for validity
         if self.C <= 0:
-            raise ValueError("C must be a positive float.")
+            raise ValueError(f"C must be a positive float, but got {self.C}.")
 
         if not isinstance(self.C, float):
             if isinstance(self.C, int):
                 self.C = float(self.C)
             else:
-                raise ValueError("C must be a float.")
+                raise ValueError(f"C must be a float, but got {type(self.C)}.")
 
         if self.alpha <= 0:
-            raise ValueError("alpha must be a positive float.")
+            raise ValueError(f"alpha must be a positive float {self.alpha}.")
 
         if not isinstance(self.alpha, float):
-            raise ValueError("alpha must be a float.")
+            raise ValueError(f"alpha must be a float, but got {type(self.alpha)}.")
 
         # Warnings for parameter choices outside of recommended ranges, but still valid
         if not 5 <= self.C <= 100:
             logger.warning(
                 "C should be set in the range [5, 100]. Please ensure that your choice of C "
-                "is appropriate for your use case."
+                f"is appropriate for your use case, got {self.C}."
             )
 
         if not 2 <= self.alpha <= 8:
             logger.warning(
                 "alpha should be set in the range [2, 8]. Please ensure that your choice of alpha "
-                "is appropriate for your use case."
+                f"is appropriate for your use case, got {self.alpha}."
             )
 
         logger.info(
-            "HaarPSI_MED was selected with parameters C=5.0 and alpha=4.9, which are recommended for medical images "
-            "based on the publication by Karner et al. (2025). If you intended to use the parameter settings "
-            "recommended for natural images, please use HaarPSI with C=30.0 and alpha=4.2."
+            "HaarPSI was selected with parameters C=30.0 and alpha=4.2, which are recommended for natural images. "
+            "If you intended to use the parameter settings recommended for medical images,based on the publication "
+            "by Karner et al. (2025), please use HaarPSI_MED with C=5.0 and alpha=4.9."
         )
 
     def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
@@ -224,149 +232,22 @@ class HaarPSI(FullReferenceMetric):
 
         return similarity  # noqa: RET504  # , local_similarities, weights
 
-    def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
-        """Return a dictionary of other implementations of the metric. This will be
-        used when compare_implementations is True to compute the metric using different
-        libraries or implementations for comparison.
-
-        :return: A dictionary where the keys are the names of the libraries or implementations, and the values are
-        callables that compute the metric using those implementations.
-        :rtype: dict[str, callable[..., torch.Tensor]]
-
-        """
-
-        implementations = {}
-
-        ### PIQ ###
-        try:
-            from piq import haarpsi
-
-            def piq_haarpsi(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # piq's implementation expects inputs with shape (N, C, H, W) and
-                # data_range parameter should correspond to pixel value range
-
-                if not self.use_rgb:
-                    image = image.unsqueeze(0)
-                    reference = reference.unsqueeze(0)
-
-                return haarpsi(
-                    image.unsqueeze(0),
-                    reference.unsqueeze(0),
-                    data_range=255.0,
-                    c=self.C,
-                    alpha=self.alpha,
-                    subsample=self.preprocess_with_subsampling,
-                )
-
-            implementations["piq"] = piq_haarpsi
-
-        except ImportError:
-            logger.warning("piq or its HaarPSI implementation is not available, skipping piq implementation of HaarPSI")
-
-        ### PIQA ###
-
-        try:
-            from piqa.haarpsi import haarpsi as haarpsi_piqa
-
-            def piqa_haarpsi(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # piqa's implementation expects inputs with shape (N, C, H, W) and
-                # data_range parameter should correspond to pixel value range
-
-                if not self.use_rgb:
-                    image = image.unsqueeze(0)
-                    reference = reference.unsqueeze(0)
-
-                return haarpsi_piqa(
-                    image.unsqueeze(0).float() / 255.0,
-                    reference.unsqueeze(0).float() / 255.0,
-                    value_range=1.0,
-                    c=self.C,
-                    alpha=self.alpha,
-                )
-
-            implementations["piqa"] = piqa_haarpsi
-        except ImportError:
-            logger.warning(
-                "piqa or its HaarPSI implementation is not available, skipping piqa implementation of HaarPSI"
-            )
-
-        ### IdealIQA ###
-
-        try:
-            from mondAI.metrics.third_party.others.haarpsi_ideal_iqa import haarpsi as haarpsi_ideal
-
-            def ideal_iqa_haarpsi(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # ideal_iqa's implementation expects inputs with shape (N, C, H, W) and
-                # pixel values in [0, 1], while the original implementation expects images with pixel values in [0, 255]
-
-                score, _, _ = haarpsi_ideal(  # type: ignore [no-untyped-call]
-                    reference / 255.0,
-                    image / 255.0,
-                    C=self.C,
-                    α=self.alpha,
-                    preprocess_with_subsampling=self.preprocess_with_subsampling,
-                )
-                return score
-
-            implementations["ideal_iqa"] = ideal_iqa_haarpsi
-
-        except ImportError:
-            logger.warning(
-                "haarpsi_ideal_iqa or its HaarPSI implementation is not available, "
-                "skipping ideal_iqa implementation of HaarPSI"
-            )
-
-        ### deepinv ###
-        try:
-            from deepinv.loss.metric import HaarPSI as DeepInvHaarPSI
-
-            def deepinv_haarpsi(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # DeepInv's implementation expects inputs with shape (N, C, H, W) and
-                #  pixel values in [0, 1] with single precision (float32, therefore scores might deviate slightly)
-
-                if not self.use_rgb:
-                    image = image.unsqueeze(0)
-                    reference = reference.unsqueeze(0)
-
-                haarpsi_metric = DeepInvHaarPSI(
-                    C=self.C, alpha=self.alpha, preprocess_with_subsampling=self.preprocess_with_subsampling
-                )
-                return haarpsi_metric(
-                    image.unsqueeze(0).float() / 255.0,
-                    reference.unsqueeze(0).float() / 255.0,
-                )
-
-            implementations["deepinv"] = deepinv_haarpsi
-
-        except ImportError:
-            logger.warning(
-                "deepinv or its HaarPSI implementation is not available, skipping deepinv implementation of HaarPSI"
-            )
-
-        ### Original NumPy implementation by Rafael Reisenhofer and David Neumann ###
-
-        try:
-            from mondAI.metrics.third_party.others.haarpsi_original import haar_psi as org_haarpsi
-
-            def original_haarpsi(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # The original implementation by Rafael Reisenhofer and David Neumann expects images with pixel values
-                # in [0, 255] and uses double precision floating point format.
-
-                score, _, _ = org_haarpsi(  # type: ignore [no-untyped-call]
-                    reference.numpy(force=True),
-                    image.numpy(force=True),
-                    preprocess_with_subsampling=self.preprocess_with_subsampling,
-                )
-                return torch.tensor(score)
-
-            implementations["original_numpy"] = original_haarpsi
-        except ImportError:
-            logger.warning(
-                "haarpsi_original or its HaarPSI implementation is not available, "
-                "skipping original_numpy implementation of HaarPSI"
-            )
-
-        return implementations
+    def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
+        self._register_implementation(
+            implementations, "piq", get_piq_haarpsi(self.use_rgb, self.C, self.alpha, self.preprocess_with_subsampling)
+        )
+        self._register_implementation(implementations, "piqa", get_piqa_haarpsi(self.use_rgb, self.C, self.alpha))
+        self._register_implementation(
+            implementations, "ideal_iqa", get_ideal_iqa_haarpsi(self.C, self.alpha, self.preprocess_with_subsampling)
+        )
+        self._register_implementation(
+            implementations,
+            "deepinv",
+            get_deepinv_haarpsi(self.use_rgb, self.C, self.alpha, self.preprocess_with_subsampling),
+        )
+        self._register_implementation(
+            implementations, "original_numpy", get_original_numpy_haarpsi(self.preprocess_with_subsampling)
+        )
 
     def __str__(self) -> str:
         """Full text representation of the metric.
@@ -573,8 +454,12 @@ class HaarPSI(FullReferenceMetric):
 
 
 class HaarPSI_MED(HaarPSI):
-    """Haar wavelet-based perceptual similarity index (HaarPSI) with parameter settings
+    """Haar wavelet-based perceptual similarity index with parameter settings
     recommended for medical images based on the publication by Karner et al (2025)."""
+
+    @property
+    def abbreviation(self) -> str:
+        return "HaarPSI_MED"
 
     def __init__(
         self, preprocess_with_subsampling: bool = True, C: float = 5.0, alpha: float = 4.9, use_rgb: bool = False

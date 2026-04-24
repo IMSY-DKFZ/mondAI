@@ -6,6 +6,7 @@ import torch
 from mondAI.logging import get_logger
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
+from mondAI.metrics.third_party.medimetrics import get_medimetrics_cwssim
 from mondAI.utils.signal_processing import gaussian_filter_kernel
 
 logger = get_logger()
@@ -80,6 +81,8 @@ class CWSSIM(FullReferenceMetric):
         :type guard_boundary: int
         :param k: Stabilizing constant, needs to be non-negative (default: 0.0)
         :type k: float
+        :raises ValueError: If levels is not positive, orientations is not positive,
+            guard_boundary is negative, or k is negative.
 
         """
         super().__init__()
@@ -89,13 +92,13 @@ class CWSSIM(FullReferenceMetric):
         self.k = k
 
         if self.levels < 1:
-            raise ValueError("levels must be at least 1.")
+            raise ValueError(f"levels must be at least 1, but got {self.levels}.")
         if self.orientations < 1:
-            raise ValueError("orientations must be at least 1.")
+            raise ValueError(f"orientations must be at least 1, but got {self.orientations}.")
         if self.guard_boundary < 0:
-            raise ValueError("guard_boundary must be non-negative.")
+            raise ValueError(f"guard_boundary must be non-negative, but got {self.guard_boundary}.")
         if self.k < 0:
-            raise ValueError("k must be non-negative.")
+            raise ValueError(f"k must be non-negative, but got {self.k}.")
 
     def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
         """Compute CW-SSIM between image and reference."""
@@ -272,31 +275,8 @@ class CWSSIM(FullReferenceMetric):
 
         return coefficients
 
-    def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
-        """Return other CW-SSIM implementations for comparison."""
-        implementations = {}
-
-        try:
-            from mondAI.metrics.third_party.medimetrics.cwssim import CWSSIM as MediMetricsCWSSIM
-
-            metric_medimetrics = MediMetricsCWSSIM()
-
-            def medimetrics_cwssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # medimetrics provides a CW-SSIM implementation based on
-                # code from the IQA_pytorch package, which is itself based on the original matlab code
-                # but they only used an approximation for the complex steerable pyramid decomposition
-                # and other default parameters, 8 orientations and 4 levels
-                score = metric_medimetrics.compute(reference.cpu().numpy(), image.cpu().numpy())
-                return torch.tensor(score, device=image.device, dtype=image.dtype)
-
-            implementations["medimetrics"] = medimetrics_cwssim
-        except ImportError:
-            logger.warning(
-                "medimetrics or its CW-SSIM implementation is not available, "
-                "skipping medimetrics implementation of CWSSIM"
-            )
-
-        return implementations
+    def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
+        self._register_implementation(implementations, "medimetrics", get_medimetrics_cwssim())
 
     def __str__(self) -> str:
         """Full text representation of the metric."""

@@ -1,6 +1,7 @@
 import inspect
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
+from functools import cached_property
 from typing import Any
 
 import numpy as np
@@ -50,6 +51,25 @@ class Metric(ABC):
 
         """
         ...
+
+    @cached_property
+    def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
+        """Return a dictionary of other implementations of the metric for comparison.
+
+        The keys are the names of the libraries or implementations, and the values
+        are callables that compute the metric with the same signature as the main
+        implementation. Register other implementations by overriding the `_register_other_implementations` method in
+          subclasses and calling `_register_implementation` for each implementation you want to register.
+
+        If no peer implementations are available return an empty dictionary.
+
+        :return: A dictionary mapping implementation names to their corresponding metric computation functions.
+        :rtype: dict[str, Callable[..., torch.Tensor]]
+
+        """
+        implementations: dict[str, Callable[..., torch.Tensor]] = {}
+        self._register_other_implementations(implementations)
+        return implementations
 
     @abstractmethod
     def __call__(
@@ -197,21 +217,29 @@ class Metric(ABC):
         logger.debug("Converting output to numpy array for consistency with input type.")
         return scores.detach().cpu().numpy()
 
-    @abstractmethod
-    def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
-        """Return a dictionary of other implementations of the metric for comparison.
+    def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
+        """Override this method in subclasses to register other implementations of the
+        metric for comparison.
 
-        The keys should be the names of the libraries or implementations, and the values
-        should be callables that compute the metric with the same signature as the main
-        implementation.
-
-        If no peer implementations are available return an empty dictionary.
-
-        :return: A dictionary mapping implementation names to their corresponding metric computation functions.
-        :rtype: dict[str, Callable[..., float | torch.Tensor | np.ndarray]]
+        Use the `_register_implementation` helper method to add implementations to the internal dictionary.
 
         """
-        raise NotImplementedError("Subclasses should implement this method.")
+        return
+
+    def _register_implementation(
+        self,
+        implementations: dict[str, Callable[..., torch.Tensor]],
+        library_name: str,
+        implementation: Callable[..., torch.Tensor],
+    ) -> None:
+        try:
+            implementations[library_name] = implementation
+            logger.debug(f"Registered implementation '{library_name}' for metric '{self.name}'.")
+        except ImportError:
+            logger.warning(
+                f"Could not import library '{library_name}' for metric '{self.name}'. "
+                "Skipping registration of this implementation."
+            )
 
 
 class MetricList:

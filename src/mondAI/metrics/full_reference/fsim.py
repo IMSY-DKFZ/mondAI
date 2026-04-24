@@ -5,8 +5,10 @@ import torch
 from mondAI.logging import get_logger
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
+from mondAI.metrics.third_party.piq import get_piq_fsim
+from mondAI.metrics.third_party.piqa import get_piqa_fsim
 from mondAI.utils.conversions import rgb_to_yiq
-from mondAI.utils.signal_processing import convolve2d
+from mondAI.utils.signal_processing import convolve2d, subsample
 from mondAI.utils.similarity_map import similarity_map
 
 logger = get_logger()
@@ -81,58 +83,63 @@ class FSIM(FullReferenceMetric):
         :param use_rgb: Whether to use metric definition for RGB images instead of
             grayscale definition. Note that the RGB definition is different from
             applying the grayscale definition to each channel separately and then
-            aggregate. If True, the metric will expect 3-channel RGB images. Default is
+            aggregating. If True, the metric will expect 3-channel RGB images. Default is
             False (grayscale).
         :type use_rgb: bool
         :param T1: The constant used in the phase congruency similarity function to
             avoid instability when the denominator is close to zero, default is 0.85 as
-            in original implementation
+            in original implementation, must be positive
         :type T1: float
         :param T2: The constant used in the gradient magnitude similarity function to
             avoid instability when the denominator is close to zero, default is 160.0
-            as in original implementation
+            as in original implementation, must be positive
         :type T2: float
         :param T3: The constant used in the similarity function for the I channel when
             using RGB images to avoid instability when the denominator is close to
-            zero, default is 200.0 as in original implementation
+            zero, default is 200.0 as in original implementation, must be positive
         :type T3: float
         :param T4: The constant used in the similarity function for the Q channel when
             using RGB images to avoid instability when the denominator is close to
-            zero, default is 200.0 as in original implementation
+            zero, default is 200.0 as in original implementation, must be positive
         :type T4: float
         :param _lambda: The exponent used to weight the chromatic similarity in the
             final FSIM score when using RGB images, default is 0.03 as in original
-            implementation
+            implementation, must be non-negative
         :type _lambda: float
         :param scales: Number of wavelet scales, default is 4 as in original
-            implementation
+            implementation, must be positive
         :type scales: int
         :param orientations: Number of filter orientations, default is 4 as in original
-            implementation
+            implementation, must be positive
         :type orientations: int
         :param minimal_wavelength: The wavelength of the smallest scale filter, default
-            is 6 as in original implementation
+            is 6 as in original implementation, must be positive
         :type minimal_wavelength: int
         :param scaling_factor: The scaling factor between successive filters, default
-            is 2 as in original implementation
+            is 2 as in original implementation,
+            must be greater than 1 to ensure proper spacing of filters in frequency domain
         :type scaling_factor: int
         :param sigma_f: The ratio of the standard deviation of the Gaussian describing
             the log Gabor filter's transfer function in the frequency domain to the
-            filter center frequency, default is 0.55 as in original implementation
+            filter center frequency, default is 0.55 as in original implementation, must be positive
         :type sigma_f: float
         :param delta_theta: The ratio of the angular interval between filter
             orientations to the standard deviation of the Gaussian describing the log
             Gabor filter's transfer function in the frequency domain, default is 1.2 as
-            in original implementation
+            in original implementation, must be positive
         :type delta_theta: float
         :param noise_threshold_factor: Number of standard deviations above the noise
             mean for the noise compensation threshold, default is 2.0 as in original
             implementation. Below this threshold the response is considered to be
-            dominated by noise and is suppressed.
+            dominated by noise and is suppressed. Must be positive to ensure proper noise compensation.
         :type noise_threshold_factor: float
         :param epsilon: A small constant to avoid division by zero, default is 1e-4 as
-            in original implementation
+            in original implementation, must be positive and less than 0.1 for numerical stability
         :type epsilon: float
+        : raises ValueError: If any of the parameters are outside their valid ranges, such as negative values
+          for T1, T2, T3, T4, or _lambda, or non-positive values for scales, orientations, minimal_wavelength,
+          scaling_factor, sigma_f, delta_theta, noise_threshold_factor, or epsilon.
+          Also raises ValueError if epsilon is greater than or equal to 0.1 for numerical stability reasons.
 
         """
 
@@ -158,30 +165,43 @@ class FSIM(FullReferenceMetric):
 
         # Check parameter settings for validity
         if self.T1 <= 0 or self.T2 <= 0 or self.T3 <= 0 or self.T4 <= 0:
-            raise ValueError("T1, T2, T3 and T4 must be positive to avoid instability in similarity calculations.")
+            raise ValueError(
+                "T1, T2, T3 and T4 must be positive to avoid instability in similarity calculations, "
+                f"but got {self.T1}, {self.T2}, {self.T3}, and {self.T4}."
+            )
         if self._lambda < 0:
             raise ValueError(
-                "Lambda must be non-negative as it is used as an exponent for weighting chromatic similarity."
+                "Lambda must be non-negative as it is used as an exponent for weighting chromatic similarity, "
+                f"but got {self._lambda}."
             )
         if self.scales <= 0:
-            raise ValueError("Number of scales must be positive.")
+            raise ValueError(f"Number of scales must be positive, but got {self.scales}.")
         if self.orientations <= 0:
-            raise ValueError("Number of orientations must be positive.")
+            raise ValueError(f"Number of orientations must be positive, but got {self.orientations}.")
         if self.minimal_wavelength <= 0:
-            raise ValueError("Minimal wavelength must be positive.")
+            raise ValueError(f"Minimal wavelength must be positive, but got {self.minimal_wavelength}.")
         if self.scaling_factor <= 1:
             raise ValueError(
-                "Scaling factor must be greater than 1 to ensure that filters are properly spaced in frequency domain."
+                "Scaling factor must be greater than 1 to ensure that filters are properly spaced in frequency domain, "
+                f"but got {self.scaling_factor}."
             )
         if self.sigma_f <= 0:
-            raise ValueError("Sigma_f must be positive to ensure a valid log Gabor filter shape.")
+            raise ValueError(
+                f"Sigma_f must be positive to ensure a valid log Gabor filter shape, but got {self.sigma_f}."
+            )
         if self.delta_theta <= 0:
-            raise ValueError("Delta_theta must be positive to ensure a valid log Gabor filter shape.")
+            raise ValueError(
+                f"Delta_theta must be positive to ensure a valid log Gabor filter shape, but got {self.delta_theta}."
+            )
         if self.noise_threshold_factor <= 0:
-            raise ValueError("Noise threshold factor must be positive to ensure proper noise compensation.")
+            raise ValueError(
+                "Noise threshold factor must be positive to ensure proper noise compensation, "
+                f"but got {self.noise_threshold_factor}."
+            )
         if self.epsilon <= 0 or self.epsilon >= 0.1:
             raise ValueError(
-                "Epsilon must be positive to avoid division by zero and less than 0.1 for numerical stability."
+                "Epsilon must be positive to avoid division by zero and less than 0.1 for numerical stability, "
+                f"but got {self.epsilon}."
             )
 
         # warnings for non-default parameter settings
@@ -251,8 +271,8 @@ class FSIM(FullReferenceMetric):
             image.shape[self.expected_dimensions.index(dim)] for dim in (Dimension.HEIGHT, Dimension.WIDTH)
         )
         kernel_size = max(1, round(min_dimension / 256))
-        image = self._subsample(image, kernel_size=kernel_size)
-        reference = self._subsample(reference, kernel_size=kernel_size)
+        image = subsample(image, kernel_size=kernel_size, channels=3 if self.use_rgb else 1)
+        reference = subsample(reference, kernel_size=kernel_size, channels=3 if self.use_rgb else 1)
 
         # Compute phase congruency maps
         phase_congruency_image = self._phase_congruency(
@@ -313,92 +333,24 @@ class FSIM(FullReferenceMetric):
 
         return score  # phase_congruency_image, phase_congruency_reference, gradient_map_image, gradient_map_reference
 
-    def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
-        """Return a dictionary of other implementations of the metric. This will be
-        used when compare_implementations is True to compute the metric using different
-        libraries or implementations for comparison.
-
-        :return: A dictionary where the keys are the names of the libraries or implementations, and the values are
-        callables that compute the metric using those implementations.
-        :rtype: dict[str, callable[..., torch.Tensor]]
-
-        """
-
-        implementations = {}
-
-        ### PIQ ###
-        try:
-            from piq import fsim
-
-            def piq_fsim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # piq's implementation expects inputs with shape (N, C, H, W) and
-                # data_range parameter should correspond to pixel value range
-
-                if not self.use_rgb:
-                    image = image.unsqueeze(0)
-                    reference = reference.unsqueeze(0)
-
-                return fsim(
-                    image.unsqueeze(0),
-                    reference.unsqueeze(0),
-                    data_range=255.0,
-                    chromatic=self.use_rgb,
-                    scales=self.scales,
-                    orientations=self.orientations,
-                    min_length=self.minimal_wavelength,
-                    mult=self.scaling_factor,
-                    sigma_f=self.sigma_f,
-                    delta_theta=self.delta_theta,
-                    k=self.noise_threshold_factor,
-                )
-
-            implementations["piq"] = piq_fsim
-
-        except ImportError:
-            logger.warning("piq or its FSIM implementation is not available, skipping piq implementation of FSIM")
-
-        ### PIQA ###
-
-        try:
-            from piqa.fsim import fsim as fsim_piqa
-            from piqa.fsim import gradient_kernel, pc_filters, phase_congruency, scharr_kernel
-
-            def piqa_fsim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # piqa's implementation expects inputs with shape (N, C, H, W) and
-                # data_range parameter should correspond to pixel value range
-
-                image = image.unsqueeze(0)
-                reference = reference.unsqueeze(0)
-
-                if not self.use_rgb:
-                    image = image.unsqueeze(0)
-                    reference = reference.unsqueeze(0)
-
-                filters_1 = pc_filters(image)
-                filters_2 = pc_filters(reference)
-                pc_1 = phase_congruency(image[:, :1, :, :] if image.shape[1] == 3 else image, filters_1)
-                pc_2 = phase_congruency(reference[:, :1, :, :] if reference.shape[1] == 3 else reference, filters_2)
-                kernel = gradient_kernel(scharr_kernel().to(image.device))
-
-                return fsim_piqa(
-                    image.float() * 255.0,
-                    reference.float() * 255.0,
-                    pc_1,
-                    pc_2,
-                    kernel,
-                    value_range=255.0,
-                    t1=self.T1,
-                    t2=self.T2,
-                    t3=self.T3,
-                    t4=self.T4,
-                    lmbda=self._lambda,
-                )
-
-            implementations["piqa"] = piqa_fsim
-        except ImportError:
-            logger.warning("piqa or its FSIM implementation is not available, skipping piqa implementation of FSIM")
-
-        return implementations
+    def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
+        self._register_implementation(
+            implementations,
+            "piq",
+            get_piq_fsim(
+                self.use_rgb,
+                self.scales,
+                self.orientations,
+                self.minimal_wavelength,
+                self.scaling_factor,
+                self.sigma_f,
+                self.delta_theta,
+                self.noise_threshold_factor,
+            ),
+        )
+        self._register_implementation(
+            implementations, "piqa", get_piqa_fsim(self.use_rgb, self.T1, self.T2, self.T3, self.T4, self._lambda)
+        )
 
     def __str__(self) -> str:
         """Full text representation of the metric.
@@ -461,36 +413,6 @@ class FSIM(FullReferenceMetric):
                     "when use_rgb is set to True. Instead you might want to use the grayscale definition"
                     "(use_rgb=False) and apply it channel wise."
                 )
-
-    def _subsample(self, image: torch.Tensor, kernel_size: int = 2) -> torch.Tensor:
-        """Subsample the input image by a factor of k (default k=2) using a mean filter
-        and dyadic subsampling. This simulates the typical distance between an image
-        and its viewer in psychophysical experiments as described in the original
-        publication.
-
-        If use_rgb is True and the input image has 3 channels, the subsampling is
-        applied to each channel separately and then the subsampled channels are stacked
-        back together.
-
-        :param image: The input 2D image to be subsampled, shape (H, W), or (C, H, W)
-            if use_rgb is True and the image has 3 channels.
-        :type image: torch.Tensor
-        :return: The subsampled image, shape (H/k, W/k), or (H/k+1, W/k+1) if the input
-            dimensions are odd. If use_rgb is True and the input image has 3 channels,
-            the output shape will be (C, H/k, W/k) or (C, H/k+1, W/k+1) if the input
-            dimensions are odd.
-        :rtype: torch.Tensor
-
-        """
-
-        # apply subsampling to each channel separately and stack back together
-        if self.use_rgb and image.shape[self.expected_dimensions.index(Dimension.CHANNEL)] == 3:
-            subsampled_channels = [self._subsample(image[channel], kernel_size=kernel_size) for channel in range(3)]
-            return torch.stack(subsampled_channels, dim=self.expected_dimensions.index(Dimension.CHANNEL))
-
-        filter_weights = image.new_ones(1, 1, kernel_size, kernel_size) / kernel_size**2
-        mean_filtered = torch.nn.functional.conv2d(image.unsqueeze(0), weight=filter_weights, padding="same")
-        return mean_filtered.squeeze()[::kernel_size, ::kernel_size]
 
     def _phase_congruency(
         self,
@@ -713,11 +635,12 @@ class FSIM(FullReferenceMetric):
 
         if cutoff < 0 or cutoff > 0.5:
             raise ValueError(
-                "Cutoff frequency must be in the range [0, 0.5], where 0.5 corresponds to the Nyquist frequency."
+                "Cutoff frequency must be in the range [0, 0.5], where 0.5 corresponds to the Nyquist frequency, "
+                f"but got {cutoff}."
             )
 
         if sharpness < 1 or not isinstance(sharpness, int):
-            raise ValueError("Sharpness must be a integer >= 1")
+            raise ValueError(f"Sharpness must be a integer >= 1, but got {sharpness}.")
 
         x, y = self._get_meshgrid_like(image)
         radius = torch.sqrt(x**2 + y**2)

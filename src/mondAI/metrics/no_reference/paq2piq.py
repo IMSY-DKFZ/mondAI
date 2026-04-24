@@ -1,5 +1,4 @@
 import os
-from collections.abc import Callable
 
 import torch
 import torchvision as tv
@@ -55,7 +54,18 @@ class PaQ2PiQ(NoReferenceMetric):
         self,
         model_weights_url: str = "https://github.com/baidut/PaQ-2-PiQ/releases/download/v1.0/RoIPoolModel-fit.10.bs.120.pth",
     ) -> None:
-        """Initialize PaQ-2-PiQ metric."""
+        """Initialize PaQ-2-PiQ metric.
+
+        :param model_weights_url: URL to the pretrained model weights for the RoIPool
+            Model. The weights will be downloaded and cached locally upon first usage.
+            Default is the URL provided by the original authors for their pretrained
+            model.
+        :type model_weights_url: str
+        :raises ValueError: If the provided model_weights_url is not a valid URL.
+        :raises RuntimeError: If there is an error during downloading or loading the
+            model weights, such as an invalid URL or network issues.
+
+        """
         super().__init__()
         self.model_weights_url = model_weights_url
 
@@ -118,19 +128,6 @@ class PaQ2PiQ(NoReferenceMetric):
         # local_scores = output[0, 1:].reshape(20, 20)
         # return global_score  ,local_scores
         return output[0, 0]
-
-    def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
-        """Return a dictionary of other implementations of the metric. This will be
-        used when compare_implementations is True to compute the metric using different
-        libraries or implementations for comparison.
-
-        :return: A dictionary where the keys are the names of the libraries or implementations, and the values are
-        callables that compute the metric using those implementations.
-        :rtype: dict[str, callable[..., torch.Tensor]]
-
-        """
-
-        return {}
 
     def __str__(self) -> str:
         """Full text representation of the metric.

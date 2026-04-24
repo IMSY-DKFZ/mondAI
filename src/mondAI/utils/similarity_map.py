@@ -35,7 +35,7 @@ def ssim_and_cs_maps(
     k1: float,
     k2: float,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Compute SSIM and contrast-structure maps for grayscale 2D images using a
+    r"""Compute SSIM and contrast-structure maps for grayscale 2D images using a
     Gaussian kernel with given properties.
 
     Includes a fallback mechanism for cases where the stability constants lead to zero denominators.

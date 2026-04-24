@@ -37,11 +37,8 @@ def test_abstract_class_not_instanticable(klass: Metric | FullReferenceMetric | 
     [
         Metric.__call__,
         Metric.__str__,
-        Metric._other_implementations,
         FullReferenceMetric.__str__,
-        FullReferenceMetric._other_implementations,
         NoReferenceMetric.__str__,
-        NoReferenceMetric._other_implementations,
     ],
 )
 def test_abstract_method_not_callable(

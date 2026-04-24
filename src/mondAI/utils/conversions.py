@@ -22,7 +22,10 @@ def rgb_to_yiq(image: torch.Tensor) -> torch.Tensor:
         g = image[..., 1]
         b = image[..., 2]
     else:
-        raise ValueError("Input image must have 3 channels in either (C, H, W) or (H, W, C) format.")
+        raise ValueError(
+            "Input image must have 3 channels in either (C, H, W) or (H, W, C) format, "
+            f"but got shape {tuple(image.shape)}."
+        )
 
     # Conversion values are taken from https://github.com/rgcda/haarpsi/blob/master/HaarPSI.m
     y = 0.299 * r + 0.587 * g + 0.114 * b

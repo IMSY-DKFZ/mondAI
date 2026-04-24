@@ -5,7 +5,14 @@ import torch
 from mondAI.logging import get_logger
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
-from mondAI.utils.signal_processing import convolve2d
+from mondAI.metrics.third_party.medimetrics import get_medimetrics_msssim
+from mondAI.metrics.third_party.monai import get_monai_msssim
+from mondAI.metrics.third_party.piq import get_piq_msssim
+from mondAI.metrics.third_party.piqa import get_piqa_msssim
+from mondAI.metrics.third_party.sewar import get_sewar_msssim
+from mondAI.metrics.third_party.tensorflow import get_tensorflow_msssim
+from mondAI.metrics.third_party.torchmetrics import get_torchmetrics_msssim
+from mondAI.utils.signal_processing import subsample
 from mondAI.utils.similarity_map import ssim_and_cs_maps
 
 logger = get_logger()
@@ -104,15 +111,15 @@ class MSSSIM(FullReferenceMetric):
     ) -> None:
         """Initialize MS-SSIM with defaults matching the original implementation.
 
-        :param k1: First stability constant coefficient, default is 0.01.
+        :param k1: First stability constant coefficient, default is 0.01, must be non-negative.
         :type k1: float
-        :param k2: Second stability constant coefficient, default is 0.03.
+        :param k2: Second stability constant coefficient, default is 0.03, must be non-negative.
         :type k2: float
-        :param kernel_size: Size of the Gaussian window, default is 11.
+        :param kernel_size: Size of the Gaussian window, default is 11, must be odd and at least 3.
         :type kernel_size: int
-        :param kernel_sigma: Standard deviation of the Gaussian window, default is 1.5.
+        :param kernel_sigma: Standard deviation of the Gaussian window, default is 1.5, must be positive.
         :type kernel_sigma: float
-        :param dynamic_range: Dynamic range ``L`` of the images, default is 255.0.
+        :param dynamic_range: Dynamic range ``L`` of the images, default is 255.0, must be positive.
         :type dynamic_range: float
         :param scales: Number of scales, needs to be a positive integer,
          setting this to 1 results in scores equal to SSIM, default is 5.
@@ -123,6 +130,9 @@ class MSSSIM(FullReferenceMetric):
         :type weights: tuple[float, ...]
         :param method: Aggregation method, either 'product' or 'weighted sum', default is 'product'.
         :type method: str
+        :raises ValueError: If any of the parameters are out of their valid ranges such as negative values for k1 or k2,
+          even kernel size, non-positive kernel sigma or dynamic range, scales less than 1, mismatched weights length,
+            zero-sum weights, or invalid method choice.
 
         """
         super().__init__()
@@ -136,23 +146,27 @@ class MSSSIM(FullReferenceMetric):
         self.method = method
 
         if self.k1 < 0 or self.k2 < 0:
-            raise ValueError("k1 and k2 must be non-negative.")
+            raise ValueError(f"k1 and k2 must be non-negative, but got {self.k1} and {self.k2}.")
         if self.kernel_size % 2 == 0:
-            raise ValueError("kernel_size must be odd.")
+            raise ValueError(f"kernel_size must be odd, but got {self.kernel_size}.")
         if self.kernel_size * self.kernel_size < 4:
-            raise ValueError("kernel_size must define a window with at least 4 elements.")
+            raise ValueError(
+                f"kernel_size must define a window with at least 4 elements, but got {self.kernel_size**2}."
+            )
         if self.kernel_sigma <= 0:
-            raise ValueError("kernel_sigma must be positive.")
+            raise ValueError(f"kernel_sigma must be positive, but got {self.kernel_sigma}.")
         if self.dynamic_range <= 0:
-            raise ValueError("dynamic_range must be positive.")
+            raise ValueError(f"dynamic_range must be positive, but got {self.dynamic_range}.")
         if self.scales < 1:
-            raise ValueError("scales must be at least 1.")
+            raise ValueError(f"scales must be at least 1, but got {self.scales}.")
         if len(self.weights) != self.scales:
-            raise ValueError("weights must have the same length as scales.")
+            raise ValueError(
+                f"weights must have the same length as scales, but got {len(self.weights)} not equal to {self.scales}."
+            )
         if sum(self.weights) == 0:
-            raise ValueError("weights must not sum to zero.")
+            raise ValueError(f"weights must not sum to zero, but got {sum(self.weights)}.")
         if self.method not in ("product", "weighted sum"):
-            raise ValueError("method must be either 'product' or 'weighted sum'.")
+            raise ValueError(f"method must be either 'product' or 'weighted sum', but got {self.method}.")
 
     def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
         """Compute MS-SSIM between image and reference."""
@@ -160,8 +174,6 @@ class MSSSIM(FullReferenceMetric):
 
         mean_ssims = image.new_zeros((self.scales,))
         mean_contrasts_and_structures = image.new_zeros((self.scales,))
-
-        downsample_filter = image.new_ones((2, 2)) / 4.0
 
         for scale in range(self.scales):
             ssim_map, cs_map = ssim_and_cs_maps(
@@ -175,11 +187,8 @@ class MSSSIM(FullReferenceMetric):
             )
             mean_ssims[scale], mean_contrasts_and_structures[scale] = ssim_map.mean(), cs_map.mean()
 
-            filtered_image = convolve2d(image, downsample_filter, padding="same")
-            filtered_reference = convolve2d(reference, downsample_filter, padding="same")
-
-            image = filtered_image[::2, ::2]
-            reference = filtered_reference[::2, ::2]
+            image = subsample(image, kernel_size=2)
+            reference = subsample(reference, kernel_size=2)
 
         weights = torch.tensor(self.weights, device=image.device, dtype=image.dtype)
         terms = torch.cat((mean_contrasts_and_structures[:-1], mean_ssims[-1:]))
@@ -194,170 +203,48 @@ class MSSSIM(FullReferenceMetric):
         else:
             return None  # This should never happen due to the check in __init__
 
-    def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
-        """Return other MS-SSIM implementations for comparison."""
-        implementations = {}
-
-        try:
-            from torchmetrics.functional.image import multiscale_structural_similarity_index_measure
-
-            def torchmetrics_msssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # torchmetrics expects NCHW tensors and implements the multiscale
-                # aggregation internally.
-                return multiscale_structural_similarity_index_measure(
-                    image.unsqueeze(0).unsqueeze(0),
-                    reference.unsqueeze(0).unsqueeze(0),
-                    gaussian_kernel=True,
-                    sigma=self.kernel_sigma,
-                    kernel_size=self.kernel_size,
-                    reduction="elementwise_mean",
-                    data_range=self.dynamic_range,
-                    k1=self.k1,
-                    k2=self.k2,
-                    betas=self.weights,
-                    normalize=None,
-                )
-
-            implementations["torchmetrics"] = torchmetrics_msssim
-        except ImportError:
-            logger.warning(
-                "torchmetrics or its MS-SSIM implementation is not available, "
-                "skipping torchmetrics implementation of MS-SSIM"
-            )
-
-        try:
-            import tensorflow as tf
-
-            def tensorflow_msssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # TensorFlow expects NHWC tensors and supports configurable scale weights.
-                score = tf.image.ssim_multiscale(
-                    image.cpu().numpy()[None, ..., None],
-                    reference.cpu().numpy()[None, ..., None],
-                    max_val=self.dynamic_range,
-                    power_factors=self.weights,
-                    filter_size=self.kernel_size,
-                    filter_sigma=self.kernel_sigma,
-                    k1=self.k1,
-                    k2=self.k2,
-                ).numpy()
-                return torch.tensor(score, device=image.device, dtype=image.dtype)
-
-            implementations["tensorflow"] = tensorflow_msssim
-        except ImportError:
-            logger.warning("tensorflow is not available, skipping tensorflow implementation of MS-SSIM")
-
-        try:
-            from piq import multi_scale_ssim
-
-            def piq_msssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # PIQ expects NCHW tensors and exposes the number of scales through the weights.
-                return multi_scale_ssim(
-                    image.unsqueeze(0).unsqueeze(0),
-                    reference.unsqueeze(0).unsqueeze(0),
-                    kernel_size=self.kernel_size,
-                    kernel_sigma=self.kernel_sigma,
-                    data_range=self.dynamic_range,
-                    reduction="mean",
-                    scale_weights=torch.tensor(self.weights, device=image.device, dtype=image.dtype),
-                    k1=self.k1,
-                    k2=self.k2,
-                )
-
-            implementations["piq"] = piq_msssim
-        except ImportError:
-            logger.warning("piq or its MS-SSIM implementation is not available, skipping piq implementation of MS-SSIM")
-
-        try:
-            from piqa import MS_SSIM
-
-            def piqa_msssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # PIQA exposes MS-SSIM as a module and expects NCHW tensors.
-                piqa_metric = MS_SSIM(
-                    window_size=self.kernel_size,
-                    sigma=self.kernel_sigma,
-                    n_channels=1,
-                    reduction="mean",
-                    value_range=self.dynamic_range,
-                    weights=torch.tensor(self.weights, device=image.device, dtype=image.dtype),
-                    k1=self.k1,
-                    k2=self.k2,
-                ).to(image.device)
-
-                return piqa_metric(image.float().unsqueeze(0).unsqueeze(0), reference.float().unsqueeze(0).unsqueeze(0))
-
-            implementations["piqa"] = piqa_msssim
-        except ImportError:
-            logger.warning(
-                "piqa or its MS-SSIM implementation is not available, skipping piqa implementation of MS-SSIM"
-            )
-
-        try:
-            from sewar.full_ref import msssim as msssim_sewar
-
-            def sewar_msssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # sewar operates on NumPy arrays and follows a classic image-quality API.
-                score = msssim_sewar(
-                    reference.cpu().numpy(),
-                    image.cpu().numpy(),
-                    weights=self.weights,
-                    ws=self.kernel_size,
-                    K1=self.k1,
-                    K2=self.k2,
-                    MAX=self.dynamic_range,
-                )
-                return torch.tensor(score, device=image.device, dtype=image.dtype)
-
-            implementations["sewar"] = sewar_msssim
-        except ImportError:
-            logger.warning(
-                "sewar or its MS-SSIM implementation is not available, skipping sewar implementation of MS-SSIM"
-            )
-
-        try:
-            from monai.metrics import MultiScaleSSIMMetric
-
-            monai_metric = MultiScaleSSIMMetric(
-                spatial_dims=2,
-                data_range=self.dynamic_range,
-                kernel_type="gaussian",
-                kernel_size=self.kernel_size,
-                kernel_sigma=self.kernel_sigma,
-                weights=self.weights,
-                k1=self.k1,
-                k2=self.k2,
-            )
-
-            def monai_msssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # MONAI exposes MS-SSIM as a metric object for batched medical imaging.
-                return monai_metric(reference.unsqueeze(0).unsqueeze(0), image.unsqueeze(0).unsqueeze(0)).to(
-                    image.dtype
-                )
-
-            implementations["monai"] = monai_msssim
-        except ImportError:
-            logger.warning(
-                "monai or its MS-SSIM implementation is not available, skipping monai implementation of MS-SSIM"
-            )
-
-        try:
-            from mondAI.metrics.third_party.medimetrics.ssim import MSSSIM as MediMetricsMSSSIM
-
-            metric = MediMetricsMSSSIM()
-
-            def medimetrics_msssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # medimetrics exposes MS-SSIM through the SSIM metric class using a
-                # NumPy-based compute method for medical image quality assessment.
-                score = metric.compute(reference.cpu().numpy(), image.cpu().numpy(), multi_scale=True)
-                return torch.tensor(score, device=image.device, dtype=image.dtype)
-
-            implementations["medimetrics"] = medimetrics_msssim
-        except ImportError:
-            logger.warning(
-                "medimetrics or its MS-SSIM implementation is not available, "
-                "skipping medimetrics implementation of MS-SSIM"
-            )
-
-        return implementations
+    def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
+        self._register_implementation(
+            implementations,
+            "torchmetrics",
+            get_torchmetrics_msssim(
+                self.kernel_sigma, self.kernel_size, self.dynamic_range, self.k1, self.k2, self.weights
+            ),
+        )
+        self._register_implementation(
+            implementations,
+            "tensorflow",
+            get_tensorflow_msssim(
+                self.dynamic_range, self.weights, self.kernel_size, self.kernel_sigma, self.k1, self.k2
+            ),
+        )
+        self._register_implementation(
+            implementations,
+            "piq",
+            get_piq_msssim(self.kernel_size, self.kernel_sigma, self.dynamic_range, self.weights, self.k1, self.k2),
+        )
+        self._register_implementation(
+            implementations,
+            "piqa",
+            get_piqa_msssim(self.kernel_size, self.kernel_sigma, self.dynamic_range, self.weights, self.k1, self.k2),
+        )
+        self._register_implementation(
+            implementations,
+            "sewar",
+            get_sewar_msssim(self.weights, self.kernel_size, self.k1, self.k2, self.dynamic_range),
+        )
+        self._register_implementation(
+            implementations,
+            "monai",
+            get_monai_msssim(self.dynamic_range, self.kernel_size, self.kernel_sigma, self.weights, self.k1, self.k2),
+        )
+        self._register_implementation(
+            implementations,
+            "medimetrics",
+            get_medimetrics_msssim(
+                self.dynamic_range, self.kernel_size, self.k1, self.k2, self.kernel_sigma, self.weights
+            ),
+        )
 
     def __str__(self) -> str:
         """Full text representation of the metric."""

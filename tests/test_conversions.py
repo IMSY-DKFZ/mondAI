@@ -24,6 +24,9 @@ def test_rgb_to_yiq_valid(shape: tuple[int, ...]) -> None:
 def test_rgb_to_yiq_invalid(shape: tuple[int, ...]) -> None:
     image_rgb = torch.rand(shape)
     with pytest.raises(
-        ValueError, match=re.escape("Input image must have 3 channels in either (C, H, W) or (H, W, C) format.")
+        ValueError,
+        match=re.escape(
+            f"Input image must have 3 channels in either (C, H, W) or (H, W, C) format, but got shape {shape}."
+        ),
     ):
         rgb_to_yiq(image_rgb)

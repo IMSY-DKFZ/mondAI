@@ -222,7 +222,7 @@ def test_metric_call_with_compare_implementations(
 
     assert isinstance(result, dict)
     assert "mondAI" in result
-    assert len(result) == len(metric._other_implementations()) + 1  # +1 for the default implementation
+    assert len(result) == len(metric._other_implementations) + 1  # +1 for the default implementation
 
 
 def test_metric_call_with_vectorization_invalid_input_number(phantom: np.ndarray) -> None:
@@ -245,9 +245,6 @@ def test_metric_call_with_vectorization_invalid_input_number(phantom: np.ndarray
 
         def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
             return torch.Tensor(0.0)
-
-        def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
-            return {}
 
         def __str__(self) -> str:
             return f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()}"
@@ -339,7 +336,7 @@ def test_output_shape_depending_on_image_and_metric_dimensions(
         )
         assert all(dim == 4 for dim in result.shape), f"Expected result shape to contain only 4, but got {result.shape}"
     else:
-        raise ValueError("Expected output dimensions cannot be negative.")
+        raise ValueError(f"Expected output dimensions cannot be negative, got {expected_output_dims}.")
 
 
 @pytest.mark.parametrize(

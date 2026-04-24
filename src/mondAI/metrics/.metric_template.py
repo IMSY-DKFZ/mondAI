@@ -67,7 +67,7 @@ class MetricTemplate(FullReferenceMetric):  # TODO: rename to actual metric name
 
         # TODO: replace with actual checks for the metric's parameters.
         if self.parameter1 < 0:
-            raise ValueError("parameter1 must be non-negative.")
+            raise ValueError(f"parameter1 must be non-negative, but got {self.parameter1}.")
 
     def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
         """Compute the metric between image and reference.
@@ -88,17 +88,18 @@ class MetricTemplate(FullReferenceMetric):  # TODO: rename to actual metric name
         """
         return torch.tensor(0.0)  # TODO: replace with actual computation logic for the metric
 
-    def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
-        """Return a dictionary of other implementations of the metric. This will be
-        used when compare_implementations is True to compute the metric using different
-        libraries or implementations for comparison.
+    def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
+        """Override this method in subclasses to register other implementations of the
+        metric for comparison. Use the `_register_implementation` helper method to add
+        implementations to the internal dictionary. These implementations will be used
+        when compare_implementations is True.
 
-        :return: A dictionary where the keys are the names of the libraries or implementations, and the values are
-        callables that compute the metric using those implementations.
-        :rtype: dict[str, callable[..., torch.Tensor]]
+        Store reference implementations in the `third_party` submodule of the metrics module,
+        and import them here to register them for comparison.
 
         """
-        return {}  # TODO: replace with actual other implementations of the metric, if available.
+        # TODO: replace with actual other implementations of the metric, if available.
+        # self._register_implementation(implementations, "library_name", get_library_metric(self.parameter1))
 
     def __str__(self) -> str:
         """Full text representation of the metric.
