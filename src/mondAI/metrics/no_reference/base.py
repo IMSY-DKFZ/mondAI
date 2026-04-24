@@ -40,7 +40,7 @@ class NoReferenceMetric(Metric, ABC):
         if compare_implementations:
             scores = {
                 library_name: self._call_pipeline(image, dims=dims, compute_function=implementation)
-                for library_name, implementation in self._other_implementations().items()
+                for library_name, implementation in self._other_implementations.items()
             }
             scores["mondAI"] = self._call_pipeline(image, dims=dims, compute_function=self._compute)
             return scores

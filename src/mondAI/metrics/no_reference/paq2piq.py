@@ -1,5 +1,4 @@
 import os
-from collections.abc import Callable
 
 import torch
 import torchvision as tv
@@ -129,19 +128,6 @@ class PaQ2PiQ(NoReferenceMetric):
         # local_scores = output[0, 1:].reshape(20, 20)
         # return global_score  ,local_scores
         return output[0, 0]
-
-    def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
-        """Return a dictionary of other implementations of the metric. This will be
-        used when compare_implementations is True to compute the metric using different
-        libraries or implementations for comparison.
-
-        :return: A dictionary where the keys are the names of the libraries or implementations, and the values are
-        callables that compute the metric using those implementations.
-        :rtype: dict[str, callable[..., torch.Tensor]]
-
-        """
-
-        return {}
 
     def __str__(self) -> str:
         """Full text representation of the metric.

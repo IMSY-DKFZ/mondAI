@@ -6,6 +6,8 @@ import torch
 from mondAI.logging import get_logger
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
+from mondAI.metrics.third_party.others import get_pytorch_iwssim
+from mondAI.metrics.third_party.piq import get_piq_iwssim
 from mondAI.utils.signal_processing import convolve2d
 from mondAI.utils.similarity_map import ssim_and_cs_maps
 
@@ -439,59 +441,34 @@ class IWSSIM(FullReferenceMetric):
 
         return pyramid
 
-    def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
-        """Return other IW-SSIM implementations for comparison."""
-        implementations = {}
-
-        try:
-            from piq import information_weighted_ssim
-
-            def piq_iwssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # PIQ expects NCHW tensors and provides a PyTorch-native IW-SSIM
-                # implementation that closely matches the original formulation.
-                return information_weighted_ssim(
-                    image.unsqueeze(0).unsqueeze(0),
-                    reference.unsqueeze(0).unsqueeze(0),
-                    data_range=self.dynamic_range,
-                    kernel_size=self.kernel_size,
-                    kernel_sigma=self.kernel_sigma,
-                    scale_weights=torch.tensor(self.weights, device=image.device, dtype=image.dtype),
-                    k1=self.k1,
-                    k2=self.k2,
-                    parent=self.include_parent,
-                    blk_size=self.block_size,
-                    sigma_nsq=self.sigma_n_squared,
-                )
-
-            implementations["piq"] = piq_iwssim
-        except ImportError:
-            logger.warning("piq or its IW-SSIM implementation is not available, skipping piq implementation of IW-SSIM")
-
-        try:
-            from mondAI.metrics.third_party.others.iwssim_pytorch import IW_SSIM as IWSSIMPyTorch
-
-            def iwssim_pytorch(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # This is a PyTorch implementation of IW-SSIM that closely follows the
-                # original MATLAB code by Zhou Wang and Qiang Li.
-                # It is not optimized for speed, uses numpy internally but serves as a useful reference for correctness.
-                metric = IWSSIMPyTorch(
-                    iw_flag=self.information_content_weighting,
-                    Nsc=self.scales,
-                    blSzX=self.block_size,
-                    blSzY=self.block_size,
-                    parent=self.include_parent,
-                    sigma_nsq=self.sigma_n_squared,
-                    use_cuda=image.device.type == "cuda",
-                    use_double=True,
-                )  # type: ignore[no-untyped-call]
-
-                return metric.test(reference.numpy(force=True), image.numpy(force=True))  # type: ignore[no-untyped-call]
-
-            implementations["iwssim_pytorch"] = iwssim_pytorch
-        except ImportError:
-            logger.warning("iwssim_pytorch is not available, skipping iwssim_pytorch implementation of IW-SSIM")
-
-        return implementations
+    def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
+        self._register_implementation(
+            implementations,
+            "piq",
+            get_piq_iwssim(
+                self.dynamic_range,
+                self.kernel_size,
+                self.kernel_sigma,
+                self.weights,
+                self.k1,
+                self.k2,
+                self.include_parent,
+                self.block_size,
+                self.sigma_n_squared,
+            ),
+        )
+        self._register_implementation(
+            implementations,
+            "pytorch",
+            get_pytorch_iwssim(
+                self.information_content_weighting,
+                self.scales,
+                self.block_size,
+                self.block_size,
+                self.include_parent,
+                self.sigma_n_squared,
+            ),
+        )
 
     def __str__(self) -> str:
         """Full text representation of the metric."""

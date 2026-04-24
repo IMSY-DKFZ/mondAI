@@ -5,6 +5,10 @@ import torch
 from mondAI.logging import get_logger
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
+from mondAI.metrics.third_party.medimetrics import get_medimetrics_mae
+from mondAI.metrics.third_party.monai import get_monai_mae
+from mondAI.metrics.third_party.sklearn import get_sklearn_mae
+from mondAI.metrics.third_party.tensorflow import get_tensorflow_mae
 
 logger = get_logger()
 
@@ -51,61 +55,11 @@ class MAE(FullReferenceMetric):
         """Compute the Mean Absolute Error between image and reference."""
         return torch.mean(torch.abs(image - reference))
 
-    def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
-        """Return a dictionary of other implementations of the MAE metric."""
-
-        implementations = {}
-
-        ### sklearn ###
-        try:
-            from sklearn.metrics import mean_absolute_error
-
-            def sklearn_mae(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # Flatten the tensors and convert to numpy arrays for sklearn
-                image_np = image.cpu().numpy().flatten()
-                reference_np = reference.cpu().numpy().flatten()
-                mae_value = mean_absolute_error(reference_np, image_np)
-                return torch.tensor(mae_value, device=image.device)
-
-            implementations["sklearn"] = sklearn_mae
-
-        except ImportError:
-            logger.warning("sklearn is not available, skipping sklearn implementation of MAE.")
-
-        ### tensorflow ###
-        try:
-            import tensorflow as tf
-
-            def tensorflow_mae(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # Flatten the tensors and convert to numpy arrays for TensorFlow
-
-                image_np = image.cpu().numpy()
-                reference_np = reference.cpu().numpy()
-                mae_metric = tf.keras.metrics.MeanAbsoluteError()
-                mae_metric.update_state(reference_np, image_np)
-                mae_value = mae_metric.result().numpy()
-                return torch.as_tensor(mae_value, device=image.device)
-
-            implementations["tensorflow"] = tensorflow_mae
-
-        except ImportError:
-            logger.warning("tensorflow is not available, skipping tensorflow implementation of MAE.")
-
-        ### monai ###
-        try:
-            from monai.metrics import MAEMetric
-
-            def monai_mae(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                mae_metric = MAEMetric()
-                mae_value = mae_metric(image.unsqueeze(0), reference.unsqueeze(0))
-                return torch.as_tensor(mae_value, device=image.device)
-
-            implementations["monai"] = monai_mae
-
-        except ImportError:
-            logger.warning("monai is not available, skipping monai implementation of MAE.")
-
-        return implementations
+    def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
+        self._register_implementation(implementations, "scikit-learn", get_sklearn_mae())
+        self._register_implementation(implementations, "tensorflow", get_tensorflow_mae())
+        self._register_implementation(implementations, "monai", get_monai_mae())
+        self._register_implementation(implementations, "medimetrics", get_medimetrics_mae())
 
     def __str__(self) -> str:
         """Full text representation of the MAE metric."""

@@ -5,6 +5,8 @@ import torch
 from mondAI.logging import get_logger
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
+from mondAI.metrics.third_party.piq import get_piq_fsim
+from mondAI.metrics.third_party.piqa import get_piqa_fsim
 from mondAI.utils.conversions import rgb_to_yiq
 from mondAI.utils.signal_processing import convolve2d, subsample
 from mondAI.utils.similarity_map import similarity_map
@@ -331,92 +333,24 @@ class FSIM(FullReferenceMetric):
 
         return score  # phase_congruency_image, phase_congruency_reference, gradient_map_image, gradient_map_reference
 
-    def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
-        """Return a dictionary of other implementations of the metric. This will be
-        used when compare_implementations is True to compute the metric using different
-        libraries or implementations for comparison.
-
-        :return: A dictionary where the keys are the names of the libraries or implementations, and the values are
-        callables that compute the metric using those implementations.
-        :rtype: dict[str, callable[..., torch.Tensor]]
-
-        """
-
-        implementations = {}
-
-        ### PIQ ###
-        try:
-            from piq import fsim
-
-            def piq_fsim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # piq's implementation expects inputs with shape (N, C, H, W) and
-                # data_range parameter should correspond to pixel value range
-
-                if not self.use_rgb:
-                    image = image.unsqueeze(0)
-                    reference = reference.unsqueeze(0)
-
-                return fsim(
-                    image.unsqueeze(0),
-                    reference.unsqueeze(0),
-                    data_range=255.0,
-                    chromatic=self.use_rgb,
-                    scales=self.scales,
-                    orientations=self.orientations,
-                    min_length=self.minimal_wavelength,
-                    mult=self.scaling_factor,
-                    sigma_f=self.sigma_f,
-                    delta_theta=self.delta_theta,
-                    k=self.noise_threshold_factor,
-                )
-
-            implementations["piq"] = piq_fsim
-
-        except ImportError:
-            logger.warning("piq or its FSIM implementation is not available, skipping piq implementation of FSIM")
-
-        ### PIQA ###
-
-        try:
-            from piqa.fsim import fsim as fsim_piqa
-            from piqa.fsim import gradient_kernel, pc_filters, phase_congruency, scharr_kernel
-
-            def piqa_fsim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # piqa's implementation expects inputs with shape (N, C, H, W) and
-                # data_range parameter should correspond to pixel value range
-
-                image = image.unsqueeze(0)
-                reference = reference.unsqueeze(0)
-
-                if not self.use_rgb:
-                    image = image.unsqueeze(0)
-                    reference = reference.unsqueeze(0)
-
-                filters_1 = pc_filters(image)
-                filters_2 = pc_filters(reference)
-                pc_1 = phase_congruency(image[:, :1, :, :] if image.shape[1] == 3 else image, filters_1)
-                pc_2 = phase_congruency(reference[:, :1, :, :] if reference.shape[1] == 3 else reference, filters_2)
-                kernel = gradient_kernel(scharr_kernel().to(image.device))
-
-                return fsim_piqa(
-                    image.float() * 255.0,
-                    reference.float() * 255.0,
-                    pc_1,
-                    pc_2,
-                    kernel,
-                    value_range=255.0,
-                    t1=self.T1,
-                    t2=self.T2,
-                    t3=self.T3,
-                    t4=self.T4,
-                    lmbda=self._lambda,
-                )
-
-            implementations["piqa"] = piqa_fsim
-        except ImportError:
-            logger.warning("piqa or its FSIM implementation is not available, skipping piqa implementation of FSIM")
-
-        return implementations
+    def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
+        self._register_implementation(
+            implementations,
+            "piq",
+            get_piq_fsim(
+                self.use_rgb,
+                self.scales,
+                self.orientations,
+                self.minimal_wavelength,
+                self.scaling_factor,
+                self.sigma_f,
+                self.delta_theta,
+                self.noise_threshold_factor,
+            ),
+        )
+        self._register_implementation(
+            implementations, "piqa", get_piqa_fsim(self.use_rgb, self.T1, self.T2, self.T3, self.T4, self._lambda)
+        )
 
     def __str__(self) -> str:
         """Full text representation of the metric.

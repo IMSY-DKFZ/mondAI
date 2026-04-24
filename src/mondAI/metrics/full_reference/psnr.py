@@ -5,6 +5,15 @@ import torch
 from mondAI.logging import get_logger
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
+from mondAI.metrics.third_party.deepinv import get_deepinv_psnr
+from mondAI.metrics.third_party.medimetrics import get_medimetrics_psnr
+from mondAI.metrics.third_party.monai import get_monai_psnr
+from mondAI.metrics.third_party.piq import get_piq_psnr
+from mondAI.metrics.third_party.piqa import get_piqa_psnr
+from mondAI.metrics.third_party.sewar import get_sewar_psnr
+from mondAI.metrics.third_party.skimage import get_skimage_psnr
+from mondAI.metrics.third_party.tensorflow import get_tensorflow_psnr
+from mondAI.metrics.third_party.torchmetrics import get_torchmetrics_psnr
 
 logger = get_logger()
 
@@ -80,150 +89,16 @@ class PSNR(FullReferenceMetric):
 
         return 10.0 * torch.log10((self.dynamic_range**2) / mse)
 
-    def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
-        """Return a dictionary of other implementations of the PSNR metric."""
-        implementations = {}
-
-        try:
-            from skimage.metrics import peak_signal_noise_ratio as psnr_skimage
-
-            def skimage_psnr(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # scikit-image operates on NumPy arrays and is the closest API match.
-                value = psnr_skimage(
-                    reference.cpu().numpy(),
-                    image.cpu().numpy(),
-                    data_range=self.dynamic_range,
-                )
-                return torch.tensor(value, device=image.device, dtype=image.dtype)
-
-            implementations["scikit-image"] = skimage_psnr
-        except ImportError:
-            logger.warning("scikit-image is not available, skipping scikit-image implementation of PSNR.")
-
-        try:
-            from torchmetrics.functional.image import peak_signal_noise_ratio as psnr_torchmetrics
-
-            def torchmetrics_psnr(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # torchmetrics expects NCHW tensors for image metrics.
-                return psnr_torchmetrics(
-                    image.unsqueeze(0).unsqueeze(0),
-                    reference.unsqueeze(0).unsqueeze(0),
-                    data_range=self.dynamic_range,
-                )
-
-            implementations["torchmetrics"] = torchmetrics_psnr
-        except ImportError:
-            logger.warning("torchmetrics is not available, skipping torchmetrics implementation of PSNR.")
-
-        try:
-            import tensorflow as tf
-
-            def tensorflow_psnr(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # TensorFlow expects NHWC tensors.
-                value = tf.image.psnr(
-                    image.cpu().numpy()[None, ..., None],
-                    reference.cpu().numpy()[None, ..., None],
-                    max_val=self.dynamic_range,
-                ).numpy()
-                return torch.tensor(value.item(), device=image.device, dtype=image.dtype)
-
-            implementations["tensorflow"] = tensorflow_psnr
-        except ImportError:
-            logger.warning("tensorflow is not available, skipping tensorflow implementation of PSNR.")
-
-        try:
-            from piq import psnr
-
-            def piq_psnr(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # PIQ expects NCHW tensors.
-                return psnr(
-                    image.unsqueeze(0).unsqueeze(0),
-                    reference.unsqueeze(0).unsqueeze(0),
-                    data_range=self.dynamic_range,
-                    reduction="mean",
-                    convert_to_greyscale=False,
-                )
-
-            implementations["piq"] = piq_psnr
-        except ImportError:
-            logger.warning("piq is not available, skipping piq implementation of PSNR.")
-
-        try:
-            from piqa import PSNR as PIQAPSNR
-
-            piqa_metric = PIQAPSNR(value_range=self.dynamic_range, reduction="mean")
-
-            def piqa_psnr(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # PIQA exposes PSNR as a module and expects NCHW tensors.
-                return piqa_metric(image.unsqueeze(0).unsqueeze(0), reference.unsqueeze(0).unsqueeze(0))
-
-            implementations["piqa"] = piqa_psnr
-        except ImportError:
-            logger.warning("piqa is not available, skipping piqa implementation of PSNR.")
-
-        try:
-            from sewar.full_ref import psnr as sewar_psnr
-
-            def sewar_psnr_impl(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # sewar operates on NumPy arrays.
-                value = sewar_psnr(reference.cpu().numpy(), image.cpu().numpy(), MAX=self.dynamic_range)
-                return torch.tensor(value, device=image.device, dtype=image.dtype)
-
-            implementations["sewar"] = sewar_psnr_impl
-        except ImportError:
-            logger.warning("sewar is not available, skipping sewar implementation of PSNR.")
-
-        try:
-            from monai.metrics import PSNRMetric
-
-            monai_metric = PSNRMetric(max_val=self.dynamic_range)
-
-            def monai_psnr(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # MONAI expects tensors in NCHW format.
-                return torch.as_tensor(
-                    monai_metric(image.unsqueeze(0).unsqueeze(0), reference.unsqueeze(0).unsqueeze(0)),
-                    device=image.device,
-                )
-
-            implementations["monai"] = monai_psnr
-        except ImportError:
-            logger.warning("monai is not available, skipping monai implementation of PSNR.")
-
-        try:
-            from deepinv.loss.metric import PSNR as DeepInvPSNR
-
-            deepinv_metric = DeepInvPSNR(max_pixel=self.dynamic_range)
-
-            def deepinv_psnr(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # deepinv expects NCHW tensors.
-                return torch.as_tensor(
-                    deepinv_metric(
-                        image.unsqueeze(0).unsqueeze(0),
-                        reference.unsqueeze(0).unsqueeze(0),
-                        max_pixel=self.dynamic_range,
-                    ),
-                    device=image.device,
-                )
-
-            implementations["deepinv"] = deepinv_psnr
-        except ImportError:
-            logger.warning("deepinv is not available, skipping deepinv implementation of PSNR.")
-
-        try:
-            from mondAI.metrics.third_party.medimetrics.psnr import PSNR as MediMetricsPSNR
-
-            medimetric = MediMetricsPSNR()
-
-            def medimetrics_psnr(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # medimetrics exposes a NumPy-based compute method.
-                value = medimetric.compute(reference.cpu().numpy(), image.cpu().numpy())
-                return torch.tensor(value, device=image.device, dtype=image.dtype)
-
-            implementations["medimetrics"] = medimetrics_psnr
-        except ImportError:
-            logger.warning("medimetrics is not available, skipping medimetrics implementation of PSNR.")
-
-        return implementations
+    def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
+        self._register_implementation(implementations, "scikit-image", get_skimage_psnr(self.dynamic_range))
+        self._register_implementation(implementations, "torchmetrics", get_torchmetrics_psnr(self.dynamic_range))
+        self._register_implementation(implementations, "tensorflow", get_tensorflow_psnr(self.dynamic_range))
+        self._register_implementation(implementations, "piq", get_piq_psnr(self.dynamic_range))
+        self._register_implementation(implementations, "piqa", get_piqa_psnr(self.dynamic_range))
+        self._register_implementation(implementations, "sewar", get_sewar_psnr(self.dynamic_range))
+        self._register_implementation(implementations, "monai", get_monai_psnr(self.dynamic_range))
+        self._register_implementation(implementations, "deepinv", get_deepinv_psnr(self.dynamic_range))
+        self._register_implementation(implementations, "medimetrics", get_medimetrics_psnr(self.dynamic_range))
 
     def __str__(self) -> str:
         """Full text representation of the PSNR metric."""

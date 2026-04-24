@@ -115,9 +115,6 @@ def dummy_full_reference_metric() -> FullReferenceMetric:
         def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
             return torch.Tensor(0.0)
 
-        def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
-            return {}
-
         def __str__(self) -> str:
             return f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()}"
 
@@ -145,9 +142,6 @@ def dummy_no_reference_metric() -> NoReferenceMetric:
 
         def _compute(self, image: torch.Tensor) -> torch.Tensor:
             return torch.Tensor(0.0)
-
-        def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
-            return {}
 
         def __str__(self) -> str:
             return f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()}"
@@ -177,9 +171,6 @@ def output_shape_test_metric_factory() -> Callable[[tuple[Dimension, ...]], Full
 
             def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
                 return torch.mean(image)  # dummy computation
-
-            def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
-                return {}
 
             def __str__(self) -> str:
                 return f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()}"

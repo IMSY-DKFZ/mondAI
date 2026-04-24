@@ -5,6 +5,15 @@ import torch
 from mondAI.logging import get_logger
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
+from mondAI.metrics.third_party.deepinv import get_deepinv_ssim
+from mondAI.metrics.third_party.medimetrics import get_medimetrics_ssim
+from mondAI.metrics.third_party.monai import get_monai_ssim
+from mondAI.metrics.third_party.piq import get_piq_ssim
+from mondAI.metrics.third_party.piqa import get_piqa_ssim
+from mondAI.metrics.third_party.sewar import get_sewar_ssim
+from mondAI.metrics.third_party.skimage import get_skimage_ssim
+from mondAI.metrics.third_party.tensorflow import get_tensorflow_ssim
+from mondAI.metrics.third_party.torchmetrics import get_torchmetrics_ssim
 from mondAI.utils.signal_processing import subsample
 from mondAI.utils.similarity_map import ssim_and_cs_maps
 
@@ -150,234 +159,52 @@ class SSIM(FullReferenceMetric):
 
         return ssim_map.mean()  # TODO: Also expose the raw SSIM map (and possibly gradients; cf. scikit-image).
 
-    def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
-        """Return other SSIM implementations for comparison."""
-        implementations = {}
-
-        try:
-            from skimage.metrics import structural_similarity
-
-            def skimage_ssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # scikit-image is the closest direct reference implementation.
-                # Differences relative to mondAI are usually limited to floating-point
-                # precision, especially when operating on float32 inputs.
-                score = structural_similarity(
-                    reference.cpu().numpy(),
-                    image.cpu().numpy(),
-                    win_size=self.kernel_size,
-                    gradient=False,
-                    data_range=self.dynamic_range,
-                    channel_axis=None,
-                    gaussian_weights=True,
-                    full=False,
-                    use_sample_covariance=False,
-                    K1=self.k1,
-                    K2=self.k2,
-                    sigma=self.kernel_sigma,
-                )
-                return torch.tensor(score, device=image.device, dtype=image.dtype)
-
-            implementations["scikit-image"] = skimage_ssim
-        except ImportError:
-            logger.warning(
-                "scikit-image or its SSIM implementation is not available, skipping scikit-image implementation of SSIM"
-            )
-
-        try:
-            from torchmetrics.functional.image import structural_similarity_index_measure
-
-            def torchmetrics_ssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # torchmetrics expects NCHW tensors. Its implementation differs from
-                # the original MATLAB code, for example by using reflection padding
-                # instead of strict valid convolution.
-                return structural_similarity_index_measure(
-                    image.unsqueeze(0).unsqueeze(0),
-                    reference.unsqueeze(0).unsqueeze(0),
-                    gaussian_kernel=True,
-                    sigma=self.kernel_sigma,
-                    kernel_size=self.kernel_size,
-                    reduction="elementwise_mean",
-                    data_range=self.dynamic_range,
-                    k1=self.k1,
-                    k2=self.k2,
-                    return_full_image=False,
-                    return_contrast_sensitivity=False,
-                )
-
-            implementations["torchmetrics"] = torchmetrics_ssim
-        except ImportError:
-            logger.warning(
-                "torchmetrics or its SSIM implementation is not available, skipping torchmetrics implementation of SSIM"
-            )
-
-        try:
-            import tensorflow as tf
-
-            def tensorflow_ssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # TensorFlow expects NHWC tensors. Small deviations may arise from
-                # its internal use of single precision (float32) and its own
-                # implementation of the Gaussian filter construction.
-                score = tf.image.ssim(
-                    image.cpu().numpy()[None, ..., None],
-                    reference.cpu().numpy()[None, ..., None],
-                    max_val=self.dynamic_range,
-                    filter_size=self.kernel_size,
-                    filter_sigma=self.kernel_sigma,
-                    k1=self.k1,
-                    k2=self.k2,
-                ).numpy()
-                return torch.tensor(score, device=image.device, dtype=image.dtype)
-
-            implementations["tensorflow"] = tensorflow_ssim
-        except ImportError:
-            logger.warning("tensorflow is not available, skipping tensorflow implementation of SSIM")
-
-        try:
-            from piq import ssim
-
-            def piq_ssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # PIQ expects NCHW tensors. In practice, its results are typically
-                # very close to scikit-image, with only minor differences stemming
-                # from implementation details such as kernel construction.
-                return ssim(
-                    image.unsqueeze(0).unsqueeze(0),
-                    reference.unsqueeze(0).unsqueeze(0),
-                    kernel_size=self.kernel_size,
-                    kernel_sigma=self.kernel_sigma,
-                    data_range=self.dynamic_range,
-                    reduction="mean",
-                    full=False,
-                    downsample=False,
-                    k1=self.k1,
-                    k2=self.k2,
-                )
-
-            implementations["piq"] = piq_ssim
-        except ImportError:
-            logger.warning("piq or its SSIM implementation is not available, skipping piq implementation of SSIM")
-
-        try:
-            from piqa import SSIM as PIQASSIM
-
-            piqa_metric = PIQASSIM(
-                window_size=self.kernel_size,
-                sigma=self.kernel_sigma,
-                n_channels=1,
-                reduction="mean",
-                value_range=self.dynamic_range,
-                k1=self.k1,
-                k2=self.k2,
-            )
-
-            def piqa_ssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # PIQA exposes SSIM as a module. It expects NCHW tensors and an
-                # explicit channel count. In practice, it behaves very similarly to
-                # scikit-image for the parameter settings used here.
-                piqa_metric.to(image.device)
-                return piqa_metric(image.float().unsqueeze(0).unsqueeze(0), reference.float().unsqueeze(0).unsqueeze(0))
-
-            implementations["piqa"] = piqa_ssim
-        except ImportError:
-            logger.warning("piqa or its SSIM implementation is not available, skipping piqa implementation of SSIM")
-
-        try:
-            from sewar.full_ref import ssim as ssim_sewar
-            from sewar.utils import Filter
-
-            def sewar_ssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # sewar operates on NumPy arrays and exposes filter settings explicitly.
-                # By default, it uses a uniform filter, so this must be overridden.
-                # Using ``mode="valid"`` keeps it aligned with the original MATLAB
-                # implementation.
-                score, _ = ssim_sewar(
-                    reference.cpu().numpy(),
-                    image.cpu().numpy(),
-                    ws=self.kernel_size,
-                    K1=self.k1,
-                    K2=self.k2,
-                    MAX=self.dynamic_range,
-                    fltr_specs={"fltr": Filter.GAUSSIAN, "sigma": self.kernel_sigma, "ws": self.kernel_size},
-                    mode="valid",
-                )
-                return torch.tensor(score, device=image.device, dtype=image.dtype)
-
-            implementations["sewar"] = sewar_ssim
-        except ImportError:
-            logger.warning("sewar or its SSIM implementation is not available, skipping sewar implementation of SSIM")
-
-        try:
-            from monai.metrics import SSIMMetric
-
-            monai_metric = SSIMMetric(
-                spatial_dims=2,
-                data_range=self.dynamic_range,
-                kernel_type="gaussian",
-                win_size=self.kernel_size,
-                kernel_sigma=self.kernel_sigma,
-                k1=self.k1,
-                k2=self.k2,
-            )
-
-            def monai_ssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # MONAI exposes SSIM as a metric object and expects NCHW tensors.
-                # It uses valid padding, source of differences still unclear.
-                return monai_metric(reference.unsqueeze(0).unsqueeze(0), image.unsqueeze(0).unsqueeze(0))
-
-            implementations["monai"] = monai_ssim
-        except ImportError:
-            logger.warning("monai or its SSIM implementation is not available, skipping monai implementation of SSIM")
-
-        try:
-            from deepinv.loss.metric import SSIM as DeepInvSSIM
-
-            deepinv_metric = DeepInvSSIM(
-                multiscale=False,
-                max_pixel=self.dynamic_range,
-                min_pixel=0.0,
-                torchmetric_kwargs={
-                    "gaussian_kernel": True,
-                    "sigma": self.kernel_sigma,
-                    "kernel_size": self.kernel_size,
-                    "k1": self.k1,
-                    "k2": self.k2,
-                },
-            )
-
-            def deepinv_ssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # deepinv wraps torchmetrics-style SSIM for inverse-problems workflows,
-                # so its results are expected to match torchmetrics very closely.
-                return deepinv_metric(image.unsqueeze(0).unsqueeze(0), reference.unsqueeze(0).unsqueeze(0))
-
-            implementations["deepinv"] = deepinv_ssim
-        except ImportError:
-            logger.warning(
-                "deepinv or its SSIM implementation is not available, skipping deepinv implementation of SSIM"
-            )
-
-        try:
-            from mondAI.metrics.third_party.medimetrics.ssim import SSIM as MediMetricsSSIM
-
-            medimetric = MediMetricsSSIM()
-
-            def medimetrics_ssim(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                score = medimetric.compute(
-                    reference.cpu().numpy(),
-                    image.cpu().numpy(),
-                    data_range=self.dynamic_range,
-                    kernel_size=self.kernel_size,
-                    sigma=self.kernel_sigma,
-                    k1=self.k1,
-                    k2=self.k2,
-                )
-                return torch.tensor(score, device=image.device, dtype=image.dtype)
-
-            implementations["medimetrics"] = medimetrics_ssim
-        except ImportError:
-            logger.warning(
-                "medimetrics or its SSIM implementation is not available, skipping medimetrics implementation of SSIM"
-            )
-
-        return implementations
+    def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
+        self._register_implementation(
+            implementations,
+            "scikit-image",
+            get_skimage_ssim(self.kernel_size, self.dynamic_range, self.k1, self.k2, self.kernel_sigma),
+        )
+        self._register_implementation(
+            implementations,
+            "torchmetrics",
+            get_torchmetrics_ssim(self.kernel_sigma, self.kernel_size, self.dynamic_range, self.k1, self.k2),
+        )
+        self._register_implementation(
+            implementations,
+            "tensorflow",
+            get_tensorflow_ssim(self.dynamic_range, self.kernel_size, self.kernel_sigma, self.k1, self.k2),
+        )
+        self._register_implementation(
+            implementations,
+            "piq",
+            get_piq_ssim(self.kernel_size, self.kernel_sigma, self.dynamic_range, self.k1, self.k2),
+        )
+        self._register_implementation(
+            implementations,
+            "piqa",
+            get_piqa_ssim(self.kernel_size, self.kernel_sigma, self.dynamic_range, self.k1, self.k2),
+        )
+        self._register_implementation(
+            implementations,
+            "sewar",
+            get_sewar_ssim(self.kernel_size, self.k1, self.k2, self.dynamic_range, self.kernel_sigma),
+        )
+        self._register_implementation(
+            implementations,
+            "monai",
+            get_monai_ssim(self.dynamic_range, self.kernel_size, self.kernel_sigma, self.k1, self.k2),
+        )
+        self._register_implementation(
+            implementations,
+            "deepinv",
+            get_deepinv_ssim(self.dynamic_range, self.kernel_sigma, self.kernel_size, self.k1, self.k2),
+        )
+        self._register_implementation(
+            implementations,
+            "medimetrics",
+            get_medimetrics_ssim(self.dynamic_range, self.kernel_size, self.kernel_sigma, self.k1, self.k2),
+        )
 
     def __str__(self) -> str:
         """Full text representation of the metric."""

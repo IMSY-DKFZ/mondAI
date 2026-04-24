@@ -5,6 +5,9 @@ import torch
 from mondAI.logging import get_logger
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
+from mondAI.metrics.third_party.piq import get_piq_vifp
+from mondAI.metrics.third_party.sewar import get_sewar_vifp
+from mondAI.metrics.third_party.torchmetrics import get_torchmetrics_vifp
 from mondAI.utils.signal_processing import convolve2d, gaussian_filter_kernel
 
 logger = get_logger()
@@ -137,75 +140,10 @@ class VIFP(FullReferenceMetric):
 
         return numerator / denominator
 
-    def _other_implementations(self) -> dict[str, Callable[..., torch.Tensor]]:
-        """Return a dictionary of other implementations of the metric. This will be
-        used when compare_implementations is True to compute the metric using different
-        libraries or implementations for comparison.
-
-        :return: A dictionary where the keys are the names of the libraries or implementations, and the values are
-        callables that compute the metric using those implementations.
-        :rtype: dict[str, callable[..., torch.Tensor]]
-
-        """
-
-        implementations = {}
-
-        # PIQ implementation
-        try:
-            from piq import vif_p as vifp_piq
-
-            def piq_vifp(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # piq's implementation expects inputs with shape (N, C, H, W) and
-                # data_range parameter should correspond to pixel value range
-
-                return vifp_piq(
-                    image.unsqueeze(0).unsqueeze(0),
-                    reference.unsqueeze(0).unsqueeze(0),
-                    data_range=255.0,
-                    sigma_n_sq=self.sigma_n_squared,
-                )
-
-            implementations["piq"] = piq_vifp
-
-        except ImportError:
-            logger.warning("piq or its VIFP implementation is not available, skipping piq implementation of VIFP")
-
-        # torchmetrics implementation
-        try:
-            from torchmetrics.functional.image.vif import visual_information_fidelity as vifp_torchmetrics
-
-            def torchmetrics_vifp(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # torchmetrics' implementation expects inputs with shape (N, C, H, W)
-
-                return vifp_torchmetrics(
-                    image.unsqueeze(0).unsqueeze(0),
-                    reference.unsqueeze(0).unsqueeze(0),
-                    sigma_n_sq=self.sigma_n_squared,
-                )
-
-            implementations["torchmetrics"] = torchmetrics_vifp
-
-        except ImportError:
-            logger.warning(
-                "torchmetrics or its VIFP implementation is not available, skipping torchmetrics implementation of VIFP"
-            )
-
-        # sewar implementation
-        try:
-            from sewar.full_ref import vifp as vifp_sewar
-
-            def sewar_vifp(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-                # sewar's implementation expects numpy arrays
-
-                vifp_numpy = vifp_sewar(image.cpu().numpy(), reference.cpu().numpy(), sigma_nsq=self.sigma_n_squared)
-                return torch.tensor(vifp_numpy).to(image.device).to(image.dtype)
-
-            implementations["sewar"] = sewar_vifp
-
-        except ImportError:
-            logger.warning("sewar or its VIFP implementation is not available, skipping sewar implementation of VIFP")
-
-        return implementations
+    def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
+        self._register_implementation(implementations, "piq", get_piq_vifp(self.sigma_n_squared))
+        self._register_implementation(implementations, "torchmetrics", get_torchmetrics_vifp(self.sigma_n_squared))
+        self._register_implementation(implementations, "sewar", get_sewar_vifp(self.sigma_n_squared))
 
     def __str__(self) -> str:
         """Full text representation of the metric.
