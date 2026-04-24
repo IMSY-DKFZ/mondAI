@@ -6,7 +6,7 @@ from mondAI.logging import get_logger
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
 from mondAI.utils.conversions import rgb_to_yiq
-from mondAI.utils.signal_processing import convolve2d
+from mondAI.utils.signal_processing import convolve2d, subsample
 from mondAI.utils.similarity_map import similarity_map
 
 logger = get_logger()
@@ -264,8 +264,8 @@ class FSIM(FullReferenceMetric):
             image.shape[self.expected_dimensions.index(dim)] for dim in (Dimension.HEIGHT, Dimension.WIDTH)
         )
         kernel_size = max(1, round(min_dimension / 256))
-        image = self._subsample(image, kernel_size=kernel_size)
-        reference = self._subsample(reference, kernel_size=kernel_size)
+        image = subsample(image, kernel_size=kernel_size, channels=3 if self.use_rgb else 1)
+        reference = subsample(reference, kernel_size=kernel_size, channels=3 if self.use_rgb else 1)
 
         # Compute phase congruency maps
         phase_congruency_image = self._phase_congruency(
@@ -474,36 +474,6 @@ class FSIM(FullReferenceMetric):
                     "when use_rgb is set to True. Instead you might want to use the grayscale definition"
                     "(use_rgb=False) and apply it channel wise."
                 )
-
-    def _subsample(self, image: torch.Tensor, kernel_size: int = 2) -> torch.Tensor:
-        """Subsample the input image by a factor of k (default k=2) using a mean filter
-        and dyadic subsampling. This simulates the typical distance between an image
-        and its viewer in psychophysical experiments as described in the original
-        publication.
-
-        If use_rgb is True and the input image has 3 channels, the subsampling is
-        applied to each channel separately and then the subsampled channels are stacked
-        back together.
-
-        :param image: The input 2D image to be subsampled, shape (H, W), or (C, H, W)
-            if use_rgb is True and the image has 3 channels.
-        :type image: torch.Tensor
-        :return: The subsampled image, shape (H/k, W/k), or (H/k+1, W/k+1) if the input
-            dimensions are odd. If use_rgb is True and the input image has 3 channels,
-            the output shape will be (C, H/k, W/k) or (C, H/k+1, W/k+1) if the input
-            dimensions are odd.
-        :rtype: torch.Tensor
-
-        """
-
-        # apply subsampling to each channel separately and stack back together
-        if self.use_rgb and image.shape[self.expected_dimensions.index(Dimension.CHANNEL)] == 3:
-            subsampled_channels = [self._subsample(image[channel], kernel_size=kernel_size) for channel in range(3)]
-            return torch.stack(subsampled_channels, dim=self.expected_dimensions.index(Dimension.CHANNEL))
-
-        filter_weights = image.new_ones(1, 1, kernel_size, kernel_size) / kernel_size**2
-        mean_filtered = torch.nn.functional.conv2d(image.unsqueeze(0), weight=filter_weights, padding="same")
-        return mean_filtered.squeeze()[::kernel_size, ::kernel_size]
 
     def _phase_congruency(
         self,

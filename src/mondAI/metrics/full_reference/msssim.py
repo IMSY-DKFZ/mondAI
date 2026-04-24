@@ -5,7 +5,7 @@ import torch
 from mondAI.logging import get_logger
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
-from mondAI.utils.signal_processing import convolve2d
+from mondAI.utils.signal_processing import subsample
 from mondAI.utils.similarity_map import ssim_and_cs_maps
 
 logger = get_logger()
@@ -165,8 +165,6 @@ class MSSSIM(FullReferenceMetric):
         mean_ssims = image.new_zeros((self.scales,))
         mean_contrasts_and_structures = image.new_zeros((self.scales,))
 
-        downsample_filter = image.new_ones((2, 2)) / 4.0
-
         for scale in range(self.scales):
             ssim_map, cs_map = ssim_and_cs_maps(
                 image,
@@ -179,11 +177,8 @@ class MSSSIM(FullReferenceMetric):
             )
             mean_ssims[scale], mean_contrasts_and_structures[scale] = ssim_map.mean(), cs_map.mean()
 
-            filtered_image = convolve2d(image, downsample_filter, padding="same")
-            filtered_reference = convolve2d(reference, downsample_filter, padding="same")
-
-            image = filtered_image[::2, ::2]
-            reference = filtered_reference[::2, ::2]
+            image = subsample(image, kernel_size=2)
+            reference = subsample(reference, kernel_size=2)
 
         weights = torch.tensor(self.weights, device=image.device, dtype=image.dtype)
         terms = torch.cat((mean_contrasts_and_structures[:-1], mean_ssims[-1:]))

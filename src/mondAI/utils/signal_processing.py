@@ -40,19 +40,25 @@ def gaussian_filter_kernel(kernel_size: int, sigma: float, device: torch.device,
     return kernel / torch.sum(kernel)
 
 
-def subsample(image: torch.Tensor, kernel_size: int = 2) -> torch.Tensor:
-    """Subsample the input image by a factor of k (default k=2) using a mean filter and
-    dyadic subsampling. This simulates the typical distance between an image and its
-    viewer in psychophysical experiments as described in the original publication.
+def subsample(image: torch.Tensor, kernel_size: int = 2, channels: int = 1) -> torch.Tensor:
+    """Subsample the input image by a factor of kernel_size (default 2) using a mean
+    filter and dyadic subsampling.
 
     :param image: The input 2D image to be subsampled, shape (H, W),
     :type image: torch.Tensor
+    :param kernel_size: The size of the mean filter kernel, defaults to 2.
+    :type kernel_size: int
+    :param channels: The number of channels in the input image, defaults to 1. This is
+        used to create the appropriate filter weights for convolution.
+    :type channels: int
     :return: The subsampled image, shape (H/k, W/k), or (H/k+1, W/k+1) if the input
         dimensions are odd.
     :rtype: torch.Tensor
 
     """
 
-    filter_weights = image.new_ones(1, 1, kernel_size, kernel_size) / kernel_size**2
-    mean_filtered = torch.nn.functional.conv2d(image.unsqueeze(0), weight=filter_weights, padding="same")
+    filter_weights = image.new_ones(channels, 1, kernel_size, kernel_size) / kernel_size**2
+    mean_filtered = torch.nn.functional.conv2d(
+        image.unsqueeze(0), weight=filter_weights, padding="same", groups=channels
+    )
     return mean_filtered.squeeze()[::kernel_size, ::kernel_size]  # subsampled
