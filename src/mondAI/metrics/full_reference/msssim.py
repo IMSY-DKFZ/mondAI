@@ -63,7 +63,7 @@ class MSSSIM(FullReferenceMetric):
 
     Original publication:
     Z. Wang, E. P. Simoncelli, and A. C. Bovik,
-    "Multi-scale structural similarity for image quality assessment,"
+    "Multi-scale structural similarity for image quality assessment",
     Proceedings of the 37th Asilomar Conference on Signals, Systems and Computers,
     Nov. 2003, pp. 1398-1402, doi: 10.1109/ACSSC.2003.1292216.
 
