@@ -3,6 +3,21 @@ from collections.abc import Callable
 import torch
 
 
+def get_piq_dss(sigma_weight: float) -> Callable[..., torch.Tensor]:
+    from piq import dss
+
+    def piq_dss(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+        # PIQ expects NCHW tensors and provides a PyTorch-native DSS implementation.
+        return dss(
+            image.unsqueeze(0).unsqueeze(0),
+            reference.unsqueeze(0).unsqueeze(0),
+            data_range=255.0,
+            sigma_weight=1.55,
+        )
+
+    return piq_dss
+
+
 def get_piq_fsim(
     use_rgb: bool,
     scales: int,

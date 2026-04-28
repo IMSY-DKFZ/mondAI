@@ -38,7 +38,7 @@ class VIFP(FullReferenceMetric):
     213a46687ad99098f274784e61d92c5144a94a68, License: Apache License 2.0) and MATLAB code provided by the
     original authors of VIFP (https://live.ece.utexas.edu/research/Quality/VIF.htm, License: BSD 3-Clause License).
 
-    Original publication: H.R. Sheikh.and A.C. Bovik, "Image information and visual quality,"
+    Original publication: H.R. Sheikh.and A.C. Bovik, "Image information and visual quality",
     IEEE Transactions on Image Processing , vol.15, no.2,pp. 430- 444, Feb. 2006.
 
     """

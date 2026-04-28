@@ -1,4 +1,5 @@
 from .cwssim import CWSSIM
+from .dss import DSS
 from .fsim import FSIM
 from .haarpsi import HaarPSI, HaarPSI_MED
 from .iwssim import IWSSIM
@@ -9,4 +10,4 @@ from .psnr import PSNR
 from .ssim import SSIM
 from .vifp import VIFP
 
-FULL_REFERENCE_METRICS = [MAE, MSE, SSIM, MSSSIM, IWSSIM, CWSSIM, HaarPSI, HaarPSI_MED, FSIM, VIFP, PSNR]
+FULL_REFERENCE_METRICS = [MAE, MSE, SSIM, MSSSIM, IWSSIM, CWSSIM, HaarPSI, HaarPSI_MED, FSIM, VIFP, PSNR, DSS]
