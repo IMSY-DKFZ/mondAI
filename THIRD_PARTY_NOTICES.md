@@ -10,6 +10,17 @@ doi: 10.1109/TIP.2009.2025923.
 
 Implementation adapted from the original MATLAB code by Zhou Wang, Mehul Sampat and Alan Bovik: https://de.mathworks.com/matlabcentral/fileexchange/43017-complex-wavelet-structural-similarity-index-cw-ssim/files/cwssim_index.m (license: BSD 2-Clause)
 
+## DSS
+
+Based on:
+Balanov, A., Schwartz, A., Moshe, Y., & Peleg, N. (2015, September).
+Image quality assessment based on DCT subband similarity.
+In 2015 IEEE international conference on image processing (ICIP) (pp. 2105-2109). IEEE.
+
+Implementation adapted from original MATLAB implementation by Yair Moshe:
+https://de.mathworks.com/matlabcentral/fileexchange/53708-dct-subband-similarity-index-for-measuring-image-quality
+(licence: BSD 3-Clause License)
+
 ## FSIM
 
 Based on:
