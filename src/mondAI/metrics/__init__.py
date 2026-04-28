@@ -1,4 +1,5 @@
 from mondAI.metrics.full_reference.cwssim import CWSSIM as CWSSIM
+from mondAI.metrics.full_reference.dss import DSS as DSS
 from mondAI.metrics.full_reference.fsim import FSIM as FSIM
 from mondAI.metrics.full_reference.haarpsi import HaarPSI as HaarPSI
 from mondAI.metrics.full_reference.haarpsi import HaarPSI_MED as HaarPSI_MED
