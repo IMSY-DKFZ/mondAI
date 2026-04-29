@@ -91,6 +91,23 @@ def get_piqa_haarpsi(use_rgb: bool, c: float, alpha: float) -> Callable[..., tor
     return piqa_haarpsi
 
 
+def get_piqa_mdsi(combination: str) -> Callable[..., torch.Tensor]:
+    from piqa import MDSI
+
+    mdsi_piqa = MDSI(combination="prod" if combination == "product" else "sum", value_range=255.0)
+
+    def piqa_mdsi(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+        # piqa's implementation expects inputs with shape (N, C, H, W) and
+        # data_range parameter should correspond to pixel value range
+        mdsi_piqa.to(image.device)
+        return mdsi_piqa(
+            image.unsqueeze(0).float(),
+            reference.unsqueeze(0).float(),
+        )
+
+    return piqa_mdsi
+
+
 def get_piqa_msssim(
     window_size: int, sigma: float, value_range: float, weights: tuple[float, ...], k1: float, k2: float
 ) -> Callable[..., torch.Tensor]:

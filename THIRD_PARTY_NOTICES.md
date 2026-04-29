@@ -77,6 +77,17 @@ Implementation adapted from the original MATLAB implementation by Zhou Wang:
 https://ece.uwaterloo.ca/~z70wang/research/iwssim/ and
 PIQ: https://github.com/photosynthesis-team/piq/blob/master/piq/iw_ssim.py commit: 213a46687ad99098f274784e61d92c5144a94a68 (license: Apache 2.0)
 
+## MDSI
+
+Based on:
+Nafchi, H. Z., Shahkolaei, A., Hedjam, R., & Cheriet, M. (2016).
+Mean deviation similarity index: Efficient and reliable full-reference image quality evaluator.
+IEE Access, 4, 5579-5590.
+
+Implementation adapted from original MATLAB implementation by Hossein Ziaei Nafchi, which is available at:
+https://de.mathworks.com/matlabcentral/fileexchange/59809-mdsi-ref-dist-combmethod/files/MDSI.m
+(licence: BSD 2-Clause License)
+
 ## MS-SSIM
 
 Based on:

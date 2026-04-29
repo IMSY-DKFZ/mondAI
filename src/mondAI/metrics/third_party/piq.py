@@ -126,6 +126,21 @@ def get_piq_iwssim(
     return piq_iwssim
 
 
+def get_piq_mdsi(combination: str) -> Callable[..., torch.Tensor]:
+    from piq import mdsi
+
+    def piq_mdsi(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+        # PIQ expects NCHW tensors and provides a PyTorch-native MDSI implementation.
+        return mdsi(
+            image.unsqueeze(0),
+            reference.unsqueeze(0),
+            data_range=255.0,
+            combination="mult" if combination == "product" else combination,
+        )
+
+    return piq_mdsi
+
+
 def get_piq_msssim(
     kernel_size: int, kernel_sigma: float, data_range: float, scale_weights: tuple[float, ...], k1: float, k2: float
 ) -> Callable[..., torch.Tensor]:
