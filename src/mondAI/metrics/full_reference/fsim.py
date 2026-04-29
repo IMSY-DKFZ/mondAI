@@ -8,7 +8,7 @@ from mondAI.metrics.full_reference.base import FullReferenceMetric
 from mondAI.metrics.third_party.piq import get_piq_fsim
 from mondAI.metrics.third_party.piqa import get_piqa_fsim
 from mondAI.utils.conversions import rgb_to_yiq
-from mondAI.utils.signal_processing import convolve2d, subsample
+from mondAI.utils.signal_processing import gradient_map, subsample
 from mondAI.utils.similarity_map import similarity_map
 
 logger = get_logger()
@@ -307,11 +307,6 @@ class FSIM(FullReferenceMetric):
             .double()
             .to(image.device)
         )
-
-        def gradient_map(image: torch.Tensor, kernel: torch.Tensor) -> torch.Tensor:
-            gradient_x = convolve2d(image, kernel, padding="same")
-            gradient_y = convolve2d(image, kernel.t(), padding="same")
-            return torch.sqrt(gradient_x**2 + gradient_y**2)
 
         gradient_map_image = gradient_map(image[0] if self.use_rgb else image, sharr_kernel)
         gradient_map_reference = gradient_map(reference[0] if self.use_rgb else reference, sharr_kernel)

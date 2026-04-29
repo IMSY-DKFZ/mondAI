@@ -43,6 +43,32 @@ def get_piqa_fsim(
     return piqa_fsim
 
 
+def get_piqa_gmsd(c: float) -> Callable[..., torch.Tensor]:
+    from piqa.gmsd import gmsd as gmsd_piqa
+    from piqa.gmsd import gradient_kernel, prewitt_kernel
+
+    def piqa_gmsd(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+        # piqa's implementation expects inputs with shape (N, C, H, W) and
+        # data_range parameter should correspond to pixel value range
+
+        image = image.unsqueeze(0).unsqueeze(0)
+        reference = reference.unsqueeze(0).unsqueeze(0)
+
+        # downsample by a factor of 2 to match the original implementation's behavior
+        image = torch.nn.functional.avg_pool2d(image, 2, ceil_mode=True)
+        reference = torch.nn.functional.avg_pool2d(reference, 2, ceil_mode=True)
+
+        return gmsd_piqa(
+            image.float(),
+            reference.float(),
+            kernel=gradient_kernel(prewitt_kernel().to(image.device)),
+            value_range=255.0,
+            c=c,
+        )
+
+    return piqa_gmsd
+
+
 def get_piqa_haarpsi(use_rgb: bool, c: float, alpha: float) -> Callable[..., torch.Tensor]:
     from piqa.haarpsi import haarpsi as haarpsi_piqa
 

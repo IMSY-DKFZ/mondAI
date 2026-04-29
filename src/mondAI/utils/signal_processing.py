@@ -62,3 +62,22 @@ def subsample(image: torch.Tensor, kernel_size: int = 2, channels: int = 1) -> t
         image.unsqueeze(0), weight=filter_weights, padding="same", groups=channels
     )
     return mean_filtered.squeeze()[::kernel_size, ::kernel_size]  # subsampled
+
+
+def gradient_map(image: torch.Tensor, kernel: torch.Tensor) -> torch.Tensor:
+    """Compute the gradient map of the input image using the provided kernel by
+    convolving the image with the kernel in both x and y directions and combining the
+    results.
+
+    :param image: The input 2D image for which to compute the gradient map, shape (H,
+        W).
+    :type image: torch.Tensor
+    :param kernel: The 2D convolution kernel to compute the gradients, shape (k, k).
+    :type kernel: torch.Tensor
+    :return: The computed gradient map, shape (H, W).
+    :rtype: torch.Tensor
+
+    """
+    gradient_x = convolve2d(image, kernel, padding="same")
+    gradient_y = convolve2d(image, kernel.t(), padding="same")
+    return torch.sqrt(gradient_x**2 + gradient_y**2)
