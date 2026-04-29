@@ -61,7 +61,7 @@ def subsample(image: torch.Tensor, kernel_size: int = 2, channels: int = 1) -> t
     mean_filtered = torch.nn.functional.conv2d(
         image.unsqueeze(0), weight=filter_weights, padding="same", groups=channels
     )
-    return mean_filtered.squeeze()[::kernel_size, ::kernel_size]  # subsampled
+    return mean_filtered.squeeze()[..., ::kernel_size, ::kernel_size]  # subsampled
 
 
 def gradient_map(image: torch.Tensor, kernel: torch.Tensor) -> torch.Tensor:
