@@ -239,15 +239,6 @@ class DSS(FullReferenceMetric):
         return similarity
 
     def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
-        """Override this method in subclasses to register other implementations of the
-        metric for comparison. Use the `_register_implementation` helper method to add
-        implementations to the internal dictionary. These implementations will be used
-        when compare_implementations is True.
-
-        Store reference implementations in the `third_party` submodule of the metrics module,
-        and import them here to register them for comparison.
-
-        """
         self._register_implementation(implementations, "piq", get_piq_dss(self.sigma))
 
     def __str__(self) -> str:

@@ -31,6 +31,16 @@ https://ieeexplore.ieee.org/document/5705575
 Implementation adapted from PIQ: https://github.com/photosynthesis-team/piq/blob/master/piq/fsim.py, commit: 213a46687ad99098f274784e61d92c5144a94a68 (License: Apache 2.0),
 which itself is based on the original MATLAB implementation by Lin Zhang, Lei Zhang, Xuanqin Mou and David Zhang: https://www4.comp.polyu.edu.hk/~cslzhang/IQA/FSIM/Files/FeatureSIM.m
 
+## GMSD
+
+Based on:
+Xue, Wufeng, et al.
+"Gradient magnitude similarity deviation: A highly efficient perceptual image quality index."
+IEEE transactions on image processing 23.2 (2013): 684-695.
+
+
+Implementation adapted from original MATLAB implementation by Wufeng Xue, Lei Zhang, Xuanqin Mou, and Alan C. Bovik,
+which is available at: http://www4.comp.polyu.edu.hk/~cslzhang/IQA/GMSD/GMSD.htm
 
 ## HaarPSI
 

@@ -55,6 +55,21 @@ def get_piq_fsim(
     return piq_fsim
 
 
+def get_piq_gmsd(t: float) -> Callable[..., torch.Tensor]:
+    from piq import gmsd
+
+    def piq_gmsd(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+        # PIQ expects NCHW tensors and provides a PyTorch-native GMSD implementation.
+        return gmsd(
+            image.unsqueeze(0).unsqueeze(0),
+            reference.unsqueeze(0).unsqueeze(0),
+            data_range=255.0,
+            t=t,
+        )
+
+    return piq_gmsd
+
+
 def get_piq_haarpsi(use_rgb: bool, c: float, alpha: float, subsample: bool) -> Callable[..., torch.Tensor]:
     from piq import haarpsi
 
