@@ -24,7 +24,7 @@ def test_k2_valid(k2: float) -> None:
 @pytest.mark.parametrize("parameter, value", [("k1", -1e-6), ("k2", -1e-6)])
 def test_k_parameters_invalid(parameter: str, value: float) -> None:
     with pytest.raises(ValueError):
-        IWSSIM(**{parameter: value})  # type: ignore[arg-type]
+        IWSSIM(**{parameter: value})
 
 
 @pytest.mark.parametrize("kernel_size", [3, 5, 11, 15])
@@ -151,5 +151,5 @@ def test_single_scale_same_as_ssim() -> None:
     img1 = torch.rand(256, 256) * 255.0
     img2 = torch.rand(256, 256) * 255.0
     score_iwssim = iwssim(img1, img2)
-    score_ssim = ssim(img1, img2)
-    assert torch.isclose(torch.as_tensor(score_iwssim), torch.as_tensor(score_ssim))
+    score_ssim = ssim(img1, img2)  # might become negative so take abs
+    assert torch.isclose(torch.as_tensor(score_iwssim), torch.abs(torch.as_tensor(score_ssim)))
