@@ -98,7 +98,7 @@ class MDSI(FullReferenceMetric):
         image = subsample(image, kernel_size=kernel_size, channels=3)
         reference = subsample(reference, kernel_size=kernel_size, channels=3)
 
-        # Convert get luminance and opponent color channels
+        # Convert to luminance and opponent color channels
         rgb_to_lhm_matrix = torch.tensor(
             [[0.2989, 0.587, 0.114], [0.3, 0.04, -0.35], [0.34, -0.6, 0.17]], device=image.device, dtype=image.dtype
         )
@@ -175,8 +175,8 @@ class MDSI(FullReferenceMetric):
             [0, 255].
         :raises ValueError: If the reference image contains pixel values outside the
             range [0, 255].
-        :raises ValueError: If use_rgb is True but the images do not have 3 channels,
-            which is required for the RGB definition of MDSI.
+        :raises ValueError: If images do not have 3 channels, which is required for
+            MDSI.
 
         """
         # Input checks specific to MDSI

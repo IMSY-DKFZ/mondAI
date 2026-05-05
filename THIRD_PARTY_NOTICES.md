@@ -133,3 +133,15 @@ Proceedings of the IEEE/CVF conference on computer vision and pattern recognitio
 
 Implementation adapted from the original author's implementation:
 https://github.com/baidut/paq2piq/ commit: 48c91e844e9f7a768f6ddcfc744dddfdd1160fea (License: MIT)
+
+## VSI
+
+Based on:
+Zhang, Lin, Ying Shen, and Hongyu Li.
+"VSI: A visual saliency-induced index for perceptual image quality assessment."
+IEEE Transactions on Image processing 23.10 (2014): 4270-4281.
+
+Implementation based on original MATLAB implementation by Lin Zhang and
+piq's implementation, which is based on the original MATLAB code provided by the authors of VSI:
+https://github.com/photosynthesis-team/piq/blob/master/piq/vsi.py
+commit: 09aad9e1bde484dfbdc4b1bc20020711145636c5 (License: Apache License 2.0)

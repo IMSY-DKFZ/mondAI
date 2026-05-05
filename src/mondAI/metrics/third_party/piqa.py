@@ -166,3 +166,22 @@ def get_piqa_ssim(
         return piqa_metric(image.float().unsqueeze(0).unsqueeze(0), reference.float().unsqueeze(0).unsqueeze(0))
 
     return piqa_ssim
+
+
+def get_piqa_vsi() -> Callable[..., torch.Tensor]:
+    """PIQA's VSI implementation is not working as there is a shape mismatch in the
+    saliency map computation."""
+    from piqa import VSI
+
+    vsi_piqa = VSI(chromatic=True, downsample=True, value_range=255.0)
+
+    def piqa_vsi(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+        # piqa's implementation expects inputs with shape (N, C, H, W) and
+        # data_range parameter should correspond to pixel value range
+        vsi_piqa.to(image.device)
+        return vsi_piqa(
+            image.unsqueeze(0).float(),
+            reference.unsqueeze(0).float(),
+        )
+
+    return piqa_vsi
