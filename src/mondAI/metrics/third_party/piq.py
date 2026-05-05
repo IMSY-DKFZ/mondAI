@@ -219,3 +219,15 @@ def get_piq_vifp(sigma_n_sq: float) -> Callable[..., torch.Tensor]:
         )
 
     return piq_vifp
+
+
+def get_piq_vsi(c1: float, c2: float, c3: float, alpha: float, beta: float) -> Callable[..., torch.Tensor]:
+    from piq import vsi
+
+    def piq_vsi(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+        # PIQ expects NCHW tensors and provides a PyTorch-native VSI implementation.
+        return vsi(
+            image.unsqueeze(0), reference.unsqueeze(0), data_range=255.0, c1=c1, c2=c2, c3=c3, alpha=alpha, beta=beta
+        )
+
+    return piq_vsi

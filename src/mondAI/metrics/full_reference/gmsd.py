@@ -106,8 +106,6 @@ class GMSD(FullReferenceMetric):
             [0, 255].
         :raises ValueError: If the reference image contains pixel values outside the
             range [0, 255].
-        :raises ValueError: If use_rgb is True but the images do not have 3 channels,
-            which is required for the RGB definition of GMSD.
 
         """
         # Input checks specific to GMSD

@@ -11,6 +11,7 @@ from .msssim import MSSSIM
 from .psnr import PSNR
 from .ssim import SSIM
 from .vifp import VIFP
+from .vsi import VSI
 
 FULL_REFERENCE_METRICS = [
     MAE,
@@ -27,4 +28,5 @@ FULL_REFERENCE_METRICS = [
     DSS,
     GMSD,
     MDSI,
+    VSI,
 ]
