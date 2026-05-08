@@ -99,6 +99,16 @@ Nov. 2003, pp. 1398-1402, doi: 10.1109/ACSSC.2003.1292216.
 Implementation adapted from the original MATLAB implementation by Zhou Wang:
 https://ece.uwaterloo.ca/~z70wang/research/iwssim/msssim.zip
 
+## NIQE
+
+Based on:
+Mittal, Anish, Rajiv Soundararajan, and Alan C. Bovik.
+"Making a “completely blind” image quality analyzer."
+IEEE Signal processing letters 20.3 (2012): 209-212.
+
+Implementation based on the original MATLAB code using their extracted parameters:
+http://live.ece.utexas.edu/research/quality/niqe_release.zip
+
 ## PSNR
 
 Reference implementation used for comparison and API alignment:
