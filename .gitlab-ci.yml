@@ -22,6 +22,8 @@ lint:
   script:
     - pip install pre-commit
     - pre-commit run --all-files
+  tags:
+    - sci-runner
 
 fast_tests:
   stage: test
