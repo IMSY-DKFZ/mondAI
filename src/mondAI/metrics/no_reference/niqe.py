@@ -14,22 +14,24 @@ logger = get_logger()
 
 
 class NIQE(NoReferenceMetric):
-    """Natural Image Quality Evaluator (NIQE) index which is  based on the statistical
+    """Natural Image Quality Evaluator (NIQE) index which is based on the statistical
     features of natural images and measures the deviation of the input image from these
     natural image statistics. The NIQE index is designed to be "completely blind,"
     meaning it does not rely on any specific distortion model or reference image,
     making it applicable to a wide range of image quality assessment tasks.
 
-    Asymmetric generalized Gaussian distribution features are computed on patches and then fitted to a multivariate
-    Gaussian distribution. The distance between the parameters of the fitted distribution and the parameters of a
+    Asymmetric generalized Gaussian distribution features are computed on mean subtracted and contrast normalized
+    patches and then fitted to a multivariate Gaussian distribution.
+    The distance between the parameters of the fitted distribution and the parameters of a
     distribution fitted to natural images is then computed as the quality score. The distance is computed using the
     Mahalanobis distance, which takes into account the covariance of the features.
 
     This implemtentation and it's scores deviate from the original MATLAB implementation due to numerical differences
-    in the image filtering and resize functions between MATLAB and pytorch which are strongly enhanced by the
+    in the image filtering and resize functions between MATLAB and pytorch which are enhanced by the
     computation of this metric. This metric expects grayscale images. Apply an `rgb2gray` function if your input
     has 3 channels (as the original MATLAB code does). Expected input image value range is [0, 255],
     and output quality scores are non-negative, where lower values indicate better perceptual quality.
+    For non-natural images expect unstable NIQE scores, as there are no natural image statistics to compare against.
 
     Implementation based on the original MATLAB code using their extracted parameters:
     http://live.ece.utexas.edu/research/quality/niqe_release.zip
@@ -111,6 +113,8 @@ class NIQE(NoReferenceMetric):
 
     def _compute(self, image: torch.Tensor) -> torch.Tensor:
         self._input_checks(image)
+
+        # Crop the image so that it can be divided into non-overlapping blocks of the specified size
         number_block_rows = image.shape[-2] // self.block_size_row
         number_block_columns = image.shape[-1] // self.block_size_column
         image = image[..., : number_block_rows * self.block_size_row, : number_block_columns * self.block_size_column]
@@ -120,32 +124,33 @@ class NIQE(NoReferenceMetric):
         image = image[..., : number_block_rows * self.block_size_row, : number_block_columns * self.block_size_column]
 
         window = gaussian_filter_kernel(7, sigma=7 / 6, device=image.device, dtype=image.dtype)
+        window = window[3, :] / torch.sum(window[3, :])
         number_features = 18
         number_scales = 2
 
         features = image.new_zeros(number_block_columns * number_block_rows, number_scales * number_features)
 
         for i in range(1, number_scales + 1):
-            image_padded = torch.nn.functional.pad(image.unsqueeze(0), pad=[3, 3, 3, 3], mode="replicate").squeeze(0)
-            mu = convolve2d(image_padded, window.T)
-            mu_squared = mu * mu
-            image_squared = image * image
-            image_squared = torch.nn.functional.pad(
-                image_squared.unsqueeze(0), pad=[3, 3, 3, 3], mode="replicate"
-            ).squeeze(0)
-            sigma = torch.sqrt(torch.abs(convolve2d(image_squared, window.T) - mu_squared))
-            structdis = (image - mu) / (sigma + 1.0)
+            # compute mean subtracted contrast normalized image
+            mu = self.correlate1d(image, window, axis=1)
+            mu = self.correlate1d(mu, window, axis=0)
+            mu_squared = torch.pow(mu, 2)
+            image_squared = torch.pow(image, 2)
+            sigma = self.correlate1d(image_squared, window, axis=1)
+            sigma = self.correlate1d(sigma, window, axis=0)
+            sigma = torch.sqrt(torch.abs(sigma - mu_squared))
+            mean_subtracted_contrast_normalized_image = (image - mu) / (sigma + 1.0)
 
             # feature extraction
             features_scale = self._block_process(
-                structdis,
+                mean_subtracted_contrast_normalized_image,
                 [self.block_size_row // i, self.block_size_column // i],
                 [self.block_row_overlap // i, self.block_column_overlap // i],
                 self._compute_features,
             )
             features[:, (i - 1) * number_features : i * number_features] = features_scale
 
-            # downsampling
+            # downsampling similar to MATLAB's imresize with bicubic interpolation and anti-aliasing
             image_padded = (
                 torch.nn.functional.pad(image.unsqueeze(0).unsqueeze(0), pad=[2, 2, 2, 2], mode="reflect")
                 .squeeze(0)
@@ -176,6 +181,41 @@ class NIQE(NoReferenceMetric):
             @ invcov_param
             @ (self.mu_prisparam.to(image.device) - mu_distparam).T
         )
+
+    def correlate1d(self, input: torch.Tensor, kernel: torch.Tensor, axis: int) -> torch.Tensor:
+        """Perform 1D correlation of the input image with the given kernel along the
+        specified axis. This function uses 2D convolution to perform the correlation by
+        reshaping the kernel appropriately and applying padding to the input image.
+
+        This function is designed to replicate the behavior of MATLAB's `imfilter` function with replicate padding.
+
+        :param input: The input image to be correlated, expected to have shape (H, W).
+        :type input: torch.Tensor
+        :param kernel: The 1D kernel to be used for correlation, expected to have shape (7,).
+        :type kernel: torch.Tensor
+        :param axis: The axis along which to perform the correlation.
+          Must be either 0 (for row-wise correlation) or 1 (for column-wise correlation).
+        :type axis: int
+        :return: The result of the 1D correlation, with the same shape as the input image.
+        :rtype: torch.Tensor
+        :raises ValueError: If the axis parameter is not 0 or 1, or if the kernel does not have the expected shape.
+
+        """
+        if axis == 0:
+            kernel = kernel.view(7, 1)
+            padding = [0, 0, 3, 3]
+        elif axis == 1:
+            kernel = kernel.view(1, 7)
+            padding = [3, 3, 0, 0]
+        else:
+            raise ValueError(f"Axis must be 0 or 1, but got {axis}.")
+
+        input_padded = (
+            torch.nn.functional.pad(input.unsqueeze(0).unsqueeze(0), pad=padding, mode="replicate")
+            .squeeze(0)
+            .squeeze(0)
+        )
+        return convolve2d(input_padded, kernel, padding="valid")
 
     def _block_process(
         self,
@@ -215,7 +255,7 @@ class NIQE(NoReferenceMetric):
         features = []
         for row in range(0, image.shape[-2] - block_size[0] + 1, step_row):
             for col in range(0, image.shape[-1] - block_size[1] + 1, step_col):
-                block_features = image[..., row : row + block_size[0], col : col + block_size[1]]
+                block_features = image[..., col : col + block_size[1], row : row + block_size[0]]
                 features.append(function(block_features))
 
         return torch.stack(features)
