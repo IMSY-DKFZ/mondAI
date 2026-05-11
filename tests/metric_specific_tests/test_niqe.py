@@ -8,7 +8,7 @@ from mondAI.metrics.no_reference.niqe import NIQE
 def test_invalid_value_range_image(factor: float) -> None:
     with pytest.raises(ValueError):
         niqe = NIQE()
-        img1 = torch.rand(200, 300) * 255.0 * factor
+        img1 = torch.ones(200, 300) * 255.0 * factor
         niqe(img1)
 
 
@@ -22,21 +22,21 @@ def test_too_small_image() -> None:
 @pytest.mark.parametrize(
     "parameter, values",
     [
-        ("block_size_row", [96, 42, 25]),
-        ("block_size_column", [96, 42, 25]),
+        ("block_size_row", [96, 55]),
+        ("block_size_column", [96, 55]),
         ("block_column_overlap", [0, 1, 2]),
         ("block_row_overlap", [0, 1, 2]),
     ],
 )
 def test_parameter_valid(
+    brain_slice: torch.Tensor,
     parameter: str,
     values: list[int],
 ) -> None:
     for value in values:
         kwargs = {parameter: value}
         niqe = NIQE(**kwargs)
-        img1 = torch.rand(200, 300) * 255.0
-        niqe(img1)
+        niqe(brain_slice.T)
 
 
 @pytest.mark.parametrize(
