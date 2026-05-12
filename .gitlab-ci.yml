@@ -22,8 +22,6 @@ lint:
   script:
     - pip install pre-commit
     - pre-commit run --all-files
-  tags:
-    - sci-runner
 
 fast_tests:
   stage: test
@@ -36,8 +34,6 @@ fast_tests:
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml
-  tags:
-    - sci-runner
 
 all_tests:
   stage: test
@@ -56,8 +52,6 @@ all_tests:
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml
-  tags:
-    - sci-runner
 
 build:
   stage: build
@@ -67,8 +61,6 @@ build:
   artifacts:
     paths:
       - dist/
-  tags:
-    - sci-runner
 
 pages:
   stage: pages
@@ -87,8 +79,6 @@ pages:
       - public
   only:
     - /^main$|^develop$|^release-.*$/  # build docs only on main, develop or release branches
-  tags:
-    - sci-runner
 
 cache:
   key: ${CI_COMMIT_REF_SLUG}
