@@ -3,16 +3,31 @@ from collections.abc import Callable
 import torch
 
 
+def get_piq_dists() -> Callable[..., torch.Tensor]:
+    from piq import DISTS
+
+    dists_metric = DISTS()
+
+    def piq_dists(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+        # PIQ expects NCHW tensors in float precision
+        return dists_metric(
+            image.unsqueeze(0).float(),
+            reference.unsqueeze(0).float(),
+        )
+
+    return piq_dists
+
+
 def get_piq_dss(sigma_weight: float) -> Callable[..., torch.Tensor]:
     from piq import dss
 
     def piq_dss(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
-        # PIQ expects NCHW tensors and provides a PyTorch-native DSS implementation.
+        # PIQ expects NCHW tensors
         return dss(
             image.unsqueeze(0).unsqueeze(0),
             reference.unsqueeze(0).unsqueeze(0),
             data_range=255.0,
-            sigma_weight=1.55,
+            sigma_weight=sigma_weight,
         )
 
     return piq_dss

@@ -19,6 +19,18 @@ def get_medimetrics_cwssim() -> Callable[..., torch.Tensor]:
     return medimetrics_cwssim
 
 
+def get_medimetrics_dists() -> Callable[..., torch.Tensor]:
+    from mondAI.metrics.third_party.medimetrics_code.dists import DISTS as MediMetricsDISTS
+
+    metric_medimetrics = MediMetricsDISTS()
+
+    def medimetrics_dists(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+        score = metric_medimetrics.compute(reference.cpu().numpy(), image.cpu().numpy())
+        return torch.tensor(score, device=image.device, dtype=image.dtype)
+
+    return medimetrics_dists
+
+
 def get_medimetrics_mae() -> Callable[..., torch.Tensor]:
     from mondAI.metrics.third_party.medimetrics_code.mae import MAE as MAEMedimetrics
 

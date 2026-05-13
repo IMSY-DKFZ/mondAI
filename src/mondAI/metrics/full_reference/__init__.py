@@ -1,4 +1,5 @@
 from .cwssim import CWSSIM
+from .dists import DISTS
 from .dss import DSS
 from .fsim import FSIM
 from .gmsd import GMSD
@@ -29,4 +30,5 @@ FULL_REFERENCE_METRICS = [
     GMSD,
     MDSI,
     VSI,
+    DISTS,
 ]

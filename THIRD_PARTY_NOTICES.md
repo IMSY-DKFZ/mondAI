@@ -10,6 +10,18 @@ doi: 10.1109/TIP.2009.2025923.
 
 Implementation adapted from the original MATLAB code by Zhou Wang, Mehul Sampat and Alan Bovik: https://de.mathworks.com/matlabcentral/fileexchange/43017-complex-wavelet-structural-similarity-index-cw-ssim/files/cwssim_index.m (license: BSD 2-Clause)
 
+## DISTS
+
+Based on:
+Ding, K., Ma, K., Wang, S., & Simoncelli, E. P. (2020).
+Image quality assessment: Unifying structure and texture similarity.
+IEEE transactions on pattern analysis and machine intelligence, 44(5), 2567-2581
+
+Implementation taken from original author Keyan Ding:
+https://github.com/dingkeyan93/DISTS/blob/master/DISTS_pytorch/DISTS_pt.py,
+commit: 1267d8cb626c98706db3697422701c56a85ebf2e (license: MIT)
+with slight adaptations for weight loading and input parsing and to fit the metric class structure
+
 ## DSS
 
 Based on:
@@ -37,7 +49,6 @@ Based on:
 Xue, Wufeng, et al.
 "Gradient magnitude similarity deviation: A highly efficient perceptual image quality index."
 IEEE transactions on image processing 23.2 (2013): 684-695.
-
 
 Implementation adapted from original MATLAB implementation by Wufeng Xue, Lei Zhang, Xuanqin Mou, and Alan C. Bovik,
 which is available at: http://www4.comp.polyu.edu.hk/~cslzhang/IQA/GMSD/GMSD.htm

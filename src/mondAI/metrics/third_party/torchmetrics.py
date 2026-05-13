@@ -3,6 +3,19 @@ from collections.abc import Callable
 import torch
 
 
+def get_torchmetrics_dists() -> Callable[..., torch.Tensor]:
+    from torchmetrics.image.dists import DeepImageStructureAndTextureSimilarity
+
+    dists = DeepImageStructureAndTextureSimilarity()
+
+    def torchmetrics_dists(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+        # torchmetrics expects NCHW tensors in float precision
+        dists.to(image.device)
+        return dists(image.unsqueeze(0).float(), reference.unsqueeze(0).float())
+
+    return torchmetrics_dists
+
+
 def get_torchmetrics_mse() -> Callable[..., torch.Tensor]:
     from torchmetrics.functional.regression import mean_squared_error as mse_torchmetrics
 
