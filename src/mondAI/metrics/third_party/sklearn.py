@@ -27,3 +27,16 @@ def get_sklearn_mse() -> Callable[..., torch.Tensor]:
         return torch.tensor(mse_value, device=image.device)
 
     return sklearn_mse
+
+
+def get_sklearn_rmse() -> Callable[..., torch.Tensor]:
+    from sklearn.metrics import root_mean_squared_error as rmse_sklearn
+
+    def sklearn_rmse(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+        # Flatten the tensors and convert to numpy arrays for sklearn
+        image_np = image.cpu().numpy().flatten()
+        reference_np = reference.cpu().numpy().flatten()
+        rmse_value = rmse_sklearn(reference_np, image_np)
+        return torch.tensor(rmse_value, device=image.device)
+
+    return sklearn_rmse

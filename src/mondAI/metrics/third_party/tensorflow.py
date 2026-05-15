@@ -33,6 +33,20 @@ def get_tensorflow_mse() -> Callable[..., torch.Tensor]:
     return tensorflow_mse
 
 
+def get_tensorflow_rmse() -> Callable[..., torch.Tensor]:
+    import tensorflow as tf
+
+    def tensorflow_rmse(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+        image_np = image.detach().cpu().numpy()
+        reference_np = reference.detach().cpu().numpy()
+        rmse_metric = tf.keras.metrics.RootMeanSquaredError()
+        rmse_metric.update_state(reference_np, image_np)
+        rmse_value = rmse_metric.result().numpy()
+        return torch.as_tensor(rmse_value, device=image.device)
+
+    return tensorflow_rmse
+
+
 def get_tensorflow_msssim(
     max_val: float, power_factors: tuple[float, ...], filter_size: int, filter_sigma: float, k1: float, k2: float
 ) -> Callable[..., torch.Tensor]:

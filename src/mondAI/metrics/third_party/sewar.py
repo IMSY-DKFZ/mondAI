@@ -14,6 +14,17 @@ def get_sewar_mse() -> Callable[..., torch.Tensor]:
     return sewar_mse
 
 
+def get_sewar_rmse() -> Callable[..., torch.Tensor]:
+    from sewar.full_ref import rmse as rmse_sewar
+
+    def sewar_rmse(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+        # sewar operates on NumPy arrays.
+        value = rmse_sewar(reference.cpu().numpy(), image.cpu().numpy())
+        return torch.tensor(value, device=image.device, dtype=image.dtype)
+
+    return sewar_rmse
+
+
 def get_sewar_msssim(
     weights: tuple[float, ...], ws: int, K1: float, K2: float, MAX: float
 ) -> Callable[..., torch.Tensor]:

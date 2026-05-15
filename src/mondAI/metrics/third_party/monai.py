@@ -25,6 +25,17 @@ def get_monai_mse() -> Callable[..., torch.Tensor]:
     return monai_mse
 
 
+def get_monai_rmse() -> Callable[..., torch.Tensor]:
+    from monai.metrics import RMSEMetric
+
+    def monai_rmse(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+        rmse_metric = RMSEMetric()
+        rmse_value = rmse_metric(image.unsqueeze(0), reference.unsqueeze(0))
+        return torch.as_tensor(rmse_value, device=image.device)
+
+    return monai_rmse
+
+
 def get_monai_msssim(
     data_range: float, kernel_size: int, kernel_sigma: float, weights: Sequence[float], k1: float, k2: float
 ) -> Callable[..., torch.Tensor]:
