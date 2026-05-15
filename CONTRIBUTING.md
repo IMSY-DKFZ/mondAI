@@ -47,7 +47,7 @@ There are three different types of tests:
 2. metric specific tests: These perform tests that are specific to individual metrics and are located under `tests/metric_specific_tests/`
 3. regression tests: These compare that the implementations are stable, e.g. don't change when dependencies are updated. They are generated in `test_regression.py` and reference scores are stored under `tests/test_regression/`
 
-## List of Contributers
+## List of Contributors
 
 * Tom Rix
 * Marco Hübner

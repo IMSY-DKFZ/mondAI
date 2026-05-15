@@ -11,6 +11,7 @@ from .mdsi import MDSI
 from .mse import MSE
 from .msssim import MSSSIM
 from .psnr import PSNR
+from .rmse import RMSE
 from .ssim import SSIM
 from .vifp import VIFP
 from .vsi import VSI
@@ -32,5 +33,6 @@ FULL_REFERENCE_METRICS = [
     MDSI,
     VSI,
     DISTS,
+    RMSE,
     LPIPS,
 ]
