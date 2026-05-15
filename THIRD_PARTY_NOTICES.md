@@ -88,6 +88,17 @@ Implementation adapted from the original MATLAB implementation by Zhou Wang:
 https://ece.uwaterloo.ca/~z70wang/research/iwssim/ and
 PIQ: https://github.com/photosynthesis-team/piq/blob/master/piq/iw_ssim.py commit: 213a46687ad99098f274784e61d92c5144a94a68 (license: Apache 2.0)
 
+## LPIPS
+
+Based on:
+Zhang, R., Isola, P., Efros, A. A., Shechtman, E., & Wang, O. (2018).
+The unreasonable effectiveness of deep features as a perceptual metric.
+In Proceedings of the IEEE conference on computer vision and pattern recognition (pp. 586-595).
+
+Implementation taken from Richard Zhang:
+https://github.com/richzhang/PerceptualSimilarity, commit: 082bb24f84c091ea94de2867d34c4544f68e0963 (license: BSD 2-Clause License)
+with slight adaptations for weight loading to fit the metric class structure.
+
 ## MDSI
 
 Based on:

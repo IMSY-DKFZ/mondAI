@@ -141,6 +141,22 @@ def get_piq_iwssim(
     return piq_iwssim
 
 
+def get_piq_lpips() -> Callable[..., torch.Tensor]:
+    from piq import LPIPS
+
+    lpips_metric = LPIPS(replace_pooling=True).double()
+
+    def piq_lpips(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+        # PIQ expects NCHW tensors
+        lpips_metric.to(image.device)
+        return lpips_metric(
+            image.unsqueeze(0),
+            reference.unsqueeze(0),
+        )
+
+    return piq_lpips
+
+
 def get_piq_mdsi(combination: str) -> Callable[..., torch.Tensor]:
     from piq import mdsi
 
