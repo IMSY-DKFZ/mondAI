@@ -36,6 +36,22 @@ def get_deepinv_mse() -> Callable[..., torch.Tensor]:
     return deepinv_mse
 
 
+def get_deepinv_lpips(net_type: str) -> Callable[..., torch.Tensor]:
+    from deepinv.loss.metric import LPIPS as DeepInvLPIPS
+
+    deepinv_metric = DeepInvLPIPS(net_type=net_type).double()
+
+    def deepinv_lpips(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+        # deepinv expects NCHW tensors
+        deepinv_metric.to(image.device)
+        return deepinv_metric(
+            image.unsqueeze(0),
+            reference.unsqueeze(0),
+        )
+
+    return deepinv_lpips
+
+
 def get_deepinv_psnr(max_pixel: float) -> Callable[..., torch.Tensor]:
     from deepinv.loss.metric import PSNR as DeepInvPSNR
 

@@ -91,6 +91,22 @@ def get_piqa_haarpsi(use_rgb: bool, c: float, alpha: float) -> Callable[..., tor
     return piqa_haarpsi
 
 
+def get_piqa_lpips(network: str) -> Callable[..., torch.Tensor]:
+    from piqa.lpips import LPIPS
+
+    lpips_piqa = LPIPS(network=network).double()
+
+    def piqa_lpips(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+        # piqa's implementation expects inputs with shape (N, C, H, W)
+        lpips_piqa.to(image.device)
+        return lpips_piqa(
+            image.unsqueeze(0),
+            reference.unsqueeze(0),
+        )
+
+    return piqa_lpips
+
+
 def get_piqa_mdsi(combination: str) -> Callable[..., torch.Tensor]:
     from piqa import MDSI
 

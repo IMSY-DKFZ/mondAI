@@ -11,9 +11,22 @@ def get_torchmetrics_dists() -> Callable[..., torch.Tensor]:
     def torchmetrics_dists(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
         # torchmetrics expects NCHW tensors in float precision
         dists.to(image.device)
-        return dists(image.unsqueeze(0).float(), reference.unsqueeze(0).float())
+        return dists(image.unsqueeze(0).float(), reference.unsqueeze(0).float()).double()
 
     return torchmetrics_dists
+
+
+def get_torchmetrics_lpips(net_type: str) -> Callable[..., torch.Tensor]:
+    from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
+
+    lpips = LearnedPerceptualImagePatchSimilarity(net_type=net_type, normalize=True)
+
+    def torchmetrics_lpips(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+        # torchmetrics expects NCHW tensors in float precision
+        lpips.to(image.device)
+        return lpips(image.unsqueeze(0).float(), reference.unsqueeze(0).float()).double()
+
+    return torchmetrics_lpips
 
 
 def get_torchmetrics_mse() -> Callable[..., torch.Tensor]:

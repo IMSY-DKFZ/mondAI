@@ -5,6 +5,7 @@ from .fsim import FSIM
 from .gmsd import GMSD
 from .haarpsi import HaarPSI, HaarPSI_MED
 from .iwssim import IWSSIM
+from .lpips import LPIPS
 from .mae import MAE
 from .mdsi import MDSI
 from .mse import MSE
@@ -31,4 +32,5 @@ FULL_REFERENCE_METRICS = [
     MDSI,
     VSI,
     DISTS,
+    LPIPS,
 ]
