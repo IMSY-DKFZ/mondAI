@@ -131,7 +131,7 @@ class Metric(ABC):
     def _call_pipeline(
         self,
         *inputs: np.ndarray | torch.Tensor,
-        dims: Sequence[str] = settings.default_dims,
+        dims: Sequence[str] | None = None,
         compute_function: Callable[..., torch.Tensor],
     ) -> float | torch.Tensor | np.ndarray:
         """Shared call pipeline for metrics, including:
@@ -145,7 +145,7 @@ class Metric(ABC):
         :param inputs: One or more input images (e.g. image and reference) as numpy arrays or torch tensors.
         :type inputs: tuple[np.ndarray | torch.Tensor, ...]
         :param dims: The dimensions of the input images, specified as a sequence of strings.
-        :type dims: Sequence[str]
+        :type dims: Sequence[str] | None
         :param compute_function: The function to compute the metric, which will be iteratively applied.
         :type compute_function: Callable[..., torch.Tensor]
         :return: The computed metric score, as a scalar or array/tensor depending on the input shape and type.
@@ -154,6 +154,9 @@ class Metric(ABC):
         expected dimensions are not present in the specified dimensions.
 
         """
+
+        if dims is None:
+            dims = settings._default_dims
 
         # checks on number of inputs, e.g. 1 for no-reference metrics, 2 for full-reference metrics
         if len(inputs) not in (1, 2):

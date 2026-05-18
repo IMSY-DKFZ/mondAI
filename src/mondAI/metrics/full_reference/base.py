@@ -19,7 +19,7 @@ class FullReferenceMetric(Metric, ABC):
         self,
         image: np.ndarray | torch.Tensor,
         reference: np.ndarray | torch.Tensor,
-        dims: Sequence[str] = settings.default_dims,
+        dims: Sequence[str] | None = None,
         compare_implementations: bool = False,
     ) -> float | torch.Tensor | np.ndarray | dict[str, float | torch.Tensor | np.ndarray]:
         """Compute the metric between image and corresponding reference with the given
@@ -34,7 +34,7 @@ class FullReferenceMetric(Metric, ABC):
         :type reference: np.ndarray | torch.Tensor
         :param dims: The dimensions of the input images, e.g. ("H", "W") for 2D images,
             ("C", "H", "W") for RGB images
-        :type dims: Sequence[str]
+        :type dims: Sequence[str] | None
         :param compare_implementations: Whether to compute the metric using other
             implementations for comparison.
         :type compare_implementations: bool
@@ -44,6 +44,9 @@ class FullReferenceMetric(Metric, ABC):
             np.ndarray]
 
         """
+
+        if dims is None:
+            dims = settings.default_dims
 
         # Full reference specific input checks
         check_same_type(image, reference)
