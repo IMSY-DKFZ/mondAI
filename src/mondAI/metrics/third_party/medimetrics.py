@@ -53,6 +53,17 @@ def get_medimetrics_mse() -> Callable[..., torch.Tensor]:
     return medimetric_mse
 
 
+def get_medimetrics_nmse() -> Callable[..., torch.Tensor]:
+    from mondAI.metrics.third_party.medimetrics_code.nmse import NMSE as NMSEMedimetrics
+
+    def medimetric_nmse(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+        medimetrics_metric = NMSEMedimetrics()
+        nmse_value = medimetrics_metric.compute(image.numpy(force=True), reference.numpy(force=True))
+        return torch.as_tensor(nmse_value, device=image.device)
+
+    return medimetric_nmse
+
+
 def get_medimetrics_msssim(
     data_range: float, kernel_size: int, k1: float, k2: float, sigma: float, betas: tuple[float, ...]
 ) -> Callable[..., torch.Tensor]:

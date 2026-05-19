@@ -36,6 +36,17 @@ def get_deepinv_mse() -> Callable[..., torch.Tensor]:
     return deepinv_mse
 
 
+def get_deepinv_nmse() -> Callable[..., torch.Tensor]:
+    from deepinv.loss.metric import NMSE as NMSEDeepInv
+
+    def deepinv_nmse(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+        nmse_metric = NMSEDeepInv()
+        nmse_value = nmse_metric(image.unsqueeze(0).unsqueeze(0), reference.unsqueeze(0).unsqueeze(0))
+        return torch.as_tensor(nmse_value, device=image.device)
+
+    return deepinv_nmse
+
+
 def get_deepinv_lpips(net_type: str) -> Callable[..., torch.Tensor]:
     from deepinv.loss.metric import LPIPS as DeepInvLPIPS
 
