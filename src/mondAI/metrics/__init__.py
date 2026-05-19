@@ -11,6 +11,7 @@ from mondAI.metrics.full_reference.mae import MAE as MAE
 from mondAI.metrics.full_reference.mdsi import MDSI as MDSI
 from mondAI.metrics.full_reference.mse import MSE as MSE
 from mondAI.metrics.full_reference.msssim import MSSSIM as MSSSIM
+from mondAI.metrics.full_reference.nmse import NMSE as NMSE
 from mondAI.metrics.full_reference.psnr import PSNR as PSNR
 from mondAI.metrics.full_reference.rmse import RMSE as RMSE
 from mondAI.metrics.full_reference.ssim import SSIM as SSIM

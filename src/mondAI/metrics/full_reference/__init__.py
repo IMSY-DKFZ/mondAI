@@ -10,6 +10,7 @@ from .mae import MAE
 from .mdsi import MDSI
 from .mse import MSE
 from .msssim import MSSSIM
+from .nmse import NMSE
 from .psnr import PSNR
 from .rmse import RMSE
 from .ssim import SSIM
@@ -35,4 +36,5 @@ FULL_REFERENCE_METRICS = [
     DISTS,
     RMSE,
     LPIPS,
+    NMSE,
 ]
