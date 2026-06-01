@@ -61,7 +61,9 @@ class NMSE(FullReferenceMetric):
 
     def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
         self._register_implementation(implementations, "deepinv", get_deepinv_nmse())
-        self._register_implementation(implementations, "medimetrics", get_medimetrics_nmse())
+        self._register_implementation(
+            implementations, "medimetrics", get_medimetrics_nmse()
+        )  # normalizes with std of target and not with mean of target, so values are different
 
     def __str__(self) -> str:
         """Full text representation of the NMSE metric."""
