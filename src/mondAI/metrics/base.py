@@ -248,7 +248,7 @@ class Metric(ABC):
 class MetricList:
     """A list of metrics."""
 
-    def __init__(self, list_name: str = "", metrics: list[Metric] | None = None) -> None:
+    def __init__(self, metrics: list[Metric] | None = None, list_name: str = "") -> None:
         self.list_name = list_name
         self.metrics = metrics if metrics is not None else []
 
