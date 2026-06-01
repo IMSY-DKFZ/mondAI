@@ -1,7 +1,9 @@
 from collections.abc import Callable
 from pathlib import Path
 
+import numpy
 import torch
+from scipy import stats
 from scipy.io import loadmat
 
 from mondAI.logging import get_logger
@@ -31,7 +33,10 @@ class NIQE(NoReferenceMetric):
     computation of this metric. This metric expects grayscale images. Apply an `rgb2gray` function if your input
     has 3 channels (as the original MATLAB code does). Expected input image value range is [0, 255],
     and output quality scores are non-negative, where lower values indicate better perceptual quality.
-    For non-natural images expect unstable NIQE scores, as there are no natural image statistics to compare against.
+
+    Warning: This metric is designed for natural images and may yield unreliable scores for non-natural images,
+    as it relies on the assumption that the features extracted from the input image should follow a
+    similar distribution to those extracted from natural images.
 
     Implementation based on the original MATLAB code using their extracted parameters:
     http://live.ece.utexas.edu/research/quality/niqe_release.zip
@@ -140,6 +145,14 @@ class NIQE(NoReferenceMetric):
             sigma = self.correlate1d(sigma, window, axis=0)
             sigma = torch.sqrt(torch.abs(sigma - mu_squared))
             mean_subtracted_contrast_normalized_image = (image - mu) / (sigma + 1.0)
+
+            if not self._is_normal(mean_subtracted_contrast_normalized_image):
+                logger.warning(
+                    "The pixel values of the mean subtracted contrast normalized image do not appear to be"
+                    "normally distributed. This may lead to unreliable NIQE scores, as NIQE relies on the "
+                    "assumption of normality in the features extracted from natural images. Please ensure "
+                    "that your input images are natural and that the preprocessing steps are correctly applied."
+                )
 
             # feature extraction
             features_scale = self._block_process(
@@ -399,3 +412,26 @@ class NIQE(NoReferenceMetric):
                 f"Got block_size_row={self.block_size_row}, block_size_column={self.block_size_column}, "
                 f"but image has shape {image.shape}."
             )
+
+    def _is_normal(self, image: torch.Tensor) -> bool:
+        """Check if the pixel values of the image follow a normal distribution using
+        skewness, kurtosis, and the Shapiro-Wilk test.
+
+        :param image: The input image for which to check normality, expected to have
+            shape (H, W).
+        :type image: torch.Tensor
+        :return: A boolean indicating whether the pixel values of the image are
+            approximately normally distributed.
+        :rtype: bool
+
+        """
+        pixel_values = image.flatten().cpu().numpy()
+
+        if len(pixel_values) > 5000:
+            rng = numpy.random.default_rng(42)
+            pixel_values = rng.choice(pixel_values, size=5000, replace=False)
+
+        skewness = stats.skew(pixel_values)
+        kurtosis = stats.kurtosis(pixel_values)
+        _, shapiro_p_value = stats.shapiro(pixel_values)
+        return bool(abs(skewness) < 0.5 and abs(kurtosis) < 1.0 and shapiro_p_value > 0.05)
