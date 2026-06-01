@@ -12,6 +12,7 @@ from mondAI.metrics.third_party.deepinv import get_deepinv_lpips
 from mondAI.metrics.third_party.piq import get_piq_lpips
 from mondAI.metrics.third_party.piqa import get_piqa_lpips
 from mondAI.metrics.third_party.torchmetrics import get_torchmetrics_lpips
+from mondAI.utils.checks import check_rgb, check_value_range
 
 
 class LPIPS(FullReferenceMetric):
@@ -166,15 +167,10 @@ class LPIPS(FullReferenceMetric):
 
         """
         # Input checks specific to LPIPS
-        if torch.any(image < 0) or torch.any(image > 1):
-            raise ValueError("Input image contains pixel values outside the range [0, 1].")
+        check_value_range(image, 0, 1)
+        check_value_range(reference, 0, 1, reference=True)
 
-        if torch.any(reference < 0) or torch.any(reference > 1):
-            raise ValueError("Reference image contains pixel values outside the range [0, 1].")
-
-        channel_dim = self.expected_dimensions.index(Dimension.CHANNEL)
-        if image.shape[channel_dim] != 3:
-            raise ValueError(f"Images have {image.shape[channel_dim]} channels, but LPIPS expects 3 (RGB) channels.")
+        check_rgb(self.expected_dimensions, image, self.abbreviation)
 
 
 """

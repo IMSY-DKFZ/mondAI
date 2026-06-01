@@ -7,6 +7,7 @@ from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
 from mondAI.metrics.third_party.piq import get_piq_fsim
 from mondAI.metrics.third_party.piqa import get_piqa_fsim
+from mondAI.utils.checks import check_rgb, check_value_range, warn_if_all_pixels_in_0_to_1_range
 from mondAI.utils.conversions import rgb_to_yiq
 from mondAI.utils.signal_processing import gradient_map, subsample
 from mondAI.utils.similarity_map import similarity_map
@@ -387,27 +388,20 @@ class FSIM(FullReferenceMetric):
 
         """
         # Input checks specific to FSIM
-        if torch.any(image < 0) or torch.any(image > 255):
-            raise ValueError("Input image contains pixel values outside the range [0, 255].")
+        check_value_range(image, 0, 255)
+        check_value_range(reference, 0, 255, reference=True)
 
-        if torch.any(reference < 0) or torch.any(reference > 255):
-            raise ValueError("Reference image contains pixel values outside the range [0, 255].")
-
-        if torch.all(image >= 0) and torch.all(image <= 1) and torch.all(reference >= 0) and torch.all(reference <= 1):
-            logger.warning(
-                "It has been detected that all pixel values in both image and reference are in the range [0, 1]. "
-                "FSIM expects pixel values in the range [0, 255]. Please ensure that your input images are "
-                "correctly scaled for accurate computation of FSIM."
-            )
+        warn_if_all_pixels_in_0_to_1_range(image, reference)
 
         if self.use_rgb:
-            channel_dim = self.expected_dimensions.index(Dimension.CHANNEL)
-            if image.shape[channel_dim] != 3:
-                raise ValueError(
-                    f"Images have {image.shape[channel_dim]} channels. FSIM expects 3 (RGB) channels, "
-                    "when use_rgb is set to True. Instead you might want to use the grayscale definition"
-                    "(use_rgb=False) and apply it channel wise."
-                )
+            check_rgb(
+                self.expected_dimensions,
+                image,
+                self.abbreviation,
+                additional_error_message=(
+                    " Instead you might want to use the grayscale definition (use_rgb=False) and apply it channel wise."
+                ),
+            )
 
     def _phase_congruency(
         self,

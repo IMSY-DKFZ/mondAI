@@ -11,6 +11,7 @@ from mondAI.metrics.full_reference.base import FullReferenceMetric
 from mondAI.metrics.third_party.medimetrics import get_medimetrics_dists
 from mondAI.metrics.third_party.piq import get_piq_dists
 from mondAI.metrics.third_party.torchmetrics import get_torchmetrics_dists
+from mondAI.utils.checks import check_rgb, check_value_range
 
 
 class DISTS(FullReferenceMetric):
@@ -113,15 +114,10 @@ class DISTS(FullReferenceMetric):
 
         """
         # Input checks specific to DISTS
-        if torch.any(image < 0) or torch.any(image > 1):
-            raise ValueError("Input image contains pixel values outside the range [0, 1].")
+        check_value_range(image, 0, 1)
+        check_value_range(reference, 0, 1, reference=True)
 
-        if torch.any(reference < 0) or torch.any(reference > 1):
-            raise ValueError("Reference image contains pixel values outside the range [0, 1].")
-
-        channel_dim = self.expected_dimensions.index(Dimension.CHANNEL)
-        if image.shape[channel_dim] != 3:
-            raise ValueError(f"Images have {image.shape[channel_dim]} channels, but DISTS expects 3 (RGB) channels.")
+        check_rgb(self.expected_dimensions, image, self.abbreviation)
 
 
 @no_type_check

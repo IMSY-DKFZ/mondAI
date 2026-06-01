@@ -7,6 +7,7 @@ from torch.hub import get_dir, load_state_dict_from_url
 from mondAI.logging import get_logger
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.no_reference.base import NoReferenceMetric
+from mondAI.utils.checks import check_rgb, check_value_range
 from mondAI.utils.internal_format import _get_torch_device
 
 logger = get_logger()
@@ -109,16 +110,10 @@ class PaQ2PiQ(NoReferenceMetric):
         """
 
         # check input value range
-        if torch.any(image < 0) or torch.any(image > 1):
-            raise ValueError(
-                "Input image contains pixel values outside the range [0, 1], "
-                f"got min {image.min()} and max {image.max()}."
-            )
+        check_value_range(image, 0, 1)
 
         # check for RGB channels
-        channel_dim = self.expected_dimensions.index(Dimension.CHANNEL)
-        if image.shape[channel_dim] != 3:
-            raise ValueError(f"Image has {image.shape[channel_dim]} channels. PaQ-2-PiQ expects 3 (RGB) channels")
+        check_rgb(self.expected_dimensions, image, self.abbreviation)
 
         # actual model prediction
         image = image.float().unsqueeze(0)  # convert to float and add batch dimension
