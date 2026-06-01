@@ -56,6 +56,14 @@ class GMSD(FullReferenceMetric):
         super().__init__()
         self.t = t
 
+        if self.t != 170.0:
+            logger.warning(
+                f"Using a non-default value of t={self.t} for GMSD may lead to results "
+                "that are not directly comparable to the original formulation of GMSD, "
+                "which uses t=170.0. Please ensure that you understand the implications "
+                "of changing this parameter on the metric's behavior and interpretability."
+            )
+
         if self.t < 0:
             raise ValueError(f"t must be non-negative, but got {self.t}.")
 
