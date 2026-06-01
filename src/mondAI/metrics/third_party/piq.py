@@ -157,7 +157,18 @@ def get_piq_lpips() -> Callable[..., torch.Tensor]:
     return piq_lpips
 
 
-def get_piq_mdsi(combination: str) -> Callable[..., torch.Tensor]:
+def get_piq_mdsi(
+    combination: str,
+    c1: float,
+    c2: float,
+    c3: float,
+    alpha: float,
+    beta: float,
+    gamma: float,
+    q: float,
+    rho: float,
+    o: float,
+) -> Callable[..., torch.Tensor]:
     from piq import mdsi
 
     def piq_mdsi(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
@@ -167,6 +178,15 @@ def get_piq_mdsi(combination: str) -> Callable[..., torch.Tensor]:
             reference.unsqueeze(0),
             data_range=255.0,
             combination="mult" if combination == "product" else combination,
+            c1=c1,
+            c2=c2,
+            c3=c3,
+            alpha=alpha,
+            beta=beta,
+            gamma=gamma,
+            q=q,
+            rho=rho,
+            o=o,
         )
 
     return piq_mdsi
