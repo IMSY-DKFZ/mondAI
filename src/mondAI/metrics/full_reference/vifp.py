@@ -2,15 +2,13 @@ from collections.abc import Callable
 
 import torch
 
-from mondAI.logging import get_logger
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
 from mondAI.metrics.third_party.piq import get_piq_vifp
 from mondAI.metrics.third_party.sewar import get_sewar_vifp
 from mondAI.metrics.third_party.torchmetrics import get_torchmetrics_vifp
+from mondAI.utils.checks import check_value_range, warn_if_all_pixels_in_0_to_1_range
 from mondAI.utils.signal_processing import convolve2d, gaussian_filter_kernel
-
-logger = get_logger()
 
 
 class VIFP(FullReferenceMetric):
@@ -177,18 +175,10 @@ class VIFP(FullReferenceMetric):
 
         """
         # Input checks specific to VIFP
-        if torch.any(image < 0) or torch.any(image > 255):
-            raise ValueError("Input image contains pixel values outside the range [0, 255].")
+        check_value_range(image, 0, 255)
+        check_value_range(reference, 0, 255, reference=True)
 
-        if torch.any(reference < 0) or torch.any(reference > 255):
-            raise ValueError("Reference image contains pixel values outside the range [0, 255].")
-
-        if torch.all(image >= 0) and torch.all(image <= 1) and torch.all(reference >= 0) and torch.all(reference <= 1):
-            logger.warning(
-                "It has been detected that all pixel values in both image and reference are in the range [0, 1]. "
-                "VIFP expects pixel values in the range [0, 255]. Please ensure that your input images are "
-                "correctly scaled for accurate computation of VIFP."
-            )
+        warn_if_all_pixels_in_0_to_1_range(image, reference)
 
         MINIMUM_REQUIRED_SIZE = 41
         if image.shape[-2] < MINIMUM_REQUIRED_SIZE or image.shape[-1] < MINIMUM_REQUIRED_SIZE:

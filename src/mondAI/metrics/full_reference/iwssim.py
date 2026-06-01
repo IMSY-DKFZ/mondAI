@@ -8,6 +8,7 @@ from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
 from mondAI.metrics.third_party.others import get_pytorch_iwssim
 from mondAI.metrics.third_party.piq import get_piq_iwssim
+from mondAI.utils.checks import check_value_range
 from mondAI.utils.signal_processing import convolve2d
 from mondAI.utils.similarity_map import ssim_and_cs_maps
 
@@ -482,11 +483,8 @@ class IWSSIM(FullReferenceMetric):
 
     def _input_checks(self, image: torch.Tensor, reference: torch.Tensor) -> None:
         """Perform input checks specific to IW-SSIM."""
-        if torch.any(image < 0) or torch.any(image > self.dynamic_range):
-            raise ValueError(f"Input image contains pixel values outside the range [0, {self.dynamic_range}].")
-
-        if torch.any(reference < 0) or torch.any(reference > self.dynamic_range):
-            raise ValueError(f"Reference image contains pixel values outside the range [0, {self.dynamic_range}].")
+        check_value_range(image, 0, self.dynamic_range)
+        check_value_range(reference, 0, self.dynamic_range, reference=True)
 
         if image.shape[-2] < self.kernel_size or image.shape[-1] < self.kernel_size:
             raise ValueError(

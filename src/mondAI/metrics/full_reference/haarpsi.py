@@ -9,6 +9,7 @@ from mondAI.metrics.third_party.deepinv import get_deepinv_haarpsi
 from mondAI.metrics.third_party.others import get_ideal_iqa_haarpsi, get_original_numpy_haarpsi
 from mondAI.metrics.third_party.piq import get_piq_haarpsi
 from mondAI.metrics.third_party.piqa import get_piqa_haarpsi
+from mondAI.utils.checks import check_rgb, check_value_range, warn_if_all_pixels_in_0_to_1_range
 from mondAI.utils.conversions import rgb_to_yiq
 from mondAI.utils.signal_processing import convolve2d
 from mondAI.utils.similarity_map import similarity_map
@@ -287,18 +288,10 @@ class HaarPSI(FullReferenceMetric):
 
         """
         # Input checks specific to HaarPSI
-        if torch.any(image < 0) or torch.any(image > 255):
-            raise ValueError("Input image contains pixel values outside the range [0, 255].")
+        check_value_range(image, 0, 255)
+        check_value_range(reference, 0, 255, reference=True)
 
-        if torch.any(reference < 0) or torch.any(reference > 255):
-            raise ValueError("Reference image contains pixel values outside the range [0, 255].")
-
-        if torch.all(image >= 0) and torch.all(image <= 1) and torch.all(reference >= 0) and torch.all(reference <= 1):
-            logger.warning(
-                "It has been detected that all pixel values in both image and reference are in the range [0, 1]. "
-                "HaarPSI expects pixel values in the range [0, 255]. Please ensure that your input images are "
-                "correctly scaled for accurate computation of HaarPSI."
-            )
+        warn_if_all_pixels_in_0_to_1_range(image, reference)
 
         if any(
             [reference.shape[self.expected_dimensions.index(dim)] < 16 for dim in (Dimension.HEIGHT, Dimension.WIDTH)]
@@ -315,13 +308,14 @@ class HaarPSI(FullReferenceMetric):
             )
 
         if self.use_rgb:
-            channel_dim = self.expected_dimensions.index(Dimension.CHANNEL)
-            if image.shape[channel_dim] != 3:
-                raise ValueError(
-                    f"Images have {image.shape[channel_dim]} channels. HaarPSI expects 3 (RGB) channels, "
-                    "when use_rgb is set to True. Instead you might want to use the grayscale definition"
-                    "(use_rgb=False) and apply it channel wise."
-                )
+            check_rgb(
+                self.expected_dimensions,
+                image,
+                self.abbreviation,
+                additional_error_message=(
+                    " Instead you might want to use the grayscale definition (use_rgb=False) and apply it channel wise."
+                ),
+            )
 
     def _subsample(self, image: torch.Tensor) -> torch.Tensor:
         """Subsample the input image by a factor of 2 using a 2x2 mean filter and

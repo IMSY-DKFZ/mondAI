@@ -2,7 +2,6 @@ from collections.abc import Callable
 
 import torch
 
-from mondAI.logging import get_logger
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference.base import FullReferenceMetric
 from mondAI.metrics.third_party.medimetrics import get_medimetrics_msssim
@@ -12,10 +11,9 @@ from mondAI.metrics.third_party.piqa import get_piqa_msssim
 from mondAI.metrics.third_party.sewar import get_sewar_msssim
 from mondAI.metrics.third_party.tensorflow import get_tensorflow_msssim
 from mondAI.metrics.third_party.torchmetrics import get_torchmetrics_msssim
+from mondAI.utils.checks import check_value_range, warn_if_all_pixels_in_0_to_1_range
 from mondAI.utils.signal_processing import subsample
 from mondAI.utils.similarity_map import ssim_and_cs_maps
-
-logger = get_logger()
 
 
 class MSSSIM(FullReferenceMetric):
@@ -257,24 +255,11 @@ class MSSSIM(FullReferenceMetric):
 
     def _input_checks(self, image: torch.Tensor, reference: torch.Tensor) -> None:
         """Perform input checks specific to MS-SSIM."""
-        if torch.any(image < 0) or torch.any(image > self.dynamic_range):
-            raise ValueError(f"Input image contains pixel values outside the range [0, {self.dynamic_range}].")
+        check_value_range(image, 0, self.dynamic_range)
+        check_value_range(reference, 0, self.dynamic_range, reference=True)
 
-        if torch.any(reference < 0) or torch.any(reference > self.dynamic_range):
-            raise ValueError(f"Reference image contains pixel values outside the range [0, {self.dynamic_range}].")
-
-        if (
-            torch.all(image >= 0)
-            and torch.all(image <= 1)
-            and torch.all(reference >= 0)
-            and torch.all(reference <= 1)
-            and self.dynamic_range > 1.0
-        ):
-            logger.warning(
-                "It has been detected that all pixel values in both image and reference are "
-                "in the range [0, 1]. MS-SSIM defaults to dynamic_range=255. Please ensure that "
-                "your input images are correctly scaled or set dynamic_range=1.0 for normalized inputs."
-            )
+        if self.dynamic_range > 1.0:
+            warn_if_all_pixels_in_0_to_1_range(image, reference)
 
         if image.shape[-2] < self.kernel_size or image.shape[-1] < self.kernel_size:
             raise ValueError(

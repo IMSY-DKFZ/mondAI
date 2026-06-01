@@ -173,7 +173,7 @@ def test_normalized_inputs_warn_for_default_dynamic_range(caplog: pytest.LogCapt
     with caplog.at_level("WARNING", logger="mondAI"):
         metric(img, img)
 
-    assert "MS-SSIM defaults to dynamic_range=255" in caplog.text
+    assert "This may indicate that the image is not correctly scaled for this metric" in caplog.text
 
 
 @pytest.mark.parametrize(
