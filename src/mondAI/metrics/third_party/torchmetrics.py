@@ -77,6 +77,15 @@ def get_torchmetrics_psnr(data_range: float) -> Callable[..., torch.Tensor]:
     return torchmetrics_psnr
 
 
+def get_torchmetrics_rmse() -> Callable[..., torch.Tensor]:
+    from torchmetrics.functional.regression import mean_squared_error as mse_torchmetrics
+
+    def torchmetrics_rmse(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+        return mse_torchmetrics(image.contiguous(), reference.contiguous(), squared=False)
+
+    return torchmetrics_rmse
+
+
 def get_torchmetrics_ssim(
     sigma: float, kernel_size: int, data_range: float, k1: float, k2: float
 ) -> Callable[..., torch.Tensor]:
