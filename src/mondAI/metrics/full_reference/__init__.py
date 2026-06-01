@@ -1,6 +1,6 @@
-from .cwssim import CWSSIM
-from .dists import DISTS
-from .dss import DSS
+# from .cwssim import CWSSIM
+# from .dists import DISTS
+# from .dss import DSS
 from .fsim import FSIM
 from .gmsd import GMSD
 from .haarpsi import HaarPSI, HaarPSI_MED
@@ -23,17 +23,17 @@ FULL_REFERENCE_METRICS = [
     SSIM,
     MSSSIM,
     IWSSIM,
-    CWSSIM,
+    # CWSSIM,
     HaarPSI,
     HaarPSI_MED,
     FSIM,
     VIFP,
     PSNR,
-    DSS,
+    # DSS,
     GMSD,
     MDSI,
     VSI,
-    DISTS,
+    # DISTS,
     RMSE,
     LPIPS,
     NMSE,

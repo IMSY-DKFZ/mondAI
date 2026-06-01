@@ -14,7 +14,7 @@ class NoReferenceMetric(Metric, ABC):
     def __call__(
         self,
         image: np.ndarray | torch.Tensor,
-        dims: Sequence[str] = settings.default_dims,
+        dims: Sequence[str] | None = None,
         compare_implementations: bool = False,
     ) -> float | torch.Tensor | np.ndarray | dict[str, float | torch.Tensor | np.ndarray]:
         """Compute the metric for the given image.
@@ -36,6 +36,9 @@ class NoReferenceMetric(Metric, ABC):
             np.ndarray]
 
         """
+
+        if dims is None:
+            dims = settings.default_dims
 
         if compare_implementations:
             scores = {

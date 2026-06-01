@@ -9,6 +9,7 @@ from mondAI.metrics.third_party.monai import get_monai_rmse
 from mondAI.metrics.third_party.sewar import get_sewar_rmse
 from mondAI.metrics.third_party.sklearn import get_sklearn_rmse
 from mondAI.metrics.third_party.tensorflow import get_tensorflow_rmse
+from mondAI.metrics.third_party.torchmetrics import get_torchmetrics_rmse
 
 logger = get_logger()
 
@@ -58,6 +59,7 @@ class RMSE(FullReferenceMetric):
     def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
         self._register_implementation(implementations, "scikit-learn", get_sklearn_rmse())
         self._register_implementation(implementations, "tensorflow", get_tensorflow_rmse())
+        self._register_implementation(implementations, "torchmetrics", get_torchmetrics_rmse())
         self._register_implementation(implementations, "monai", get_monai_rmse())
         self._register_implementation(implementations, "sewar", get_sewar_rmse())
 

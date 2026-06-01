@@ -66,28 +66,111 @@ class MDSI(FullReferenceMetric):
     def expected_dimensions(self) -> tuple[Dimension, ...]:
         return (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
 
-    def __init__(self, combination_method: str = "sum") -> None:
+    def __init__(
+        self,
+        combination_method: str = "sum",
+        C1: int = 140,
+        C2: int = 55,
+        C3: int = 550,
+        alpha: float = 0.6,
+        beta: float = 0.1,
+        gamma: float = 0.2,
+        rho: float = 1.0,
+        q: float = 0.25,
+        o: float = 0.25,
+    ) -> None:
         """
 
         :param combination_method: Method to combine the gradient similarity and chromaticity similarity components
         of MDSI. Must be either 'sum' or 'product'. Default is 'sum'.
         :type combination_method: str
-
+        :param C1: Coefficient to calculate gradient similarity. Default is 140.
+        :type C1: int
+        :param C2: Coefficient to calculate gradient similarity with fused images. Default is 55.
+        :type C2: int
+        :param C3: Coefficient to calculate chromaticity similarity. Default is 550.
+        :type C3: int
+        :param alpha: Coefficient to combine gradient similarity and chromaticity similarity when using summation.
+        Should be between 0 and 1. Default is 0.6.
+        :type alpha: float
+        :param beta: Power to combine gradient similarity with chromaticity similarity when using multiplication.
+        Should be a positive value. Default is 0.1.
+        :type beta: float
+        :param gamma: Power to combine gradient similarity and chromaticity similarity when using multiplication.
+         Should be a positive value. Default is 0.2.
+        :type gamma: float
+        :param rho: Order of the Minkowski distance used in deviation pooling. Should be a positive value.
+        Default is 1.0.
+        :type rho: float
+        :param q: Coefficient to adjust the emphasis of the values in image and mean chromaticity similarity map
+        when computing the gradient-chromaticity similarity. Should be a positive value. Default is 0.25.
+        :type q: float
+        :param o: The power pooling applied on the final value of the deviation. Should be a positive value.
+          Default is 0.25.
+        :type o: float
         """
         super().__init__()
         self.combination_method = combination_method
+        self.C1 = C1
+        self.C2 = C2
+        self.C3 = C3
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = gamma
+        self.rho = rho
+        self.q = q
+        self.o = o
 
         if self.combination_method not in ("sum", "product"):
             raise ValueError(
                 f"combination_method must be either 'sum' or 'product', but got {self.combination_method}."
             )
 
+        if self.C1 != 140 or self.C2 != 55 or self.C3 != 550:
+            logger.warning(
+                f"Using non-default values of C1={C1}, C2={C2}, or C3={C3} for MDSI may lead to results that are "
+                "not directly comparable to the original formulation of MDSI, which uses C1=140, C2=55, and C3=550. "
+                "Please ensure that you understand the implications of changing these parameters on the metric's "
+                "behavior and interpretability."
+            )
+
+        if not (0 <= self.alpha <= 1):
+            raise ValueError(f"alpha must be between 0 and 1, but got {self.alpha}.")
+
+        if self.beta <= 0:
+            raise ValueError(f"beta must be a positive value, but got {self.beta}.")
+
+        if self.gamma <= 0:
+            raise ValueError(f"gamma must be a positive value, but got {self.gamma}.")
+
+        if self.rho <= 0:
+            raise ValueError(f"rho must be a positive value, but got {self.rho}.")
+
+        if self.q <= 0:
+            raise ValueError(f"q must be a positive value, but got {self.q}.")
+
+        if self.o <= 0:
+            raise ValueError(f"o must be a positive value, but got {self.o}.")
+
+        if (
+            self.alpha != 0.6
+            or self.beta != 0.1
+            or self.gamma != 0.2
+            or self.rho != 1.0
+            or self.q != 0.25
+            or self.o != 0.25
+        ):
+            logger.warning(
+                f"Using non-default values of alpha={alpha}, beta={beta}, gamma={gamma}, rho={rho}, q={q}, or o={o} "
+                "for MDSI may lead to results that are not directly comparable to the original formulation of MDSI, "
+                "which uses alpha=0.6, beta=0.1, gamma=0.2, rho=1.0, q=0.25, and o=0.25. Please ensure that you "
+                "understand the implications of changing these parameters on the metric's behavior and "
+                "interpretability."
+            )
+
     def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
         self._input_checks(image, reference)
 
-        C1 = 140
-        C2 = 55
-        C3 = 550
         prewitt_kernel = torch.tensor([[1, 0, -1], [1, 0, -1], [1, 0, -1]], device=image.device, dtype=image.dtype) / 3
 
         # Downsample the images
@@ -111,15 +194,15 @@ class MDSI(FullReferenceMetric):
         gradient_fusion = gradient_map(0.5 * (image_lhm[0] + reference_lhm[0]), prewitt_kernel)
 
         # gradient similarity
-        gradient_similarity_RD = similarity_map(gradient_image, gradient_reference, C1)
-        gradient_similarity_RF = similarity_map(gradient_reference, gradient_fusion, C2)
-        gradient_similarity_DF = similarity_map(gradient_image, gradient_fusion, C2)
+        gradient_similarity_RD = similarity_map(gradient_image, gradient_reference, self.C1)
+        gradient_similarity_RF = similarity_map(gradient_reference, gradient_fusion, self.C2)
+        gradient_similarity_DF = similarity_map(gradient_image, gradient_fusion, self.C2)
         gradient_similarity = gradient_similarity_RD + gradient_similarity_DF - gradient_similarity_RF
 
         # chromaticity similarity
-        chromaticity_similarity = (2 * (image_lhm[1] * reference_lhm[1] + image_lhm[2] * reference_lhm[2]) + C3) / (
-            image_lhm[1] ** 2 + reference_lhm[1] ** 2 + image_lhm[2] ** 2 + reference_lhm[2] ** 2 + C3
-        )
+        chromaticity_similarity = (
+            2 * (image_lhm[1] * reference_lhm[1] + image_lhm[2] * reference_lhm[2]) + self.C3
+        ) / (image_lhm[1] ** 2 + reference_lhm[1] ** 2 + image_lhm[2] ** 2 + reference_lhm[2] ** 2 + self.C3)
 
         # convert to complex numbers to handle negative numberes and exponents smaller than 1 without NaNs
         gradient_similarity = gradient_similarity.to(torch.complex128)
@@ -127,23 +210,41 @@ class MDSI(FullReferenceMetric):
 
         # gradient-chromaticity similarity
         if self.combination_method == "sum":
-            alpha = 0.6
-            gradient_chromaticity_similarity = alpha * gradient_similarity + (1 - alpha) * chromaticity_similarity
+            gradient_chromaticity_similarity = (
+                self.alpha * gradient_similarity + (1 - self.alpha) * chromaticity_similarity
+            )
         elif self.combination_method == "product":
-            gamma = 0.2
-            beta = 0.1
-            gradient_chromaticity_similarity = gradient_similarity**gamma * chromaticity_similarity**beta
+            gradient_chromaticity_similarity = gradient_similarity**self.gamma * chromaticity_similarity**self.beta
 
         # deviation pooling
-        mean_gradient_chromaticity_similarity = torch.mean(gradient_chromaticity_similarity**0.25)
+        mean_gradient_chromaticity_similarity = torch.mean(gradient_chromaticity_similarity**self.q)
         return (
-            torch.mean(torch.abs(gradient_chromaticity_similarity**0.25 - mean_gradient_chromaticity_similarity))
-            ** 0.25
+            torch.mean(
+                torch.abs(gradient_chromaticity_similarity**self.q - mean_gradient_chromaticity_similarity) ** self.rho
+            )
+            ** self.o
         )
 
     def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
-        self._register_implementation(implementations, "piq", get_piq_mdsi(self.combination_method))
+        self._register_implementation(
+            implementations,
+            "piq",
+            get_piq_mdsi(
+                combination=self.combination_method,
+                c1=self.C1,
+                c2=self.C2,
+                c3=self.C3,
+                alpha=self.alpha,
+                beta=self.beta,
+                gamma=self.gamma,
+                q=self.q,
+                rho=self.rho,
+                o=self.o,
+            ),
+        )
         self._register_implementation(implementations, "piqa", get_piqa_mdsi(self.combination_method))
+        # piqa's MDSI implementation only allows to set combination method,
+        # other parameters are fixed to default values of original paper
 
     def __str__(self) -> str:
         """Full text representation of the metric.
@@ -156,7 +257,9 @@ class MDSI(FullReferenceMetric):
         return (
             f"{self.name} ({self.abbreviation}) "
             f"{self._arrow_indicating_optimum()} "
-            f"with combination_method={self.combination_method}"
+            f"with combination_method={self.combination_method}, "
+            f"C1={self.C1}, C2={self.C2}, C3={self.C3}, "
+            f"alpha={self.alpha}, gamma={self.gamma}, beta={self.beta}, q={self.q}, rho={self.rho}, o={self.o}"
         )
 
     def _input_checks(self, image: torch.Tensor, reference: torch.Tensor) -> None:
