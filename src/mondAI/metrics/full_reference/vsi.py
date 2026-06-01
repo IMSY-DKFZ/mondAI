@@ -54,7 +54,16 @@ class VSI(FullReferenceMetric):
         return (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
 
     def __init__(
-        self, c1: float = 1.27, c2: float = 386.0, c3: float = 130.0, alpha: float = 0.40, beta: float = 0.020
+        self,
+        c1: float = 1.27,
+        c2: float = 386.0,
+        c3: float = 130.0,
+        alpha: float = 0.40,
+        beta: float = 0.020,
+        sigma_d: float = 145.0,
+        sigma_c: float = 0.001,
+        omega_0: float = 0.0210,
+        sigma_f: float = 1.34,
     ) -> None:
         """
         :param c1: Constant for numerical stability of visual saliency map, must be non-negative, default is 1.27.
@@ -67,6 +76,16 @@ class VSI(FullReferenceMetric):
         :type alpha: float
         :param beta: Weighting factor for the gradient magnitude comparison, must be non-negative, default is 0.020.
         :type beta: float
+        :param sigma_d: Coefficient for location weighting in visual saliency map, must be non-negative,
+        default is 145.0.
+        :type sigma_d: float
+        :param sigma_c: Coefficient for color weighting in visual saliency map, must be non-negative, default is 0.001.
+        :type sigma_c: float
+        :param omega_0: The center frequency of the log-Gabor filter, must be non-negative, default is
+            0.0210.
+        :type omega_0: float
+        :param sigma_f: The bandwidth of the log-Gabor filter, must be non-negative, default is 1.34.
+        :type sigma_f: float
         """
         super().__init__()
         self.c1 = c1
@@ -74,6 +93,10 @@ class VSI(FullReferenceMetric):
         self.c3 = c3
         self.alpha = alpha
         self.beta = beta
+        self.sigma_d = sigma_d
+        self.sigma_c = sigma_c
+        self.omega_0 = omega_0
+        self.sigma_f = sigma_f
 
         if self.c1 < 0:
             raise ValueError(f"c1 must be non-negative, but got {self.c1}.")
@@ -85,12 +108,45 @@ class VSI(FullReferenceMetric):
             raise ValueError(f"alpha must be non-negative, but got {self.alpha}.")
         if self.beta < 0:
             raise ValueError(f"beta must be non-negative, but got {self.beta}.")
+        if self.sigma_d < 0:
+            raise ValueError(f"sigma_d must be non-negative, but got {self.sigma_d}.")
+        if self.sigma_c < 0:
+            raise ValueError(f"sigma_c must be non-negative, but got {self.sigma_c}.")
+        if self.omega_0 < 0:
+            raise ValueError(f"omega_0 must be non-negative, but got {self.omega_0}.")
+        if self.sigma_f < 0:
+            raise ValueError(f"sigma_f must be non-negative, but got {self.sigma_f}.")
+
+        if (
+            self.c1 != 1.27
+            or self.c2 != 386.0
+            or self.c3 != 130.0
+            or self.alpha != 0.40
+            or self.beta != 0.020
+            or self.sigma_d != 145.0
+            or self.sigma_c != 0.001
+            or self.omega_0 != 0.0210
+            or self.sigma_f != 1.34
+        ):
+            logger.warning(
+                f"Using non-default values for c1={self.c1}, c2={self.c2}, c3={self.c3}, alpha={self.alpha}, "
+                f"beta={self.beta}, sigma_d={self.sigma_d}, sigma_c={self.sigma_c}, omega_0={self.omega_0}, or "
+                f"sigma_f={self.sigma_f} may lead "
+                "to results that are not directly comparable to the original formulation of VSI, which uses "
+                "c1=1.27, c2=386.0, c3=130.0, alpha=0.40, beta=0.020, sigma_d=145.0, sigma_c=0.001, omega_0=0.0210, "
+                "and sigma_f=1.34. Please ensure that you understand the implications of changing these parameters on "
+                "the metric's behavior and interpretability."
+            )
 
     def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
         self._input_checks(image, reference)
 
-        saliency_map_image = self._saliency_map(image)
-        saliency_map_reference = self._saliency_map(reference)
+        saliency_map_image = self._saliency_map(
+            image, sigma_d=self.sigma_d, sigma_c=self.sigma_c, omega_0=self.omega_0, sigma_f=self.sigma_f
+        )
+        saliency_map_reference = self._saliency_map(
+            reference, sigma_d=self.sigma_d, sigma_c=self.sigma_c, omega_0=self.omega_0, sigma_f=self.sigma_f
+        )
 
         # Convert to luminance and opponent color space
         rgb_to_lmn_matrix = torch.tensor(
@@ -151,7 +207,14 @@ class VSI(FullReferenceMetric):
 
         return similarity.sum() / weight.sum()
 
-    def _saliency_map(self, image: torch.Tensor, sigma_d: float = 145.0, sigma_c: float = 0.001) -> torch.Tensor:
+    def _saliency_map(
+        self,
+        image: torch.Tensor,
+        sigma_d: float = 145.0,
+        sigma_c: float = 0.001,
+        omega_0: float = 0.0210,
+        sigma_f: float = 1.34,
+    ) -> torch.Tensor:
         """
         Saliency Detection by combining Simple Priors (frequency, location, color).
         Default parameters as defined in original paper:
@@ -166,6 +229,10 @@ class VSI(FullReferenceMetric):
         :type sigma_d: float
         :param sigma_c: Coefficient for color weighting, default is 0.001.
         :type sigma_c: float
+        :param omega_0: The center frequency of the log-Gabor filter, must be non-negative, default is 0.0210.
+        :type omega_0: float
+        :param sigma_f: The bandwidth of the log-Gabor filter, must be non-negative, default is 1.34.
+        :type sigma_f: float
         :return: Saliency map tensor with shape (1, H, W).
         :rtype: torch.Tensor
         """
@@ -182,7 +249,9 @@ class VSI(FullReferenceMetric):
         x = torch.arange(-target_size[0] / 2, target_size[0] / 2, device=image.device, dtype=image.dtype)
         y = torch.arange(-target_size[1] / 2, target_size[1] / 2, device=image.device, dtype=image.dtype)
         xx, yy = torch.meshgrid(x, y, indexing="ij")
-        log_gabor_filter = self._log_gabor_filters(xx / target_size[0], yy / target_size[1])
+        log_gabor_filter = self._log_gabor_filters(
+            xx / target_size[0], yy / target_size[1], omega_0=omega_0, sigma_f=sigma_f
+        )
         filtered = torch.fft.ifft2(IMAGE * log_gabor_filter).real
         frequency_prior = torch.sqrt(torch.sum(filtered**2, dim=0))
 
@@ -291,7 +360,19 @@ class VSI(FullReferenceMetric):
 
         """
         self._register_implementation(
-            implementations, "piq", get_piq_vsi(self.c1, self.c2, self.c3, self.alpha, self.beta)
+            implementations,
+            "piq",
+            get_piq_vsi(
+                c1=self.c1,
+                c2=self.c2,
+                c3=self.c3,
+                alpha=self.alpha,
+                beta=self.beta,
+                omega_0=self.omega_0,
+                sigma_d=self.sigma_d,
+                sigma_c=self.sigma_c,
+                sigma_f=self.sigma_f,
+            ),
         )
         # self._register_implementation(implementations, "piqa", get_piqa_vsi())
         # PIQA's VSI implementation is not working as there is a shape mismatch in the saliency map computation
@@ -306,7 +387,8 @@ class VSI(FullReferenceMetric):
         """
         return (
             f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()} "
-            f"with c1={self.c1}, c2={self.c2}, c3={self.c3}, alpha={self.alpha}, beta={self.beta}"
+            f"with c1={self.c1}, c2={self.c2}, c3={self.c3}, alpha={self.alpha}, beta={self.beta}, "
+            f"sigma_d={self.sigma_d}, sigma_c={self.sigma_c}, omega_0={self.omega_0}, sigma_f={self.sigma_f}"
         )
 
     def _input_checks(self, image: torch.Tensor, reference: torch.Tensor) -> None:
