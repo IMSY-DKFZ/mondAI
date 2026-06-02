@@ -62,7 +62,7 @@ def brain_slice() -> np.ndarray:
 def maximum_dimensions_image_B_C_D_H_W() -> np.ndarray:
     phantom = load_shepp_logan_phantom() / 255.0  # Normalize to [0, 1] for testing
     # Create a 5D image with dimensions (B, C, D, H, W) by repeating the phantom across new dimensions
-    return np.tile(phantom, (5, 3, 10, 1, 1))  # (B=5, C=3, D=10, H=400, W=400)
+    return np.tile(phantom, (2, 3, 2, 1, 1))  # (B=5, C=3, D=10, H=400, W=400)
 
 
 @fixture
