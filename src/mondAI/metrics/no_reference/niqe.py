@@ -10,6 +10,7 @@ from mondAI.logging import get_logger
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.no_reference.base import NoReferenceMetric
 from mondAI.metrics.third_party.medimetrics import get_medimetrics_niqe
+from mondAI.utils.checks import check_value_range, warn_if_all_pixels_in_0_to_1_range
 from mondAI.utils.signal_processing import convolve2d, gaussian_filter_kernel
 
 logger = get_logger()
@@ -396,15 +397,8 @@ class NIQE(NoReferenceMetric):
 
         """
         # Input checks specific to NIQE
-        if torch.any(image < 0) or torch.any(image > 255):
-            raise ValueError("Input image contains pixel values outside the range [0, 255].")
-
-        if torch.all(image >= 0) and torch.all(image <= 1):
-            logger.warning(
-                "It has been detected that all pixel values in the image are in the range [0, 1]. "
-                "NIQE expects pixel values in the range [0, 255]. Please ensure that your input images are "
-                "correctly scaled for accurate computation of NIQE."
-            )
+        check_value_range(image, 0, 255)
+        warn_if_all_pixels_in_0_to_1_range(image, image)
 
         if self.block_size_row > image.shape[-2] or self.block_size_column > image.shape[-1]:
             raise ValueError(
