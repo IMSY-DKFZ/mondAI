@@ -299,9 +299,7 @@ class LPIPS_Module(torch.nn.Module):  # type: ignore
 
             if pretrained:
                 if model_path is None:
-                    model_path = str(
-                        PurePosixPath(Path.cwd() / f"src/mondAI/metrics/full_reference/lpips_weights/{net}.pth")
-                    )
+                    model_path = str(PurePosixPath(Path.cwd() / f"src/mondAI/metrics//weights/lpips/{net}.pth"))
 
                 if verbose:
                     print(f"Loading model from: {model_path}")

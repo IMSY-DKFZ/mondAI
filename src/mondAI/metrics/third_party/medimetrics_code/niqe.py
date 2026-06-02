@@ -45,7 +45,7 @@ class NIQE(NonRefMetric):
         """
 
         # load trained parameters:
-        params = loadmat(str(PurePosixPath(Path.cwd() / "src/mondAI/metrics/third_party/medimetrics_code/niqe.mat")))
+        params = loadmat(str(PurePosixPath(Path.cwd() / "src/mondAI/metrics/weights/medimetrics_niqe.mat")))
         pop_mu = np.ravel(params["pop_mu"])
         pop_cov = params["pop_cov"]
 

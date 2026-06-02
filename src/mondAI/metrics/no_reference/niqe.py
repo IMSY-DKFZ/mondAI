@@ -100,7 +100,7 @@ class NIQE(NoReferenceMetric):
             raise ValueError(f"block row overlap must be non-negative, but got {self.block_row_overlap}.")
 
         try:
-            model_parameters = loadmat(str(PurePosixPath(Path.cwd() / "src/mondAI/metrics/no_reference/niqe.mat")))
+            model_parameters = loadmat(str(PurePosixPath(Path.cwd() / "src/mondAI/metrics/weights/niqe.mat")))
         except FileNotFoundError as e:
             raise FileNotFoundError(
                 "NIQE model parameters file not found. Please ensure that 'niqe.mat' is located next to this file."

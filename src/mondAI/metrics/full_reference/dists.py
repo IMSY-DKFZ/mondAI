@@ -194,7 +194,7 @@ class DISTS_Module(torch.nn.Module):  # type: ignore
         self.chns = [3, 64, 128, 256, 512, 512]
         self.register_parameter("alpha", torch.nn.Parameter(torch.randn(1, sum(self.chns), 1, 1)))
         self.register_parameter("beta", torch.nn.Parameter(torch.randn(1, sum(self.chns), 1, 1)))
-        weights = torch.load(str(PurePosixPath(Path.cwd() / "src/mondAI/metrics/full_reference/dists_weights.pt")))
+        weights = torch.load(str(PurePosixPath(Path.cwd() / "src/mondAI/metrics/weights/dists.pt")))
         self.alpha.data = weights["alpha"]
         self.beta.data = weights["beta"]
 

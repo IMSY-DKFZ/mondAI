@@ -8,6 +8,7 @@ contributer_guide/logger
 contributer_guide/tests
 contributer_guide/documentation
 contributer_guide/tooling
+contributer_guide/weights
 ```
 
 We are happy that you would like to contribute to this library. Please read the README.md and CONTRIBUTING.md files before contributing.
