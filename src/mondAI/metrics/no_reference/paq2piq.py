@@ -49,11 +49,15 @@ class PaQ2PiQ(NoReferenceMetric):
 
     @property
     def expected_dimensions(self) -> tuple[Dimension, ...]:
-        return (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)  # RGB expected
+        if self.batched:
+            return (Dimension.BATCH, Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
+        else:
+            return (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
 
     def __init__(
         self,
         model_weights_url: str = "https://github.com/baidut/PaQ-2-PiQ/releases/download/v1.0/RoIPoolModel-fit.10.bs.120.pth",
+        batched: bool = False,
     ) -> None:
         """Initialize PaQ-2-PiQ metric.
 
@@ -62,6 +66,11 @@ class PaQ2PiQ(NoReferenceMetric):
             Default is the URL provided by the original authors for their pretrained
             model.
         :type model_weights_url: str
+        :param batched: Whether the images will be provided in batches and scores
+            should be computed batch-wise. If False, the metric expects inputs of shape
+            (C, H, W) and will add a batch dimension internally. If True, the metric
+            expects inputs of shape (N, C, H, W). Default is False.
+        :type batched: bool
         :raises ValueError: If the provided model_weights_url is not a valid URL.
         :raises RuntimeError: If there is an error during downloading or loading the
             model weights, such as an invalid URL or network issues.
@@ -69,6 +78,7 @@ class PaQ2PiQ(NoReferenceMetric):
         """
         super().__init__()
         self.model_weights_url = model_weights_url
+        self.batched = batched
 
         # check that URL is valid
         if not self.model_weights_url.startswith("http"):
@@ -116,7 +126,9 @@ class PaQ2PiQ(NoReferenceMetric):
         check_rgb(self.expected_dimensions, image, self.abbreviation)
 
         # actual model prediction
-        image = image.float().unsqueeze(0)  # convert to float and add batch dimension
+        image = image.float()  # convert to float and add batch dimension
+        if not self.batched:
+            image = image.unsqueeze(0)
         self.model.input_block_rois(block_size=(20, 20), img_size=image.shape[-2:], device=image.device)
         output = self.model(image)
         # global_score = output[0, 0]
@@ -134,7 +146,7 @@ class PaQ2PiQ(NoReferenceMetric):
         """
         return (
             f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()} "
-            f"with pretrained weights from {self.model_weights_url} "
+            f"with pretrained weights from {self.model_weights_url}, batched={self.batched}"
         )
 
 

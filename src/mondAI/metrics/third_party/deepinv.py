@@ -47,7 +47,7 @@ def get_deepinv_nmse() -> Callable[..., torch.Tensor]:
     return deepinv_nmse
 
 
-def get_deepinv_lpips(net_type: str) -> Callable[..., torch.Tensor]:
+def get_deepinv_lpips(net_type: str, batched: bool = False) -> Callable[..., torch.Tensor]:
     from deepinv.loss.metric import LPIPS as DeepInvLPIPS
 
     deepinv_metric = DeepInvLPIPS(net_type=net_type).double()
@@ -55,10 +55,12 @@ def get_deepinv_lpips(net_type: str) -> Callable[..., torch.Tensor]:
     def deepinv_lpips(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
         # deepinv expects NCHW tensors
         deepinv_metric.to(image.device)
-        return deepinv_metric(
-            image.unsqueeze(0),
-            reference.unsqueeze(0),
-        )
+
+        if not batched:
+            image = image.unsqueeze(0)
+            reference = reference.unsqueeze(0)
+
+        return deepinv_metric(image, reference)
 
     return deepinv_lpips
 

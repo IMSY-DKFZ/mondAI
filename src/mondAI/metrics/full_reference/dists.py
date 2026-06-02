@@ -54,11 +54,20 @@ class DISTS(FullReferenceMetric):
 
     @property
     def expected_dimensions(self) -> tuple[Dimension, ...]:
-        return (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
+        if self.batched:
+            return (Dimension.BATCH, Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
+        else:
+            return (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
 
-    def __init__(self) -> None:
+    def __init__(self, batched: bool = False) -> None:
+        """
+        :param batched: Whether the images will be provided in batches and scores should be computed batch-wise.
+         If False, the metric expects inputs of shape (C, H, W) and will add a batch dimension internally.
+         If True, the metric expects inputs of shape (N, C, H, W). Default is False.
+        :type batched: bool
+        """
         super().__init__()
-
+        self.batched = batched
         self.model = DISTS_Module()
 
     def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
@@ -70,7 +79,12 @@ class DISTS(FullReferenceMetric):
             reference = torchvision.transforms.functional.resize(reference, 256)
 
         self.model.to(image.device).double()
-        score = self.model(reference.unsqueeze(0), image.unsqueeze(0))
+
+        if not self.batched:
+            image = image.unsqueeze(0)
+            reference = reference.unsqueeze(0)
+
+        score = self.model(reference, image)
         return score.squeeze()
 
     def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
@@ -83,9 +97,11 @@ class DISTS(FullReferenceMetric):
         and import them here to register them for comparison.
 
         """
-        self._register_implementation(implementations, "piq", get_piq_dists())
-        self._register_implementation(implementations, "torchmetrics", get_torchmetrics_dists())
-        self._register_implementation(implementations, "medimetrics", get_medimetrics_dists())
+        self._register_implementation(implementations, "piq", get_piq_dists(batched=self.batched))
+        self._register_implementation(implementations, "torchmetrics", get_torchmetrics_dists(batched=self.batched))
+        self._register_implementation(
+            implementations, "medimetrics", get_medimetrics_dists()
+        )  # only supports non-batched inputs
 
     def __str__(self) -> str:
         """Full text representation of the metric.
@@ -95,7 +111,7 @@ class DISTS(FullReferenceMetric):
         :rtype: str
 
         """
-        return f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()}"
+        return f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()}, batched={self.batched}"
 
     def _input_checks(self, image: torch.Tensor, reference: torch.Tensor) -> None:
         """Perform input checks specific to DISTS, such as checking for valid pixel
