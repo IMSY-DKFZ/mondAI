@@ -89,6 +89,19 @@ def get_medimetrics_msssim(
     return medimetrics_msssim
 
 
+def get_medimetrics_niqe() -> Callable[..., torch.Tensor]:
+    from mondAI.metrics.third_party.medimetrics_code.niqe import NIQE as MediMetricsNIQE
+
+    medimetric = MediMetricsNIQE()
+
+    def medimetrics_niqe(image: torch.Tensor) -> torch.Tensor:
+        # medimetrics exposes a NumPy-based compute method.
+        value = medimetric.compute(image.cpu().numpy(), data_range=255)
+        return torch.tensor(value, device=image.device, dtype=image.dtype)
+
+    return medimetrics_niqe
+
+
 def get_medimetrics_psnr(data_range: float) -> Callable[..., torch.Tensor]:
     from mondAI.metrics.third_party.medimetrics_code.psnr import PSNR as MediMetricsPSNR
 

@@ -17,4 +17,5 @@ from mondAI.metrics.full_reference.rmse import RMSE as RMSE
 from mondAI.metrics.full_reference.ssim import SSIM as SSIM
 from mondAI.metrics.full_reference.vifp import VIFP as VIFP
 from mondAI.metrics.full_reference.vsi import VSI as VSI
+from mondAI.metrics.no_reference.niqe import NIQE as NIQE
 from mondAI.metrics.no_reference.paq2piq import PaQ2PiQ as PaQ2PiQ

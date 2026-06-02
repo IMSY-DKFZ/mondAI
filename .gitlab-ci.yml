@@ -27,7 +27,7 @@ fast_tests:
   stage: test
   script:
     - pip install .[dev]
-    - PYTHONPATH=src pytest tests -m "not slow" --cov=mondAI --cov-report=term-missing --cov-report=xml --cov-config=pyproject.toml
+    - PYTHONPATH=src pytest tests -m "not slow" --cov=mondAI --cov-report=term-missing --cov-report=xml --durations=5 --cov-config=pyproject.toml
   coverage: '/TOTAL\s+\d+\s+\d+\s+(\d+%)/'
   artifacts:
     reports:
@@ -39,7 +39,7 @@ all_tests:
   stage: test
   script:
     - pip install .[dev,comparison]
-    - PYTHONPATH=src pytest tests --cov=mondAI --cov-report=term-missing --cov-report=xml --cov-config=pyproject.toml
+    - PYTHONPATH=src pytest tests --cov=mondAI --cov-report=term-missing --cov-report=xml --durations=5 --cov-config=pyproject.toml
   allow_failure: false
   rules:
     # run in merge requests
@@ -79,7 +79,6 @@ pages:
       - public
   only:
     - /^main$|^develop$|^release-.*$/  # build docs only on main, develop or release branches
-
 
 cache:
   key: ${CI_COMMIT_REF_SLUG}
