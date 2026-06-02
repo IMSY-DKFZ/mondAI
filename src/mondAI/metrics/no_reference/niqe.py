@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import numpy
 import torch
@@ -100,8 +100,7 @@ class NIQE(NoReferenceMetric):
             raise ValueError(f"block row overlap must be non-negative, but got {self.block_row_overlap}.")
 
         try:
-            PACKAGEDIR = Path(__file__).parent.absolute()
-            model_parameters = loadmat(PACKAGEDIR / "niqe.mat")
+            model_parameters = loadmat(str(PurePosixPath(Path.cwd() / "src/mondAI/metrics/no_reference/niqe.mat")))
         except FileNotFoundError as e:
             raise FileNotFoundError(
                 "NIQE model parameters file not found. Please ensure that 'niqe.mat' is located next to this file."

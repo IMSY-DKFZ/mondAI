@@ -5,7 +5,7 @@
 
 import math
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, List, Optional, Tuple
 
 import numpy as np
@@ -45,8 +45,7 @@ class NIQE(NonRefMetric):
         """
 
         # load trained parameters:
-        PACKAGEDIR = Path(__file__).parent.absolute()
-        params = loadmat(PACKAGEDIR / "niqe.mat")
+        params = loadmat(str(PurePosixPath(Path.cwd() / "src/mondAI/metrics/third_party/medimetrics_code/niqe.mat")))
         pop_mu = np.ravel(params["pop_mu"])
         pop_cov = params["pop_cov"]
 
