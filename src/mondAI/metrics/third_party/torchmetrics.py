@@ -3,7 +3,7 @@ from collections.abc import Callable
 import torch
 
 
-def get_torchmetrics_dists() -> Callable[..., torch.Tensor]:
+def get_torchmetrics_dists(batched: bool = False) -> Callable[..., torch.Tensor]:
     from torchmetrics.image.dists import DeepImageStructureAndTextureSimilarity
 
     dists = DeepImageStructureAndTextureSimilarity()
@@ -11,7 +11,12 @@ def get_torchmetrics_dists() -> Callable[..., torch.Tensor]:
     def torchmetrics_dists(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
         # torchmetrics expects NCHW tensors in float precision
         dists.to(image.device)
-        return dists(image.unsqueeze(0).float(), reference.unsqueeze(0).float()).double()
+
+        if not batched:
+            image = image.unsqueeze(0)
+            reference = reference.unsqueeze(0)
+
+        return dists(image.float(), reference.float()).double()
 
     return torchmetrics_dists
 

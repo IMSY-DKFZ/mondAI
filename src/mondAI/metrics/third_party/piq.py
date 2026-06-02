@@ -3,17 +3,19 @@ from collections.abc import Callable
 import torch
 
 
-def get_piq_dists() -> Callable[..., torch.Tensor]:
+def get_piq_dists(batched: bool = False) -> Callable[..., torch.Tensor]:
     from piq import DISTS
 
     dists_metric = DISTS()
 
     def piq_dists(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
         # PIQ expects NCHW tensors in float precision
-        return dists_metric(
-            image.unsqueeze(0).float(),
-            reference.unsqueeze(0).float(),
-        )
+
+        if not batched:
+            image = image.unsqueeze(0)
+            reference = reference.unsqueeze(0)
+
+        return dists_metric(image.float(), reference.float())
 
     return piq_dists
 
@@ -141,7 +143,7 @@ def get_piq_iwssim(
     return piq_iwssim
 
 
-def get_piq_lpips() -> Callable[..., torch.Tensor]:
+def get_piq_lpips(batched: bool = False) -> Callable[..., torch.Tensor]:
     from piq import LPIPS
 
     lpips_metric = LPIPS(replace_pooling=True).double()
@@ -149,10 +151,12 @@ def get_piq_lpips() -> Callable[..., torch.Tensor]:
     def piq_lpips(image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
         # PIQ expects NCHW tensors
         lpips_metric.to(image.device)
-        return lpips_metric(
-            image.unsqueeze(0),
-            reference.unsqueeze(0),
-        )
+
+        if not batched:
+            image = image.unsqueeze(0)
+            reference = reference.unsqueeze(0)
+
+        return lpips_metric(image, reference)
 
     return piq_lpips
 

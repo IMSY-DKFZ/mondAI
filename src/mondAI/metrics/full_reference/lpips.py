@@ -64,21 +64,25 @@ class LPIPS(FullReferenceMetric):
 
     @property
     def expected_dimensions(self) -> tuple[Dimension, ...]:
-        return (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
+        if self.batched:
+            return (Dimension.BATCH, Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
+        else:
+            return (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
 
-    def __init__(
-        self,
-        network_architecture: Literal["vgg", "alex", "squeeze"] = "alex",
-    ) -> None:
+    def __init__(self, network_architecture: Literal["vgg", "alex", "squeeze"] = "alex", batched: bool = False) -> None:
         """
 
         :param network_architecture: The architecture of the pre-trained CNN to use for feature extraction.
             Choices are "vgg", "alex", or "squeeze", default is "alex".
         :type network_architecture: str
-
+        :param batched: Whether the images will be provided in batches and scores should be computed batch-wise.
+         If False, the metric expects inputs of shape (C, H, W) and will add a batch dimension internally.
+         If True, the metric expects inputs of shape (N, C, H, W). Default is False.
+        :type batched: bool
         """
         super().__init__()
         self.network_architecture = network_architecture
+        self.batched = batched
 
         if network_architecture not in ["vgg", "alex", "squeeze"]:
             raise ValueError(
@@ -117,7 +121,12 @@ class LPIPS(FullReferenceMetric):
         reference = 2 * reference - 1
 
         self.model.to(image.device).double()
-        score = self.model(reference.unsqueeze(0), image.unsqueeze(0))
+
+        if not self.batched:
+            image = image.unsqueeze(0)
+            reference = reference.unsqueeze(0)
+
+        score = self.model(reference, image)
         return score.squeeze()
 
     def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
@@ -133,9 +142,14 @@ class LPIPS(FullReferenceMetric):
         self._register_implementation(
             implementations, "torchmetrics", get_torchmetrics_lpips(self.network_architecture)
         )
-        self._register_implementation(implementations, "piq", get_piq_lpips())  # piq only has vgg16 version
-        self._register_implementation(implementations, "piqa", get_piqa_lpips(self.network_architecture))
-        self._register_implementation(implementations, "deepinv", get_deepinv_lpips(self.network_architecture))
+        self._register_implementation(implementations, "piq", get_piq_lpips(batched=self.batched))
+        # piq only has vgg16 version
+        self._register_implementation(
+            implementations, "piqa", get_piqa_lpips(self.network_architecture, batched=self.batched)
+        )
+        self._register_implementation(
+            implementations, "deepinv", get_deepinv_lpips(self.network_architecture, batched=self.batched)
+        )
 
     def __str__(self) -> str:
         """Full text representation of the metric.
@@ -147,7 +161,7 @@ class LPIPS(FullReferenceMetric):
         """
         return (
             f"{self.name} ({self.abbreviation}) {self._arrow_indicating_optimum()} with "
-            f"network_architecture={self.network_architecture}"
+            f"network_architecture={self.network_architecture}, batched={self.batched}"
         )
 
     def _input_checks(self, image: torch.Tensor, reference: torch.Tensor) -> None:
