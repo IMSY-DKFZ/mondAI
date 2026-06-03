@@ -7,8 +7,8 @@ from mondAI.metrics.full_reference.psnr import PSNR
 @pytest.mark.parametrize("dynamic_range", [1.0, 100.0, 255.0])
 def test_dynamic_range_valid(dynamic_range: float) -> None:
     psnr = PSNR(dynamic_range=dynamic_range)
-    img1 = torch.rand(64, 64) * dynamic_range
-    img2 = torch.rand(64, 64) * dynamic_range
+    img1 = torch.rand(64, 64) * dynamic_range / 255.0  # compensate for internal scaling factor
+    img2 = torch.rand(64, 64) * dynamic_range / 255.0  # compensate for internal scaling factor
     psnr(img1, img2)
 
 
@@ -38,13 +38,13 @@ def test_invalid_value_range_reference(factor: float) -> None:
 
 def test_identical_images_are_infinite() -> None:
     psnr = PSNR()
-    img = torch.rand(64, 64) * 255.0
+    img = torch.rand(64, 64)
     result = psnr(img, img)
     assert torch.isinf(torch.as_tensor(result))
 
 
 def test_psnr_decreases_with_larger_error() -> None:
-    psnr = PSNR(dynamic_range=1.0)
+    psnr = PSNR(dynamic_range=255.0)
     reference = torch.zeros(32, 32)
     image_small_error = torch.full((32, 32), 0.1)
     image_large_error = torch.full((32, 32), 0.2)

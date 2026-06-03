@@ -26,7 +26,8 @@ class HaarPSI(FullReferenceMetric):
     alpha=4.9 are recommended, as shown in Karner et al. (2025), which are the defaults
     in HaarPSI_MED.
 
-    It expects two-dimensional grayscale or RGB (set `use_rgb` to True) images with pixel values in the range [0, 255].
+    It expects two-dimensional grayscale or RGB (set `use_rgb` to True) images with pixel values in the range [0, 255],
+    therefore input images are scaled from [0,1] to [0,255] by multiplying with a scaling factor of 255.
     The resulting HaarPSI score ranges from 0 to 1, where a score of 1 indicates perfect
     similarity between the input image and the reference image, while a score of 0 indicates
     no perceptual similarity. Note that the RGB definition is not just a simple channel-wise application of the
@@ -79,6 +80,10 @@ class HaarPSI(FullReferenceMetric):
     @property
     def higher_is_better(self) -> bool:
         return True
+
+    @property
+    def scaling_factor(self) -> float:
+        return 255.0
 
     @property
     def expected_dimensions(self) -> tuple[Dimension, ...]:

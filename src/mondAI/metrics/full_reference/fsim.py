@@ -20,12 +20,14 @@ class FSIM(FullReferenceMetric):
     images based on phase congruency and gradient magnitude similarity. It is designed
     to capture perceptual differences between images which align with human visual
     perception. It expects two-dimensional grayscale or RGB (set `use_rgb` to True)
-    images with pixel values in the range [0, 255]. The resulting FSIM score usually
-    ranges from 0 to 1, where a score of 1 indicates perfect similarity between the
-    input image and the reference image, while a score of 0 indicates no perceptual
-    similarity. Note that the RGB definition is not just a simple channel-wise
-    application of the grayscale definition, but rather a different definition that
-    considers the Y, I and Q channels of the YIQ color space separately.
+    images with pixel values in the range [0, 255], therefore input images are scaled
+    from [0,1] to [0,255] by multiplying with a scaling factor of 255. The resulting
+    FSIM score usually ranges from 0 to 1, where a score of 1 indicates perfect
+    similarity between the input image and the reference image, while a score of 0
+    indicates no perceptual similarity. Note that the RGB definition is not just a
+    simple channel-wise application of the grayscale definition, but rather a different
+    definition that considers the Y, I and Q channels of the YIQ color space
+    separately.
 
     FSIM uses the phase congruency and gradient magnitude of image to compute local similarities, and the
     phase congruency is used to compute weights for these local similarities.
@@ -56,6 +58,10 @@ class FSIM(FullReferenceMetric):
         return True
 
     @property
+    def scaling_factor(self) -> float:
+        return 255.0
+
+    @property
     def expected_dimensions(self) -> tuple[Dimension, ...]:
         if self.use_rgb:
             return (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
@@ -72,7 +78,7 @@ class FSIM(FullReferenceMetric):
         scales: int = 4,
         orientations: int = 4,
         minimal_wavelength: int = 6,
-        scaling_factor: int = 2,
+        filter_scaling_factor: int = 2,
         sigma_f: float = 0.55,
         delta_theta: float = 1.2,
         noise_threshold_factor: float = 2.0,
@@ -116,10 +122,10 @@ class FSIM(FullReferenceMetric):
         :param minimal_wavelength: The wavelength of the smallest scale filter, default
             is 6 as in original implementation, must be positive
         :type minimal_wavelength: int
-        :param scaling_factor: The scaling factor between successive filters, default
+        :param filter_scaling_factor: The scaling factor between successive filters, default
             is 2 as in original implementation,
             must be greater than 1 to ensure proper spacing of filters in frequency domain
-        :type scaling_factor: int
+        :type filter_scaling_factor: int
         :param sigma_f: The ratio of the standard deviation of the Gaussian describing
             the log Gabor filter's transfer function in the frequency domain to the
             filter center frequency, default is 0.55 as in original implementation, must be positive
@@ -139,7 +145,7 @@ class FSIM(FullReferenceMetric):
         :type epsilon: float
         : raises ValueError: If any of the parameters are outside their valid ranges, such as negative values
           for T1, T2, T3, T4, or _lambda, or non-positive values for scales, orientations, minimal_wavelength,
-          scaling_factor, sigma_f, delta_theta, noise_threshold_factor, or epsilon.
+          filter_scaling_factor, sigma_f, delta_theta, noise_threshold_factor, or epsilon.
           Also raises ValueError if epsilon is greater than or equal to 0.1 for numerical stability reasons.
 
         """
@@ -158,7 +164,7 @@ class FSIM(FullReferenceMetric):
         self.scales = scales
         self.orientations = orientations
         self.minimal_wavelength = minimal_wavelength
-        self.scaling_factor = scaling_factor
+        self.filter_scaling_factor = filter_scaling_factor
         self.sigma_f = sigma_f
         self.delta_theta = delta_theta
         self.noise_threshold_factor = noise_threshold_factor
@@ -181,10 +187,10 @@ class FSIM(FullReferenceMetric):
             raise ValueError(f"Number of orientations must be positive, but got {self.orientations}.")
         if self.minimal_wavelength <= 0:
             raise ValueError(f"Minimal wavelength must be positive, but got {self.minimal_wavelength}.")
-        if self.scaling_factor <= 1:
+        if self.filter_scaling_factor <= 1:
             raise ValueError(
-                "Scaling factor must be greater than 1 to ensure that filters are properly spaced in frequency domain, "
-                f"but got {self.scaling_factor}."
+                "Filter scaling factor must be greater than 1 to ensure that filters are properly spaced in frequency "
+                f"domain, but got {self.filter_scaling_factor}."
             )
         if self.sigma_f <= 0:
             raise ValueError(
@@ -226,8 +232,8 @@ class FSIM(FullReferenceMetric):
             non_default_params.append(f"orientations={self.orientations} (default: 4)")
         if self.minimal_wavelength != 6:
             non_default_params.append(f"minimal_wavelength={self.minimal_wavelength} (default: 6)")
-        if self.scaling_factor != 2:
-            non_default_params.append(f"scaling_factor={self.scaling_factor} (default: 2)")
+        if self.filter_scaling_factor != 2:
+            non_default_params.append(f"filter_scaling_factor={self.filter_scaling_factor} (default: 2)")
         if self.sigma_f != 0.55:
             non_default_params.append(f"sigma_f={self.sigma_f} (default: 0.55)")
         if self.delta_theta != 1.2:
@@ -281,7 +287,7 @@ class FSIM(FullReferenceMetric):
             self.scales,
             self.orientations,
             self.minimal_wavelength,
-            self.scaling_factor,
+            self.filter_scaling_factor,
             self.sigma_f,
             self.delta_theta,
             self.noise_threshold_factor,
@@ -292,7 +298,7 @@ class FSIM(FullReferenceMetric):
             self.scales,
             self.orientations,
             self.minimal_wavelength,
-            self.scaling_factor,
+            self.filter_scaling_factor,
             self.sigma_f,
             self.delta_theta,
             self.noise_threshold_factor,
@@ -338,7 +344,7 @@ class FSIM(FullReferenceMetric):
                 self.scales,
                 self.orientations,
                 self.minimal_wavelength,
-                self.scaling_factor,
+                self.filter_scaling_factor,
                 self.sigma_f,
                 self.delta_theta,
                 self.noise_threshold_factor,
@@ -363,7 +369,7 @@ class FSIM(FullReferenceMetric):
             f"{self.name} ({self.abbreviation}) {arrow}{rgb_info} with parameters: "
             f"{self.T1=}, {self.T2=}, {self.T3=}, {self.T4=}, {self._lambda=}, "
             f"{self.scales=}, {self.orientations=}, {self.minimal_wavelength=}, "
-            f"{self.scaling_factor=}, {self.sigma_f=}, {self.delta_theta=}, "
+            f"{self.filter_scaling_factor=}, {self.sigma_f=}, {self.delta_theta=}, "
             f"{self.noise_threshold_factor=}, {self.epsilon=}"
         )
 
@@ -409,7 +415,7 @@ class FSIM(FullReferenceMetric):
         scales: int = 4,
         orientations: int = 4,
         minimal_wavelength: int = 6,
-        scaling_factor: int = 2,
+        filter_scaling_factor: int = 2,
         sigma_f: float = 0.55,
         delta_theta: float = 1.2,
         noise_threshold_factor: float = 2.0,
@@ -453,9 +459,9 @@ class FSIM(FullReferenceMetric):
         :param minimal_wavelength: The wavelength of the smallest scale filter, default
             is 6 as in original implementation
         :type minimal_wavelength: int
-        :param scaling_factor: The scaling factor between successive filters, default
+        :param filter_scaling_factor: The scaling factor between successive filters, default
             is 2 as in original implementation
-        :type scaling_factor: int
+        :type filter_scaling_factor: int
         :param sigma_f: The ratio of the standard deviation of the Gaussian describing
             the log Gabor filter's transfer function in the frequency domain to the
             filter center frequency, default is 0.55 as in original implementation
@@ -503,7 +509,9 @@ class FSIM(FullReferenceMetric):
         # sharpness (15) for the low-pass filter are set according to the original implementation.
         low_pass_filter = self._low_pass_filter_like(image, 0.45, 15)
 
-        center_frequencies = 1.0 / (minimal_wavelength * scaling_factor ** torch.arange(scales, device=image.device))
+        center_frequencies = 1.0 / (
+            minimal_wavelength * filter_scaling_factor ** torch.arange(scales, device=image.device)
+        )
         log_sigma_f = torch.log(torch.tensor(sigma_f, device=image.device))
         log_gabor = low_pass_filter * torch.exp(
             -(torch.log(radius / (center_frequencies[:, None, None])) ** 2) / (2 * log_sigma_f**2)

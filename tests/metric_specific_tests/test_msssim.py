@@ -8,16 +8,16 @@ from mondAI.metrics.full_reference.ssim import SSIM
 @pytest.mark.parametrize("k1", [0.0, 0.001, 0.01, 0.05])
 def test_k1_valid(k1: float) -> None:
     metric = MSSSIM(k1=k1)
-    img1 = torch.rand(256, 256) * 255.0
-    img2 = torch.rand(256, 256) * 255.0
+    img1 = torch.rand(256, 256)
+    img2 = torch.rand(256, 256)
     metric(img1, img2)
 
 
 @pytest.mark.parametrize("k2", [0.0, 0.003, 0.03, 0.05])
 def test_k2_valid(k2: float) -> None:
     metric = MSSSIM(k2=k2)
-    img1 = torch.rand(256, 256) * 255.0
-    img2 = torch.rand(256, 256) * 255.0
+    img1 = torch.rand(256, 256)
+    img2 = torch.rand(256, 256)
     metric(img1, img2)
 
 
@@ -30,8 +30,8 @@ def test_k_parameters_invalid(parameter: str, value: float) -> None:
 @pytest.mark.parametrize("kernel_size", [3, 5, 11, 15])
 def test_kernel_size_valid(kernel_size: int) -> None:
     metric = MSSSIM(kernel_size=kernel_size)
-    img1 = torch.rand(256, 256) * 255.0
-    img2 = torch.rand(256, 256) * 255.0
+    img1 = torch.rand(256, 256)
+    img2 = torch.rand(256, 256)
     metric(img1, img2)
 
 
@@ -44,8 +44,8 @@ def test_kernel_size_invalid(kernel_size: int) -> None:
 @pytest.mark.parametrize("kernel_sigma", [0.1, 1.0, 1.5, 3.0])
 def test_kernel_sigma_valid(kernel_sigma: float) -> None:
     metric = MSSSIM(kernel_sigma=kernel_sigma)
-    img1 = torch.rand(256, 256) * 255.0
-    img2 = torch.rand(256, 256) * 255.0
+    img1 = torch.rand(256, 256)
+    img2 = torch.rand(256, 256)
     metric(img1, img2)
 
 
@@ -58,8 +58,8 @@ def test_kernel_sigma_invalid(kernel_sigma: float) -> None:
 @pytest.mark.parametrize("dynamic_range", [1.0, 100.0, 255.0])
 def test_dynamic_range_valid(dynamic_range: float) -> None:
     metric = MSSSIM(dynamic_range=dynamic_range)
-    img1 = torch.rand(256, 256) * dynamic_range
-    img2 = torch.rand(256, 256) * dynamic_range
+    img1 = torch.rand(256, 256) * dynamic_range / 255.0  # compensate for internal scaling factor
+    img2 = torch.rand(256, 256) * dynamic_range / 255.0  # compensate for internal scaling factor
     metric(img1, img2)
 
 
@@ -91,8 +91,8 @@ def test_invalid_value_range_reference(factor: float) -> None:
 def test_scales_valid(scales: int) -> None:
     weights = (0.0448, 0.2856, 0.3001, 0.2363, 0.1333)[:scales]
     metric = MSSSIM(scales=scales, weights=weights)
-    img1 = torch.rand(256, 256) * 255.0
-    img2 = torch.rand(256, 256) * 255.0
+    img1 = torch.rand(256, 256)
+    img2 = torch.rand(256, 256)
     metric(img1, img2)
 
 
@@ -115,8 +115,8 @@ def test_weights_sum_invalid() -> None:
 @pytest.mark.parametrize("method", ["product", "weighted sum"])
 def test_method_valid(method: str) -> None:
     metric = MSSSIM(scales=2, weights=(0.5, 0.5), method=method)
-    img1 = torch.rand(256, 256) * 255.0
-    img2 = torch.rand(256, 256) * 255.0
+    img1 = torch.rand(256, 256)
+    img2 = torch.rand(256, 256)
     metric(img1, img2)
 
 
@@ -143,7 +143,7 @@ def test_image_too_small_for_scales() -> None:
 
 def test_identical_images_are_one() -> None:
     metric = MSSSIM()
-    img = torch.rand(256, 256) * 255.0
+    img = torch.rand(256, 256)
     result = metric(img, img)
     assert torch.isclose(torch.as_tensor(result), torch.tensor(1.0, dtype=torch.as_tensor(result).dtype))
 
@@ -151,8 +151,8 @@ def test_identical_images_are_one() -> None:
 def test_single_scale_same_as_ssim() -> None:
     msssim = MSSSIM(scales=1, weights=(1.0,))
     ssim = SSIM()
-    img1 = torch.rand(256, 256) * 255.0
-    img2 = torch.rand(256, 256) * 255.0
+    img1 = torch.rand(256, 256)
+    img2 = torch.rand(256, 256)
     score_msssim = msssim(img1, img2)
     score_ssim = ssim(img1, img2)
     assert torch.isclose(torch.as_tensor(score_msssim), torch.tensor(score_ssim))
@@ -160,7 +160,7 @@ def test_single_scale_same_as_ssim() -> None:
 
 def test_zero_constants_constant_images_follow_fallback_path() -> None:
     metric = MSSSIM(k1=0.0, k2=0.0, scales=1, weights=(1.0,))
-    img = torch.full((64, 64), 5.0)
+    img = torch.full((64, 64), 0.5)
 
     score = metric(img, img)
     assert torch.isclose(torch.as_tensor(score), torch.tensor(1.0, dtype=torch.as_tensor(score).dtype))
@@ -168,7 +168,7 @@ def test_zero_constants_constant_images_follow_fallback_path() -> None:
 
 def test_normalized_inputs_warn_for_default_dynamic_range(caplog: pytest.LogCaptureFixture) -> None:
     metric = MSSSIM(scales=1, weights=(1.0,))
-    img = torch.rand(64, 64)
+    img = torch.rand(64, 64) / 255.0
 
     with caplog.at_level("WARNING", logger="mondAI"):
         metric(img, img)
@@ -207,7 +207,7 @@ def test_aggregation_uses_expected_terms(monkeypatch: pytest.MonkeyPatch, method
 
     monkeypatch.setattr("mondAI.metrics.full_reference.msssim.ssim_and_cs_maps", fake_ssim_and_cs_maps)
 
-    img = torch.rand(64, 64) * 255.0
+    img = torch.rand(64, 64)
     result = metric(img, img)
 
     assert torch.isclose(torch.as_tensor(result), torch.tensor(expected, dtype=torch.as_tensor(result).dtype))

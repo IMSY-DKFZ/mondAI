@@ -24,7 +24,9 @@ user_guide/logger
 from mondAI.metrics import MAE
 
 mae = MAE()
-image = torch.random.rand((256,256))
+
+# image values need to be in [0,1] value range
+image = torch.rand((256,256))
 score = mae(image, image)  # score = 0.0
 
 ```

@@ -24,7 +24,8 @@ class VIFP(FullReferenceMetric):
     this implementation is based on. The pixel domain version of VIFP is easier to compute than the wavelet domain
     version.
 
-    VIFP expects grayscale images with a value range of [0, 255]. VIFP requires that input images have spatial
+    VIFP expects grayscale images with a value range of [0, 255], therefore input images are scaled
+    from [0,1] to [0,255] by multiplying with a scaling factor of 255. VIFP requires that input images have spatial
     dimensions of at least 41x41 pixels to ensure that they do not become too small after downsampling 4 times in the
     VIFP computation. It is not symmetric, meaning that the order of the input images matters. It yields scores mostly
     between 0 and 1, where higher values indicate better perceptual quality. However, it can yield values greater
@@ -52,6 +53,10 @@ class VIFP(FullReferenceMetric):
     @property
     def higher_is_better(self) -> bool:
         return True
+
+    @property
+    def scaling_factor(self) -> float:
+        return 255.0
 
     @property
     def expected_dimensions(self) -> tuple[Dimension, ...]:

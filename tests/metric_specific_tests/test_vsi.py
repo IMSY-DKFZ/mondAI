@@ -62,8 +62,8 @@ def test_parameter_valid(
     for value in values:
         kwargs = {parameter: value}
         vsi = VSI(**kwargs)
-        img1 = torch.rand(3, 64, 64) * 255.0
-        img2 = torch.rand(3, 64, 64) * 255.0
+        img1 = torch.rand(3, 64, 64)
+        img2 = torch.rand(3, 64, 64)
         vsi(img1, img2, dims=["C", "H", "W"])
 
 

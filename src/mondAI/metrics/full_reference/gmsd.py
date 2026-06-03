@@ -18,7 +18,8 @@ class GMSD(FullReferenceMetric):
     """Gradient Magnitude Similarity Deviation (GMSD)
 
     This metric computes the standard deviation of the gradient magnitude similarity map between a distorted image
-    and a reference image. It expects grayscale images with pixel values in the range [0, 255] and yields scores
+    and a reference image. It expects grayscale images with pixel values in the range [0, 255], therefore input images
+    are scaled from [0,1] to [0,255] by multiplying with a scaling factor of 255. and yields scores
     between 0 and infinity, where lower values indicate better perceptual quality. GMSD is designed to be a simple
     and efficient metric that captures local variations in image quality based on gradient information.
 
@@ -43,6 +44,10 @@ class GMSD(FullReferenceMetric):
     @property
     def higher_is_better(self) -> bool:
         return False
+
+    @property
+    def scaling_factor(self) -> float:
+        return 255.0
 
     @property
     def expected_dimensions(self) -> tuple[Dimension, ...]:

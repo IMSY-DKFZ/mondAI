@@ -240,6 +240,10 @@ def test_metric_call_with_vectorization_invalid_input_number(phantom: np.ndarray
             return True
 
         @property
+        def scaling_factor(self) -> float:
+            return 1.0
+
+        @property
         def expected_dimensions(self) -> tuple[Dimension, ...]:
             return (Dimension.HEIGHT, Dimension.WIDTH)
 
@@ -358,7 +362,7 @@ def test_output_shape_depending_on_image_and_metric_dimensions(
         (
             ("B", "C", "H", "W"),
             (Dimension.DEPTH, Dimension.HEIGHT, Dimension.WIDTH),
-        ),  # imvalid case: image has other dimension than metric expects
+        ),  # invalid case: image has other dimension than metric expects
     ],
 )
 def test_invalid_image_and_metric_dimensions(

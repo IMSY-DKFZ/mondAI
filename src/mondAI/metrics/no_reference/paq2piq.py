@@ -48,6 +48,10 @@ class PaQ2PiQ(NoReferenceMetric):
         return True
 
     @property
+    def scaling_factor(self) -> float:
+        return 1.0
+
+    @property
     def expected_dimensions(self) -> tuple[Dimension, ...]:
         if self.batched:
             return (Dimension.BATCH, Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)

@@ -8,16 +8,16 @@ from mondAI.metrics.full_reference.ssim import SSIM
 @pytest.mark.parametrize("k1", [0.0, 0.001, 0.01, 0.05])
 def test_k1_valid(k1: float) -> None:
     metric = IWSSIM(k1=k1)
-    img1 = torch.rand(256, 256) * 255.0
-    img2 = torch.rand(256, 256) * 255.0
+    img1 = torch.rand(256, 256)
+    img2 = torch.rand(256, 256)
     metric(img1, img2)
 
 
 @pytest.mark.parametrize("k2", [0.0, 0.003, 0.03, 0.05])
 def test_k2_valid(k2: float) -> None:
     metric = IWSSIM(k2=k2)
-    img1 = torch.rand(256, 256) * 255.0
-    img2 = torch.rand(256, 256) * 255.0
+    img1 = torch.rand(256, 256)
+    img2 = torch.rand(256, 256)
     metric(img1, img2)
 
 
@@ -30,8 +30,8 @@ def test_k_parameters_invalid(parameter: str, value: float) -> None:
 @pytest.mark.parametrize("kernel_size", [3, 5, 11, 15])
 def test_kernel_size_valid(kernel_size: int) -> None:
     metric = IWSSIM(kernel_size=kernel_size, scales=3, weights=IWSSIM.DEFAULT_WEIGHTS[:3])
-    img1 = torch.rand(256, 256) * 255.0
-    img2 = torch.rand(256, 256) * 255.0
+    img1 = torch.rand(256, 256)
+    img2 = torch.rand(256, 256)
     metric(img1, img2)
 
 
@@ -50,8 +50,8 @@ def test_kernel_sigma_invalid(kernel_sigma: float) -> None:
 @pytest.mark.parametrize("dynamic_range", [1.0, 100.0, 255.0])
 def test_dynamic_range_valid(dynamic_range: float) -> None:
     metric = IWSSIM(dynamic_range=dynamic_range)
-    img1 = torch.rand(256, 256) * dynamic_range
-    img2 = torch.rand(256, 256) * dynamic_range
+    img1 = torch.rand(256, 256) * dynamic_range / 255.0  # compensate for internal scaling factor
+    img2 = torch.rand(256, 256) * dynamic_range / 255.0  # compensate for internal scaling factor
     metric(img1, img2)
 
 
@@ -82,8 +82,8 @@ def test_invalid_value_range_reference(factor: float) -> None:
 @pytest.mark.parametrize("scales", [1, 3, 5])
 def test_scales_valid(scales: int) -> None:
     metric = IWSSIM(scales=scales, weights=IWSSIM.DEFAULT_WEIGHTS[:scales])
-    img1 = torch.rand(256, 256) * 255.0
-    img2 = torch.rand(256, 256) * 255.0
+    img1 = torch.rand(256, 256)
+    img2 = torch.rand(256, 256)
     metric(img1, img2)
 
 
@@ -106,8 +106,8 @@ def test_weights_sum_invalid() -> None:
 @pytest.mark.parametrize("sigma_n_squared", [0.0, 0.4, 1.0])
 def test_sigma_n_squared_valid(sigma_n_squared: float) -> None:
     metric = IWSSIM(sigma_n_squared=sigma_n_squared)
-    img1 = torch.rand(256, 256) * 255.0
-    img2 = torch.rand(256, 256) * 255.0
+    img1 = torch.rand(256, 256)
+    img2 = torch.rand(256, 256)
     metric(img1, img2)
 
 
@@ -140,7 +140,7 @@ def test_image_too_small_for_scales() -> None:
 
 def test_identical_images_are_one() -> None:
     metric = IWSSIM(scales=3, weights=IWSSIM.DEFAULT_WEIGHTS[:3])
-    img = torch.rand(256, 256) * 255.0
+    img = torch.rand(256, 256)
     result = metric(img, img)
     assert torch.isclose(torch.as_tensor(result), torch.tensor(1.0, dtype=torch.as_tensor(result).dtype), atol=1e-6)
 
@@ -148,8 +148,8 @@ def test_identical_images_are_one() -> None:
 def test_single_scale_same_as_ssim() -> None:
     iwssim = IWSSIM(scales=1, weights=(1.0,))
     ssim = SSIM()
-    img1 = torch.rand(256, 256) * 255.0
-    img2 = torch.rand(256, 256) * 255.0
+    img1 = torch.rand(256, 256)
+    img2 = torch.rand(256, 256)
     score_iwssim = iwssim(img1, img2)
     score_ssim = ssim(img1, img2)  # might become negative so take abs
     assert torch.isclose(torch.as_tensor(score_iwssim), torch.abs(torch.as_tensor(score_ssim)))

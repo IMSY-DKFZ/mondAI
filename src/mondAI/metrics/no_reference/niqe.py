@@ -32,7 +32,8 @@ class NIQE(NoReferenceMetric):
     This implemtentation and it's scores deviate from the original MATLAB implementation due to numerical differences
     in the image filtering and resize functions between MATLAB and pytorch which are enhanced by the
     computation of this metric. This metric expects grayscale images. Apply an `rgb2gray` function if your input
-    has 3 channels (as the original MATLAB code does). Expected input image value range is [0, 255],
+    has 3 channels (as the original MATLAB code does). Expected input image value range is [0, 255], therefore input
+    images are scaled from [0,1] to [0,255] by multiplying with a scaling factor of 255,
     and output quality scores are non-negative, where lower values indicate better perceptual quality.
 
     Warning: This metric is designed for natural images and may yield unreliable scores for non-natural images,
@@ -60,6 +61,10 @@ class NIQE(NoReferenceMetric):
     @property
     def higher_is_better(self) -> bool:
         return False
+
+    @property
+    def scaling_factor(self) -> float:
+        return 255.0
 
     @property
     def expected_dimensions(self) -> tuple[Dimension, ...]:

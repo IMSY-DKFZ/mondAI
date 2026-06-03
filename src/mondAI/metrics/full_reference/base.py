@@ -28,9 +28,9 @@ class FullReferenceMetric(Metric, ABC):
         If compare_implementations is True, also compute the metric using other
         implementations.
 
-        :param image: The image to be evaluated.
+        :param image: The image to be evaluated, in value range [0,1].
         :type image: np.ndarray | torch.Tensor
-        :param reference: The reference image to compare against.
+        :param reference: The reference image to compare against, in value range [0,1].
         :type reference: np.ndarray | torch.Tensor
         :param dims: The dimensions of the input images, e.g. ("H", "W") for 2D images,
             ("C", "H", "W") for RGB images

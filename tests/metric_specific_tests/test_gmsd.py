@@ -25,8 +25,8 @@ def test_invalid_value_range_reference(factor: float) -> None:
 @pytest.mark.parametrize("t", [170.0, 3.0, 0.0])
 def test_t_valid(t: float) -> None:
     gmsd = GMSD(t=t)
-    img1 = torch.rand(64, 64) * 255.0
-    img2 = torch.rand(64, 64) * 255.0
+    img1 = torch.rand(64, 64)
+    img2 = torch.rand(64, 64)
     gmsd(img1, img2)
 
 
