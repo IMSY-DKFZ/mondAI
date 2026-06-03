@@ -40,6 +40,16 @@ class Metric(ABC):
 
     @property
     @abstractmethod
+    def scaling_factor(self) -> float:
+        """Factor to scale images from [0, 1] to the metric's expected value range.
+
+        Default is 1.0 (no scaling).
+
+        """
+        ...
+
+    @property
+    @abstractmethod
     def expected_dimensions(self) -> tuple[Dimension, ...]:
         """The dimensions that the metric expects to be present in the input images.
 
@@ -102,6 +112,7 @@ class Metric(ABC):
             "name": self.name,
             "abbreviation": self.abbreviation,
             "higher_is_better": self.higher_is_better,
+            "scaling_factor": self.scaling_factor,
             "expected_dimensions": [dim.value for dim in self.expected_dimensions],
             **params,
         }
@@ -177,6 +188,11 @@ class Metric(ABC):
 
         torch_inputs = tuple(convert_to_internal_format(x) for x in inputs)
 
+        # Scale image(s) from [0, 1] to the metric's expected value range
+        if self.scaling_factor != 1.0:
+            torch_inputs = tuple(x * self.scaling_factor for x in torch_inputs)
+
+        # Validate that expected dimensions are present in the specified dimensions
         dims_enum = [_DIMENSION_LOOKUP[d] for d in dims]
 
         for expected_dim in self.expected_dimensions:

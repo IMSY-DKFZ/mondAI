@@ -45,6 +45,10 @@ class RMSE(FullReferenceMetric):
         return False
 
     @property
+    def scaling_factor(self) -> float:
+        return 1.0
+
+    @property
     def expected_dimensions(self) -> tuple[Dimension, ...]:
         return (Dimension.HEIGHT, Dimension.WIDTH)
 

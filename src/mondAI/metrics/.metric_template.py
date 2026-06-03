@@ -34,6 +34,10 @@ class MetricTemplate(FullReferenceMetric):  # TODO: rename to actual metric name
         return False  # TODO: set to True if higher metric values indicate better performance, False otherwise
 
     @property
+    def scaling_factor(self) -> float:
+        return 1.0
+
+    @property
     def expected_dimensions(self) -> tuple[Dimension, ...]:
         """TODO: replace with actual expected dimensions for the metric, e.g. (Dimension.HEIGHT, Dimension.WIDTH) for 2D
         single channel metrics, or (Dimension.HEIGHT, Dimension.WIDTH, Dimension.CHANNEL) for RGB metrics. The expected

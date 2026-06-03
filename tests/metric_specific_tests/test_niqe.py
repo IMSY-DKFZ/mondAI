@@ -8,14 +8,14 @@ from mondAI.metrics.no_reference.niqe import NIQE
 def test_invalid_value_range_image(factor: float) -> None:
     with pytest.raises(ValueError):
         niqe = NIQE()
-        img1 = torch.ones(200, 300) * 255.0 * factor
+        img1 = torch.ones(200, 300) * factor
         niqe(img1)
 
 
 def test_too_small_image() -> None:
     with pytest.raises(ValueError):
         niqe = NIQE()
-        img1 = torch.ones(64, 64) * 255.0
+        img1 = torch.ones(64, 64)
         niqe(img1)
 
 

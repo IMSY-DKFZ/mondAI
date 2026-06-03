@@ -45,6 +45,10 @@ class GMSD(FullReferenceMetric):
         return False
 
     @property
+    def scaling_factor(self) -> float:
+        return 255.0
+
+    @property
     def expected_dimensions(self) -> tuple[Dimension, ...]:
         return (Dimension.HEIGHT, Dimension.WIDTH)
 

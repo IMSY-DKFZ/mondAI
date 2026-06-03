@@ -87,6 +87,7 @@ def test_metric_dummy_fingerprint(dummy_full_reference_metric: FullReferenceMetr
     assert fingerprint["name"] == "Dummy Full Reference Metric"
     assert fingerprint["abbreviation"] == "DFRM"
     assert fingerprint["higher_is_better"] is True
+    assert fingerprint["scaling_factor"] == 255.0
 
 
 @pytest.mark.parametrize("metric_class", METRICS)
@@ -96,6 +97,8 @@ def test_metric_actual_fingerprint(metric_class: type[Metric]) -> None:
     assert "name" in fingerprint
     assert "abbreviation" in fingerprint
     assert "higher_is_better" in fingerprint
+    assert "scaling_factor" in fingerprint
     assert isinstance(fingerprint["name"], str)
     assert isinstance(fingerprint["abbreviation"], str)
     assert isinstance(fingerprint["higher_is_better"], bool)
+    assert isinstance(fingerprint["scaling_factor"], float)

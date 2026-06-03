@@ -81,6 +81,10 @@ class HaarPSI(FullReferenceMetric):
         return True
 
     @property
+    def scaling_factor(self) -> float:
+        return 255.0
+
+    @property
     def expected_dimensions(self) -> tuple[Dimension, ...]:
         if self.use_rgb:
             return (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)

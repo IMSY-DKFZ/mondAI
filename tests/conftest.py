@@ -25,17 +25,15 @@ from mondAI.metrics.no_reference.base import NoReferenceMetric
 
 
 def load_shepp_logan_phantom() -> np.ndarray:
-    # Load the Shepp-Logan phantom (400, 400) pixel image with values in [0, 255]
+    # Load the Shepp-Logan phantom (400, 400) pixel image with values in [0, 1]
     phantom = shepp_logan_phantom()
-    return (phantom - phantom.min()) / (phantom.max() - phantom.min()) * 255.0
+    return (phantom - phantom.min()) / (phantom.max() - phantom.min())
 
 
 def load_brain() -> np.ndarray:
     # Load the brain volume (10, 256, 256) voxel image
-    # TODO: Should this volume be normalized to [0, 1]?
-    # TODO: Does this need to be converted from uint8 to float64?
     brain = brain_volume()
-    return (brain - brain.min()) / (brain.max() - brain.min()) * 255.0
+    return (brain - brain.min()) / (brain.max() - brain.min())
 
 
 def create_random_image(shape: tuple[int, ...], dtype: torch.dtype = torch.float64) -> torch.Tensor:
@@ -60,7 +58,7 @@ def brain_slice() -> np.ndarray:
 
 @fixture
 def maximum_dimensions_image_B_C_D_H_W() -> np.ndarray:
-    phantom = load_shepp_logan_phantom() / 255.0  # Normalize to [0, 1] for testing
+    phantom = load_shepp_logan_phantom()
     # Create a 5D image with dimensions (B, C, D, H, W) by repeating the phantom across new dimensions
     return np.tile(phantom, (2, 3, 2, 1, 1))  # (B=5, C=3, D=10, H=400, W=400)
 
@@ -106,6 +104,10 @@ def dummy_full_reference_metric() -> FullReferenceMetric:
             return True
 
         @property
+        def scaling_factor(self) -> float:
+            return 255.0
+
+        @property
         def expected_dimensions(self) -> tuple[Dimension, ...]:
             return (Dimension.HEIGHT, Dimension.WIDTH)
 
@@ -137,6 +139,10 @@ def dummy_no_reference_metric() -> NoReferenceMetric:
             return True
 
         @property
+        def scaling_factor(self) -> float:
+            return 255.0
+
+        @property
         def expected_dimensions(self) -> tuple[Dimension, ...]:
             return (Dimension.HEIGHT, Dimension.WIDTH)
 
@@ -164,6 +170,10 @@ def output_shape_test_metric_factory() -> Callable[[tuple[Dimension, ...]], Full
             @property
             def higher_is_better(self) -> bool:
                 return True
+
+            @property
+            def scaling_factor(self) -> float:
+                return 255.0
 
             @property
             def expected_dimensions(self) -> tuple[Dimension, ...]:
