@@ -18,7 +18,8 @@ class MDSI(FullReferenceMetric):
     r"""Mean Deviation Similarity Index (MDSI)
 
     This metric computes the mean deviation of a combined gradient-chromaticity similarity map between a distorted image
-    and a reference image. It expects RGB images with pixel values in the range [0, 255] and yields scores between 0 and
+    and a reference image. It expects RGB images with pixel values in the range [0, 255], therefore input images are
+    scaled from [0,1] to [0,255] by multiplying with a scaling factor of 255, and yields scores between 0 and
     infinity, where lower values indicate better perceptual quality. MDSI is designed to capture both gradient and
     color distortions in a way that correlates well with human perception of image quality. It is defined as
 

@@ -22,7 +22,7 @@ class NoReferenceMetric(Metric, ABC):
         If compare_implementations is True, also compute the metric using other
         implementations.
 
-        :param image: The image to be evaluated.
+        :param image: The image to be evaluated, in value range [0,1].
         :type image: np.ndarray | torch.Tensor
         :param dims: The dimensions of the input image, e.g. ("H", "W") for 2D images,
             ("C", "H", "W") for RGB images

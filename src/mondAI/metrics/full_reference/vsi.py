@@ -22,7 +22,8 @@ class VSI(FullReferenceMetric):
     of image quality. In particular, VSI computes a visual saliency map for both the reference and distorted images
     and uses this for similarity computation but also uses these maps to weight the
     similarity comparisons between the images, giving more importance to regions that are more visually salient.
-    It expects RGB images with pixel values in the range [0, 255] and yields scores between 0 and 1
+    It expects RGB images with pixel values in the range [0, 255], therefore input images are scaled
+    from [0,1] to [0,255] by multiplying with a scaling factor of 255, and yields scores between 0 and 1
     where higher values indicate better perceptual quality. The metric is symmetric.
 
     Implementation based on original MATLAB implementation by Lin Zhang and

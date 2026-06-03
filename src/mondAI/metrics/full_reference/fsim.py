@@ -20,12 +20,14 @@ class FSIM(FullReferenceMetric):
     images based on phase congruency and gradient magnitude similarity. It is designed
     to capture perceptual differences between images which align with human visual
     perception. It expects two-dimensional grayscale or RGB (set `use_rgb` to True)
-    images with pixel values in the range [0, 255]. The resulting FSIM score usually
-    ranges from 0 to 1, where a score of 1 indicates perfect similarity between the
-    input image and the reference image, while a score of 0 indicates no perceptual
-    similarity. Note that the RGB definition is not just a simple channel-wise
-    application of the grayscale definition, but rather a different definition that
-    considers the Y, I and Q channels of the YIQ color space separately.
+    images with pixel values in the range [0, 255], therefore input images are scaled
+    from [0,1] to [0,255] by multiplying with a scaling factor of 255. The resulting
+    FSIM score usually ranges from 0 to 1, where a score of 1 indicates perfect
+    similarity between the input image and the reference image, while a score of 0
+    indicates no perceptual similarity. Note that the RGB definition is not just a
+    simple channel-wise application of the grayscale definition, but rather a different
+    definition that considers the Y, I and Q channels of the YIQ color space
+    separately.
 
     FSIM uses the phase congruency and gradient magnitude of image to compute local similarities, and the
     phase congruency is used to compute weights for these local similarities.

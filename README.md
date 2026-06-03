@@ -29,6 +29,7 @@ from mondAI.metrics import PSNR, SSIM
 psnr = PSNR()
 ssim = SSIM()
 
+# image values need to be in [0,1] value range
 image = torch.rand((256, 128))
 reference = torch.rand((256, 128))
 

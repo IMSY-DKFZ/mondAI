@@ -20,7 +20,8 @@ class DSS(FullReferenceMetric):
     evaluating image processing algorithms and comparing the quality of different
     images.
 
-    DSS expects grayscale images with pixel values in the range [0, 255].
+    DSS expects grayscale images with pixel values in the range [0, 255], therefore input images are
+    scaled from [0,1] to [0,255] by multiplying with a scaling factor of 255.
     It is symmetric, meaning that the order of the input images does not affect the result.
     DSS yields scores in the range [0, 1], where higher values indicate better perceptual quality.
 
