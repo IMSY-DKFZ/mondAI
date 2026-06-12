@@ -72,7 +72,8 @@ class DISTNet(torch.nn.Module):
         self.alpha.data.normal_(0.1, 0.01)
         self.beta.data.normal_(0.1, 0.01)
 
-        weights = torch.load(str(PurePosixPath(Path.cwd() / "src/mondAI/metrics/weights/dists.pt")))
+        BASE = Path(__file__).resolve().parent.parent
+        weights = torch.load(BASE / "weights" / "dists.pt")
         self.alpha.data = weights["alpha"]
         self.beta.data = weights["beta"]
 

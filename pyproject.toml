@@ -79,3 +79,6 @@ make-summary-multi-line = false
 [tool.mypy]
 strict = true
 disallow_untyped_decorators = false
+
+[tool.setuptools.package-data]
+mondAI = ["metrics/weights/*.*"]

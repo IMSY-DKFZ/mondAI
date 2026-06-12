@@ -78,9 +78,8 @@ def discover_metrics():
         module = importlib.import_module(module_name)
 
         for _, obj in inspect.getmembers(module, inspect.isclass):
-            if inspect.isabstract(obj) or obj.__name__ in ["DISTS", "LPIPS", "NIQE"]:
+            if inspect.isabstract(obj):
                 continue
-            print(obj)
             if issubclass(obj, Metric) and obj is not Metric:
                 metric_classes.append(obj())
 

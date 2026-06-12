@@ -1,8 +1,8 @@
 # Storing Weights
 
-Some metrics have parameters, weights or other statistics they use during computation which were learned or acquired beforehand. If the size of these files is small (e.g. < 1 MB) they can be stored within the package in the `metrics/weights/` folder. Then you can load the file with:
+Some metrics have parameters, weights or other statistics they use during computation which were learned or acquired beforehand. If the size of these files is small (e.g. < 1 MB) they can be stored within the package in the `metrics/weights/` folder. Then from a metric implementation file you can load the file with:
 ```python
-str(PurePosixPath(Path.cwd() / f"src/mondAI/metrics//weights/yourfile.name"))
+Path(__file__).resolve().parent.parent / "weights" / "yourfile.name"
 ```
 
 In case the file(s) are too large, they should be downloaded upon first usage from a given url and stored in the torch hub `mondAI` folder:

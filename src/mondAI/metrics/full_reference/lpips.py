@@ -1,6 +1,6 @@
 from collections import namedtuple
 from collections.abc import Callable
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from typing import Literal, no_type_check
 
 import torch
@@ -303,7 +303,8 @@ class LPIPS_Module(torch.nn.Module):  # type: ignore
 
             if pretrained:
                 if model_path is None:
-                    model_path = str(PurePosixPath(Path.cwd() / f"src/mondAI/metrics//weights/lpips/{net}.pth"))
+                    BASE = Path(__file__).resolve().parent.parent
+                    model_path = BASE / "weights" / "lpips" / f"{net}.pth"
 
                 if verbose:
                     print(f"Loading model from: {model_path}")
