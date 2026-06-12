@@ -72,7 +72,7 @@ class DISTNet(torch.nn.Module):
         self.alpha.data.normal_(0.1, 0.01)
         self.beta.data.normal_(0.1, 0.01)
 
-        BASE = Path(__file__).resolve().parent.parent
+        BASE = Path(__file__).resolve().parent.parent.parent
         weights = torch.load(BASE / "weights" / "dists.pt")
         self.alpha.data = weights["alpha"]
         self.beta.data = weights["beta"]
