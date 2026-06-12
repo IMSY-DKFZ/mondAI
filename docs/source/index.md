@@ -30,5 +30,6 @@ pip install -e .[dev,comparison]
 :maxdepth: 2
 user_guide
 contributer_guide
+metrics_list
 API Reference <generated/modules>
 ```

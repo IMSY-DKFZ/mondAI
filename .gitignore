@@ -71,6 +71,8 @@ instance/
 # Sphinx documentation
 docs/_build/
 docs/source/generated/
+# This file is generated from the metric templates and should not be checked in.
+docs/source/metrics_list.md
 
 # PyBuilder
 .pybuilder/
