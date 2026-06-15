@@ -222,11 +222,11 @@ class Metric(ABC):
         scores_1d = self._compute_iteratively(*reshaped_images, compute_function=compute_function)
 
         # return scalar if there are no "other dimensions" to iterate over
-        if len(other_shape) == 0:
+        if len(other_shape) == 0 and not getattr(self, "batched", False):
             return scores_1d.item()
 
         # reshape back to original "other dimensions" shape
-        scores = scores_1d.reshape(other_shape)
+        scores = scores_1d.reshape(other_shape) if not getattr(self, "batched", False) else scores_1d
 
         # convert to numpy if necessary for consistency with input types
         if output_is_torch:
