@@ -133,12 +133,20 @@ class PaQ2PiQ(NoReferenceMetric):
         image = image.float()  # convert to float and add batch dimension
         if not self.batched:
             image = image.unsqueeze(0)
-        self.model.input_block_rois(block_size=(20, 20), img_size=image.shape[-2:], device=image.device)
+        self.model.input_block_rois(
+            block_size=(20, 20),
+            img_size=image.shape[-2:],
+            batch_size=image.shape[self.expected_dimensions.index(Dimension.BATCH)] if self.batched else 1,
+            device=image.device,
+        )
         output = self.model(image)
         # global_score = output[0, 0]
         # local_scores = output[0, 1:].reshape(20, 20)
         # return global_score  ,local_scores
-        return output[0, 0]
+        if self.batched:
+            return output[:, 0]
+        else:
+            return output[0, 0]
 
     def __str__(self) -> str:
         """Full text representation of the metric.
@@ -223,7 +231,11 @@ class RoIPoolModel(torch.nn.Module):  # type: ignore[misc]
         return preds.view(batch_size, -1)
 
     def input_block_rois(
-        self, block_size: tuple[int, int] = (20, 20), img_size: tuple[int, int] = (1, 1), device: torch.device = None
+        self,
+        block_size: tuple[int, int] = (20, 20),
+        img_size: tuple[int, int] = (1, 1),
+        batch_size: int = 1,
+        device: torch.device = None,
     ) -> None:
         ys = torch.linspace(0, img_size[0], steps=block_size[0] + 1, device=device)
         xs = torch.linspace(0, img_size[1], steps=block_size[1] + 1, device=device)
@@ -233,4 +245,5 @@ class RoIPoolModel(torch.nn.Module):  # type: ignore[misc]
 
         blockwise_rois = torch.stack([grid_x0, grid_y0, grid_x1, grid_y1], dim=-1).reshape(-1, 4)
         global_rois = torch.tensor([[0, 0, img_size[1], img_size[0]]], device=device)
-        self.rois = torch.cat((global_rois, blockwise_rois))
+        rois = torch.cat((global_rois, blockwise_rois))
+        self.rois = rois.unsqueeze(0).repeat(batch_size, 1, 1).reshape(-1, 4)
