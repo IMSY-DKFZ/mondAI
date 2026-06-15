@@ -15,7 +15,22 @@ def convolve2d(image: torch.Tensor, kernel: torch.Tensor, padding: str = "valid"
     :rtype: torch.Tensor
 
     """
-    convolved = torch.nn.functional.conv2d(image.unsqueeze(0), weight=kernel.unsqueeze(0).unsqueeze(0), padding=padding)
+    if padding == "same":
+        kernel_height, kernel_width = kernel.shape
+        padded_image = torch.nn.functional.pad(
+            image.unsqueeze(0),
+            (
+                (kernel_width - 1) // 2,  # left
+                (kernel_width - 1) - (kernel_width - 1) // 2,  # right
+                (kernel_height - 1) // 2,  # top
+                (kernel_height - 1) - (kernel_height - 1) // 2,  # bottom
+            ),
+        )
+        convolved = torch.nn.functional.conv2d(padded_image, weight=kernel.unsqueeze(0).unsqueeze(0))
+    else:
+        convolved = torch.nn.functional.conv2d(
+            image.unsqueeze(0), weight=kernel.unsqueeze(0).unsqueeze(0), padding=padding
+        )
     return convolved.squeeze()
 
 

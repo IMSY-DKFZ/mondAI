@@ -350,7 +350,8 @@ class HaarPSI(FullReferenceMetric):
 
         kernel_size = 2
         filter_weights = image.new_ones(1, 1, kernel_size, kernel_size) / kernel_size**2
-        mean_filtered = torch.nn.functional.conv2d(image.unsqueeze(0), weight=filter_weights, padding="same")
+        padded_image = torch.nn.functional.pad(image.unsqueeze(0), (0, 1, 0, 1))
+        mean_filtered = torch.nn.functional.conv2d(padded_image, weight=filter_weights)
         return mean_filtered.squeeze()[::kernel_size, ::kernel_size]
 
     def _haar_wavelet_decomposition(self, image: torch.Tensor, n_scales: int) -> torch.Tensor:
