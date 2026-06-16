@@ -7,6 +7,7 @@ from typing import Any
 import numpy as np
 import torch
 
+from mondAI import __version__
 from mondAI.logging import get_logger
 from mondAI.settings import settings
 from mondAI.utils.checks import check_dimensions, check_image_type, check_nan_values
@@ -220,6 +221,8 @@ class Metric(ABC):
 
         # Compute metric for each image (pair)
         scores_1d = self._compute_iteratively(*reshaped_images, compute_function=compute_function)
+
+        logger.info(f"Metric computation done with mondAI v{__version__} using {self!s}")
 
         # return scalar if there are no "other dimensions" to iterate over
         if len(other_shape) == 0 and not getattr(self, "batched", False):
