@@ -21,7 +21,7 @@ class DISTS(FullReferenceMetric):
     a similarity score based on the structure (means) and texture (variances) of the images. The structure and texture
     scores are weighted by learned parameters alpha and beta, which were trained to align with human judgments.
     The final DISTS score is computed as 1 - (weighted structure similarity + weighted texture similarity),
-    so higher scores indicate better perceptual quality.
+    so lower scores indicate better perceptual quality.
 
     DISTS expects RGB images with a value range of [0, 1], which are internally standardized to ImageNet statistics.
     It is symmetric, meaning that the order of the input images does not matter.
@@ -50,7 +50,7 @@ class DISTS(FullReferenceMetric):
 
     @property
     def higher_is_better(self) -> bool:
-        return True
+        return False
 
     @property
     def scaling_factor(self) -> float:
