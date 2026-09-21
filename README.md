@@ -1,6 +1,6 @@
 # mondAI
 
- > Metrics on n-dimension artificial images
+> Metrics for Objective, Numerical, and Data-driven Assessment of Images. Pronounced [mond-eɪ-aɪ].
 
 This package provides image quality metric implementations which are:
 * correct (in the sense of the original definition)
