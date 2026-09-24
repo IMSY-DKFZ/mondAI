@@ -94,4 +94,6 @@ This project is licensed under Apache 2.0
 
 This project has received funding from the European Research Council (ERC) under the European Union’s Horizon 2020 research and innovation programme (grant agreement No. [101002198]).
 
+This project has received funding from the European Research Council (ERC) under the European Union’s Horizon 2020 research and innovation programme (project NEURAL SPICING Grant No. 101002198), from the Deutsche Forschungsgemeinschaft (DFG, German Research Foundation) - project number 462569370, and is part of the *Model-Based AI* project, which is funded by the Carl Zeiss Foundation.
+
 ![ERC](https://github.com/IMSY-DKFZ/simpa/raw/main/docs/source/images/LOGO_ERC-FLAG_EU_.jpg "ERC")
