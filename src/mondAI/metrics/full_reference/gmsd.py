@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
+from functools import partial
 
 import torch
 
@@ -94,8 +95,8 @@ class GMSD(FullReferenceMetric):
 
     def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
         # as piq and piqa expect 0-1 range and c is defined as 170.0/255.0^2 in the original paper, we need to adjust t
-        self._register_implementation(implementations, "piq", get_piq_gmsd(self.t / (255.0**2)))
-        self._register_implementation(implementations, "piqa", get_piqa_gmsd(self.t / (255.0**2)))
+        self._register_implementation(implementations, "piq", partial(get_piq_gmsd, self.t / (255.0**2)))
+        self._register_implementation(implementations, "piqa", partial(get_piqa_gmsd, self.t / (255.0**2)))
 
     def __str__(self) -> str:
         """Full text representation of the metric.

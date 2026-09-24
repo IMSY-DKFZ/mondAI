@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
+from functools import partial
 
 import torch
 
@@ -375,7 +376,8 @@ class VSI(FullReferenceMetric):
         self._register_implementation(
             implementations,
             "piq",
-            get_piq_vsi(
+            partial(
+                get_piq_vsi,
                 c1=self.c1,
                 c2=self.c2,
                 c3=self.c3,

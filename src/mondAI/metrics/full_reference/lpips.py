@@ -3,6 +3,7 @@
 
 from collections import namedtuple
 from collections.abc import Callable
+from functools import partial
 from pathlib import Path
 from typing import Literal, no_type_check
 
@@ -147,15 +148,15 @@ class LPIPS(FullReferenceMetric):
 
         """
         self._register_implementation(
-            implementations, "torchmetrics", get_torchmetrics_lpips(self.network_architecture)
+            implementations, "torchmetrics", partial(get_torchmetrics_lpips, self.network_architecture)
         )
-        self._register_implementation(implementations, "piq", get_piq_lpips(batched=self.batched))
+        self._register_implementation(implementations, "piq", partial(get_piq_lpips, batched=self.batched))
         # piq only has vgg16 version
         self._register_implementation(
-            implementations, "piqa", get_piqa_lpips(self.network_architecture, batched=self.batched)
+            implementations, "piqa", partial(get_piqa_lpips, self.network_architecture, batched=self.batched)
         )
         self._register_implementation(
-            implementations, "deepinv", get_deepinv_lpips(self.network_architecture, batched=self.batched)
+            implementations, "deepinv", partial(get_deepinv_lpips, self.network_architecture, batched=self.batched)
         )
 
     def __str__(self) -> str:

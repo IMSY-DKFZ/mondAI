@@ -261,12 +261,12 @@ class Metric(ABC):
         self,
         implementations: dict[str, Callable[..., torch.Tensor]],
         library_name: str,
-        implementation: Callable[..., torch.Tensor],
+        implementation: Callable[[], Callable[..., torch.Tensor]],
     ) -> None:
         try:
-            implementations[library_name] = implementation
+            implementations[library_name] = implementation()
             logger.debug(f"Registered implementation '{library_name}' for metric '{self.name}'.")
-        except ImportError:
+        except ModuleNotFoundError:
             logger.warning(
                 f"Could not import library '{library_name}' for metric '{self.name}'. "
                 "Skipping registration of this implementation."

@@ -67,14 +67,14 @@ class MSE(FullReferenceMetric):
         return torch.mean((image - reference) ** 2)
 
     def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
-        self._register_implementation(implementations, "scikit-image", get_skimage_mse())
-        self._register_implementation(implementations, "scikit-learn", get_sklearn_mse())
-        self._register_implementation(implementations, "torchmetrics", get_torchmetrics_mse())
-        self._register_implementation(implementations, "tensorflow", get_tensorflow_mse())
-        self._register_implementation(implementations, "monai", get_monai_mse())
-        self._register_implementation(implementations, "sewar", get_sewar_mse())
-        self._register_implementation(implementations, "medimetrics", get_medimetrics_mse())
-        self._register_implementation(implementations, "deepinv", get_deepinv_mse())
+        self._register_implementation(implementations, "scikit-image", get_skimage_mse)
+        self._register_implementation(implementations, "scikit-learn", get_sklearn_mse)
+        self._register_implementation(implementations, "torchmetrics", get_torchmetrics_mse)
+        self._register_implementation(implementations, "tensorflow", get_tensorflow_mse)
+        self._register_implementation(implementations, "monai", get_monai_mse)
+        self._register_implementation(implementations, "sewar", get_sewar_mse)
+        self._register_implementation(implementations, "medimetrics", get_medimetrics_mse)
+        self._register_implementation(implementations, "deepinv", get_deepinv_mse)
 
     def __str__(self) -> str:
         """Full text representation of the MSE metric."""

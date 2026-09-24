@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
+from functools import partial
 
 import torch
 
@@ -95,15 +96,17 @@ class PSNR(FullReferenceMetric):
         return 10.0 * torch.log10((self.dynamic_range**2) / mse)
 
     def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
-        self._register_implementation(implementations, "scikit-image", get_skimage_psnr(self.dynamic_range))
-        self._register_implementation(implementations, "torchmetrics", get_torchmetrics_psnr(self.dynamic_range))
-        self._register_implementation(implementations, "tensorflow", get_tensorflow_psnr(self.dynamic_range))
-        self._register_implementation(implementations, "piq", get_piq_psnr(self.dynamic_range))
-        self._register_implementation(implementations, "piqa", get_piqa_psnr(self.dynamic_range))
-        self._register_implementation(implementations, "sewar", get_sewar_psnr(self.dynamic_range))
-        self._register_implementation(implementations, "monai", get_monai_psnr(self.dynamic_range))
-        self._register_implementation(implementations, "deepinv", get_deepinv_psnr(self.dynamic_range))
-        self._register_implementation(implementations, "medimetrics", get_medimetrics_psnr(self.dynamic_range))
+        self._register_implementation(implementations, "scikit-image", partial(get_skimage_psnr, self.dynamic_range))
+        self._register_implementation(
+            implementations, "torchmetrics", partial(get_torchmetrics_psnr, self.dynamic_range)
+        )
+        self._register_implementation(implementations, "tensorflow", partial(get_tensorflow_psnr, self.dynamic_range))
+        self._register_implementation(implementations, "piq", partial(get_piq_psnr, self.dynamic_range))
+        self._register_implementation(implementations, "piqa", partial(get_piqa_psnr, self.dynamic_range))
+        self._register_implementation(implementations, "sewar", partial(get_sewar_psnr, self.dynamic_range))
+        self._register_implementation(implementations, "monai", partial(get_monai_psnr, self.dynamic_range))
+        self._register_implementation(implementations, "deepinv", partial(get_deepinv_psnr, self.dynamic_range))
+        self._register_implementation(implementations, "medimetrics", partial(get_medimetrics_psnr, self.dynamic_range))
 
     def __str__(self) -> str:
         """Full text representation of the PSNR metric."""

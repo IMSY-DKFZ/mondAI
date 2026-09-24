@@ -3,6 +3,7 @@
 
 import math
 from collections.abc import Callable
+from functools import partial
 
 import torch
 
@@ -457,7 +458,8 @@ class IWSSIM(FullReferenceMetric):
         self._register_implementation(
             implementations,
             "piq",
-            get_piq_iwssim(
+            partial(
+                get_piq_iwssim,
                 self.dynamic_range,
                 self.kernel_size,
                 self.kernel_sigma,
@@ -472,7 +474,8 @@ class IWSSIM(FullReferenceMetric):
         self._register_implementation(
             implementations,
             "pytorch",
-            get_pytorch_iwssim(
+            partial(
+                get_pytorch_iwssim,
                 self.information_content_weighting,
                 self.scales,
                 self.block_size,

@@ -287,7 +287,7 @@ class CWSSIM(FullReferenceMetric):
         return coefficients
 
     def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
-        self._register_implementation(implementations, "medimetrics", get_medimetrics_cwssim())
+        self._register_implementation(implementations, "medimetrics", get_medimetrics_cwssim)
 
     def __str__(self) -> str:
         """Full text representation of the metric."""

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
+from functools import partial
 from pathlib import Path
 from typing import no_type_check
 
@@ -104,10 +105,12 @@ class DISTS(FullReferenceMetric):
         and import them here to register them for comparison.
 
         """
-        self._register_implementation(implementations, "piq", get_piq_dists(batched=self.batched))
-        self._register_implementation(implementations, "torchmetrics", get_torchmetrics_dists(batched=self.batched))
+        self._register_implementation(implementations, "piq", partial(get_piq_dists, batched=self.batched))
         self._register_implementation(
-            implementations, "medimetrics", get_medimetrics_dists()
+            implementations, "torchmetrics", partial(get_torchmetrics_dists, batched=self.batched)
+        )
+        self._register_implementation(
+            implementations, "medimetrics", get_medimetrics_dists
         )  # only supports non-batched inputs
 
     def __str__(self) -> str:

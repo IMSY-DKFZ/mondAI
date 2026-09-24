@@ -63,10 +63,10 @@ class MAE(FullReferenceMetric):
         return torch.mean(torch.abs(image - reference))
 
     def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
-        self._register_implementation(implementations, "scikit-learn", get_sklearn_mae())
-        self._register_implementation(implementations, "tensorflow", get_tensorflow_mae())
-        self._register_implementation(implementations, "monai", get_monai_mae())
-        self._register_implementation(implementations, "medimetrics", get_medimetrics_mae())
+        self._register_implementation(implementations, "scikit-learn", get_sklearn_mae)
+        self._register_implementation(implementations, "tensorflow", get_tensorflow_mae)
+        self._register_implementation(implementations, "monai", get_monai_mae)
+        self._register_implementation(implementations, "medimetrics", get_medimetrics_mae)
 
     def __str__(self) -> str:
         """Full text representation of the MAE metric."""

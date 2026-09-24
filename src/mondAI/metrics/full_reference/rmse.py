@@ -64,11 +64,11 @@ class RMSE(FullReferenceMetric):
         return torch.sqrt(torch.mean((image - reference) ** 2))
 
     def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
-        self._register_implementation(implementations, "scikit-learn", get_sklearn_rmse())
-        self._register_implementation(implementations, "tensorflow", get_tensorflow_rmse())
-        self._register_implementation(implementations, "torchmetrics", get_torchmetrics_rmse())
-        self._register_implementation(implementations, "monai", get_monai_rmse())
-        self._register_implementation(implementations, "sewar", get_sewar_rmse())
+        self._register_implementation(implementations, "scikit-learn", get_sklearn_rmse)
+        self._register_implementation(implementations, "tensorflow", get_tensorflow_rmse)
+        self._register_implementation(implementations, "torchmetrics", get_torchmetrics_rmse)
+        self._register_implementation(implementations, "monai", get_monai_rmse)
+        self._register_implementation(implementations, "sewar", get_sewar_rmse)
 
     def __str__(self) -> str:
         """Full text representation of the RMSE metric."""

@@ -67,9 +67,9 @@ class NMSE(FullReferenceMetric):
         return torch.mean((image - reference) ** 2) / torch.mean(reference**2)
 
     def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
-        self._register_implementation(implementations, "deepinv", get_deepinv_nmse())
+        self._register_implementation(implementations, "deepinv", get_deepinv_nmse)
         self._register_implementation(
-            implementations, "medimetrics", get_medimetrics_nmse()
+            implementations, "medimetrics", get_medimetrics_nmse
         )  # normalizes with std of target and not with mean of target, so values are different
 
     def __str__(self) -> str:

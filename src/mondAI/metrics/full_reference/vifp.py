@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
+from functools import partial
 
 import torch
 
@@ -151,9 +152,11 @@ class VIFP(FullReferenceMetric):
         return numerator / denominator
 
     def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
-        self._register_implementation(implementations, "piq", get_piq_vifp(self.sigma_n_squared))
-        self._register_implementation(implementations, "torchmetrics", get_torchmetrics_vifp(self.sigma_n_squared))
-        self._register_implementation(implementations, "sewar", get_sewar_vifp(self.sigma_n_squared))
+        self._register_implementation(implementations, "piq", partial(get_piq_vifp, self.sigma_n_squared))
+        self._register_implementation(
+            implementations, "torchmetrics", partial(get_torchmetrics_vifp, self.sigma_n_squared)
+        )
+        self._register_implementation(implementations, "sewar", partial(get_sewar_vifp, self.sigma_n_squared))
 
     def __str__(self) -> str:
         """Full text representation of the metric.

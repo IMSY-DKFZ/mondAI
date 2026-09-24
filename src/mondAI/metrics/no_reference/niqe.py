@@ -374,7 +374,7 @@ class NIQE(NoReferenceMetric):
         and import them here to register them for comparison.
 
         """
-        self._register_implementation(implementations, "medimetric", get_medimetrics_niqe())
+        self._register_implementation(implementations, "medimetric", get_medimetrics_niqe)
 
     def __str__(self) -> str:
         """Full text representation of the metric.
