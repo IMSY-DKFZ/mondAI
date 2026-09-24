@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Division of Intelligent Medical Systems, DKFZ
 # SPDX-License-Identifier: Apache-2.0
 
-from mondAI.metrics.base import Metric
+from mondAI.metrics.base import Metric, MetricList
 from mondAI.metrics.dimension import Dimension
 from mondAI.metrics.full_reference import FULL_REFERENCE_METRICS
 from mondAI.metrics.full_reference.cwssim import CWSSIM as CWSSIM
@@ -27,4 +27,4 @@ from mondAI.metrics.no_reference import NO_REFERENCE_METRICS
 from mondAI.metrics.no_reference.niqe import NIQE as NIQE
 from mondAI.metrics.no_reference.paq2piq import PaQ2PiQ as PaQ2PiQ
 
-__all__ = ["FULL_REFERENCE_METRICS", "NO_REFERENCE_METRICS", "Dimension", "Metric"]
+__all__ = ["FULL_REFERENCE_METRICS", "NO_REFERENCE_METRICS", "Dimension", "Metric", "MetricList"]

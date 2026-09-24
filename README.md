@@ -40,9 +40,9 @@ ssim_score = ssim(image, reference)
 You can also create a list of metrics and compute all of them by simply calling the list once:
 
 ```python
-from mondAI import MetricList
+from mondAI.metrics import MetricList
 
-validation_metrics = MetricList(name='validation', metrics=[PSNR(), SSIM()])
+validation_metrics = MetricList(list_name='validation', metrics=[PSNR(), SSIM()])
 
 validation_scores = validation_metrics(image, reference)
 ```
