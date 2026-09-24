@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Division of Intelligent Medical Systems, DKFZ
+# SPDX-License-Identifier: Apache-2.0
 """This file contains fixtures for testing the metrics defined in `metrics`. These
 fixtures provide a variety of test images and volumes, including the Shepp-Logan
 phantom and a brain volume, as well as random images of different shapes and

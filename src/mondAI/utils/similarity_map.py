@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Division of Intelligent Medical Systems, DKFZ
+# SPDX-License-Identifier: Apache-2.0
+
 import torch
 
 from mondAI.utils.signal_processing import convolve2d, gaussian_filter_kernel

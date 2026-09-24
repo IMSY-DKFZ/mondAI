@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Division of Intelligent Medical Systems, DKFZ
+# SPDX-License-Identifier: Apache-2.0
 """This file contains tests for the call function of all metrics defined in `metrics`.
 
 It verifies the following aspects of the metrics:

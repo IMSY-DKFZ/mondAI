@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Division of Intelligent Medical Systems, DKFZ
+# SPDX-License-Identifier: Apache-2.0
 """This file contains tests for the `MetricList` class defined in `metrics/base.py`.
 
 It verifies the following aspects of the `MetricList` class:

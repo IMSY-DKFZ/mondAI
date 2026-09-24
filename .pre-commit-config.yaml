@@ -43,3 +43,15 @@ repos:
         args: [--pytest-test-first]
       - id: mixed-line-ending
       - id: end-of-file-fixer
+
+  # Ensure that every Python file contains the SPDX license header.
+  # Missing headers are inserted automatically.
+  - repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.5.6
+    hooks:
+      - id: insert-license
+        types: [python]
+        exclude: ^src/mondAI/metrics/third_party/ # Exclude third-party metrics from license header insertion
+        args:
+          - --license-filepath
+          - license_header.txt

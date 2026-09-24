@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Division of Intelligent Medical Systems, DKFZ
+# SPDX-License-Identifier: Apache-2.0
+
 from mondAI.logging import update_log_level
 from mondAI.metrics.dimension import _DIMENSION_LOOKUP
 

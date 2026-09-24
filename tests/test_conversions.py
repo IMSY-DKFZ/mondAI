@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Division of Intelligent Medical Systems, DKFZ
+# SPDX-License-Identifier: Apache-2.0
 """Tests the `check_*` functions in `utils/checks.py`."""
 
 import re

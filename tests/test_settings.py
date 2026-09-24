@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Division of Intelligent Medical Systems, DKFZ
+# SPDX-License-Identifier: Apache-2.0
 """This file contains tests which verify the functionality of the settings module.
 
 It tests the default values of the settings, as well as the validation logic in the

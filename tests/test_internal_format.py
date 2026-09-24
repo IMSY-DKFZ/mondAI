@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Division of Intelligent Medical Systems, DKFZ
+# SPDX-License-Identifier: Apache-2.0
 """This file contains tests for the `convert_to_internal_format` function defined in
 `utils/internal_format.py`."""
 
