@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
+from functools import partial
 
 import torch
 
@@ -238,7 +239,8 @@ class MDSI(FullReferenceMetric):
         self._register_implementation(
             implementations,
             "piq",
-            get_piq_mdsi(
+            partial(
+                get_piq_mdsi,
                 combination=self.combination_method,
                 c1=self.C1,
                 c2=self.C2,
@@ -251,7 +253,7 @@ class MDSI(FullReferenceMetric):
                 o=self.o,
             ),
         )
-        self._register_implementation(implementations, "piqa", get_piqa_mdsi(self.combination_method))
+        self._register_implementation(implementations, "piqa", partial(get_piqa_mdsi, self.combination_method))
         # piqa's MDSI implementation only allows to set combination method,
         # other parameters are fixed to default values of original paper
 

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
+from functools import partial
 
 import torch
 
@@ -276,6 +277,10 @@ class FSIM(FullReferenceMetric):
         image = image.double()
         reference = reference.double()
 
+        # If the images are identical, return a perfect score of 1.0
+        if torch.equal(image, reference):
+            return torch.ones((), device=image.device, dtype=image.dtype)
+
         # Downsample the images
         min_dimension = min(
             image.shape[self.expected_dimensions.index(dim)] for dim in (Dimension.HEIGHT, Dimension.WIDTH)
@@ -342,7 +347,8 @@ class FSIM(FullReferenceMetric):
         self._register_implementation(
             implementations,
             "piq",
-            get_piq_fsim(
+            partial(
+                get_piq_fsim,
                 self.use_rgb,
                 self.scales,
                 self.orientations,
@@ -354,7 +360,9 @@ class FSIM(FullReferenceMetric):
             ),
         )
         self._register_implementation(
-            implementations, "piqa", get_piqa_fsim(self.use_rgb, self.T1, self.T2, self.T3, self.T4, self._lambda)
+            implementations,
+            "piqa",
+            partial(get_piqa_fsim, self.use_rgb, self.T1, self.T2, self.T3, self.T4, self._lambda),
         )
 
     def __str__(self) -> str:

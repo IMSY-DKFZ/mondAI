@@ -106,7 +106,11 @@ class MetricTemplate(FullReferenceMetric):  # TODO: rename to actual metric name
 
         """
         # TODO: replace with actual other implementations of the metric, if available.
-        # self._register_implementation(implementations, "library_name", get_library_metric(self.parameter1))
+        # If there are no parameters
+        # self._register_implementation(implementations, "library_name", get_library_metric)
+        # with parameters
+        # self._register_implementation(implementations, "library_name",
+        # partial(get_library_metric, parameter1=self.parameter1))
 
     def __str__(self) -> str:
         """Full text representation of the metric.

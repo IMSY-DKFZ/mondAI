@@ -3,6 +3,7 @@
 
 import math
 from collections.abc import Callable
+from functools import partial
 
 import torch
 
@@ -245,7 +246,7 @@ class DSS(FullReferenceMetric):
         return similarity
 
     def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
-        self._register_implementation(implementations, "piq", get_piq_dss(self.sigma))
+        self._register_implementation(implementations, "piq", partial(get_piq_dss, self.sigma))
 
     def __str__(self) -> str:
         """Full text representation of the metric.

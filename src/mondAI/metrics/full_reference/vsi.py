@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
+from functools import partial
 
 import torch
 
@@ -149,6 +150,10 @@ class VSI(FullReferenceMetric):
 
     def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
         self._input_checks(image, reference)
+
+        # If the images are identical, return a perfect score of 1.0
+        if torch.equal(image, reference):
+            return torch.ones((), device=image.device, dtype=image.dtype)
 
         saliency_map_image = self._saliency_map(
             image, sigma_d=self.sigma_d, sigma_c=self.sigma_c, omega_0=self.omega_0, sigma_f=self.sigma_f
@@ -371,7 +376,8 @@ class VSI(FullReferenceMetric):
         self._register_implementation(
             implementations,
             "piq",
-            get_piq_vsi(
+            partial(
+                get_piq_vsi,
                 c1=self.c1,
                 c2=self.c2,
                 c3=self.c3,

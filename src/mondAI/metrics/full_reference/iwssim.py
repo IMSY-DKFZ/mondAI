@@ -3,6 +3,7 @@
 
 import math
 from collections.abc import Callable
+from functools import partial
 
 import torch
 
@@ -187,6 +188,10 @@ class IWSSIM(FullReferenceMetric):
 
         """
         self._input_checks(image, reference)
+
+        # If the images are identical, return a perfect score of 1.0
+        if torch.equal(image, reference):
+            return torch.ones((), device=image.device, dtype=image.dtype)
 
         weights = torch.tensor(self.weights[: self.scales], device=image.device, dtype=image.dtype)
         weights = weights / weights.sum()
@@ -453,7 +458,8 @@ class IWSSIM(FullReferenceMetric):
         self._register_implementation(
             implementations,
             "piq",
-            get_piq_iwssim(
+            partial(
+                get_piq_iwssim,
                 self.dynamic_range,
                 self.kernel_size,
                 self.kernel_sigma,
@@ -468,7 +474,8 @@ class IWSSIM(FullReferenceMetric):
         self._register_implementation(
             implementations,
             "pytorch",
-            get_pytorch_iwssim(
+            partial(
+                get_pytorch_iwssim,
                 self.information_content_weighting,
                 self.scales,
                 self.block_size,

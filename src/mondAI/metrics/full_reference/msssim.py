@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
+from functools import partial
 
 import torch
 
@@ -212,42 +213,72 @@ class MSSSIM(FullReferenceMetric):
         self._register_implementation(
             implementations,
             "torchmetrics",
-            get_torchmetrics_msssim(
-                self.kernel_sigma, self.kernel_size, self.dynamic_range, self.k1, self.k2, self.weights
+            partial(
+                get_torchmetrics_msssim,
+                self.kernel_sigma,
+                self.kernel_size,
+                self.dynamic_range,
+                self.k1,
+                self.k2,
+                self.weights,
             ),
         )
         self._register_implementation(
             implementations,
             "tensorflow",
-            get_tensorflow_msssim(
-                self.dynamic_range, self.weights, self.kernel_size, self.kernel_sigma, self.k1, self.k2
+            partial(
+                get_tensorflow_msssim,
+                self.dynamic_range,
+                self.weights,
+                self.kernel_size,
+                self.kernel_sigma,
+                self.k1,
+                self.k2,
             ),
         )
         self._register_implementation(
             implementations,
             "piq",
-            get_piq_msssim(self.kernel_size, self.kernel_sigma, self.dynamic_range, self.weights, self.k1, self.k2),
+            partial(
+                get_piq_msssim, self.kernel_size, self.kernel_sigma, self.dynamic_range, self.weights, self.k1, self.k2
+            ),
         )
         self._register_implementation(
             implementations,
             "piqa",
-            get_piqa_msssim(self.kernel_size, self.kernel_sigma, self.dynamic_range, self.weights, self.k1, self.k2),
+            partial(
+                get_piqa_msssim, self.kernel_size, self.kernel_sigma, self.dynamic_range, self.weights, self.k1, self.k2
+            ),
         )
         self._register_implementation(
             implementations,
             "sewar",
-            get_sewar_msssim(self.weights, self.kernel_size, self.k1, self.k2, self.dynamic_range),
+            partial(get_sewar_msssim, self.weights, self.kernel_size, self.k1, self.k2, self.dynamic_range),
         )
         self._register_implementation(
             implementations,
             "monai",
-            get_monai_msssim(self.dynamic_range, self.kernel_size, self.kernel_sigma, self.weights, self.k1, self.k2),
+            partial(
+                get_monai_msssim,
+                self.dynamic_range,
+                self.kernel_size,
+                self.kernel_sigma,
+                self.weights,
+                self.k1,
+                self.k2,
+            ),
         )
         self._register_implementation(
             implementations,
             "medimetrics",
-            get_medimetrics_msssim(
-                self.dynamic_range, self.kernel_size, self.k1, self.k2, self.kernel_sigma, self.weights
+            partial(
+                get_medimetrics_msssim,
+                self.dynamic_range,
+                self.kernel_size,
+                self.k1,
+                self.k2,
+                self.kernel_sigma,
+                self.weights,
             ),
         )
 

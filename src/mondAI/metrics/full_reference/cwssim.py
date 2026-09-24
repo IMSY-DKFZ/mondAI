@@ -111,6 +111,10 @@ class CWSSIM(FullReferenceMetric):
         """Compute CW-SSIM between image and reference."""
         self._input_checks(image, reference)
 
+        # If the images are identical, return a perfect score of 1.0
+        if torch.equal(image, reference):
+            return torch.ones((), device=image.device, dtype=image.dtype)
+
         cw_image = self._get_pyramid_bands(image, self.levels, self.orientations)
         cw_reference = self._get_pyramid_bands(reference, self.levels, self.orientations)
         s = image.shape[0] / (2 ** (self.levels - 1))
@@ -283,7 +287,7 @@ class CWSSIM(FullReferenceMetric):
         return coefficients
 
     def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
-        self._register_implementation(implementations, "medimetrics", get_medimetrics_cwssim())
+        self._register_implementation(implementations, "medimetrics", get_medimetrics_cwssim)
 
     def __str__(self) -> str:
         """Full text representation of the metric."""

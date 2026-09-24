@@ -64,7 +64,7 @@ def test_k_invalid() -> None:
 def test_image_too_small() -> None:
     metric = CWSSIM()
     img1 = torch.ones(128, 128)
-    img2 = torch.ones(128, 128)
+    img2 = torch.ones(128, 128) + 1
     with pytest.raises(ValueError):
         metric(img1, img2)
 

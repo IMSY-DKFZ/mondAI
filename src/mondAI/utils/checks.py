@@ -62,8 +62,8 @@ def check_same_shape(image: np.ndarray | torch.Tensor, reference: np.ndarray | t
 
 
 def check_nan_values(image: np.ndarray | torch.Tensor, reference: bool = False) -> bool:
-    """Check if the image contains NaN values. Set reference=True if checking a
-    reference image.
+    """Check if the image contains NaN or infinite values. Set reference=True if
+    checking a reference image.
 
     :param image: Image to be checked
     :type image: np.ndarray | torch.Tensor
@@ -75,12 +75,19 @@ def check_nan_values(image: np.ndarray | torch.Tensor, reference: bool = False) 
     :raises TypeError: If the input type is not supported
 
     """
+
+    label = "Reference image" if reference else "Image"
+
     if isinstance(image, np.ndarray):
         if np.isnan(image).any():
-            raise ValueError(f"{'Reference image' if reference else 'Image'} contains NaN values.")
+            raise ValueError(f"{label} contains NaN values.")
+        if not np.isfinite(image).all():
+            raise ValueError(f"{label} contains non-finite values.")
     elif isinstance(image, torch.Tensor):
         if torch.isnan(image).any():
-            raise ValueError(f"{'Reference image' if reference else 'Image'} contains NaN values.")
+            raise ValueError(f"{label} contains NaN values.")
+        if not torch.isfinite(image).all():
+            raise ValueError(f"{label} contains non-finite values.")
     else:
         raise TypeError(f"Input must be a numpy array or a torch tensor, but got {type(image)}.")
     return False

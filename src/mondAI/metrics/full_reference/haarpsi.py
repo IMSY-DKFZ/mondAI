@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
+from functools import partial
 
 import torch
 
@@ -186,6 +187,10 @@ class HaarPSI(FullReferenceMetric):
         image = image.double()
         reference = reference.double()
 
+        # If the images are identical, return a perfect score of 1.0
+        if torch.equal(image, reference):
+            return torch.ones((), device=image.device, dtype=image.dtype)
+
         # Convert from RGB to YIQ color space
         if self.use_rgb:
             image = rgb_to_yiq(image)
@@ -243,19 +248,25 @@ class HaarPSI(FullReferenceMetric):
 
     def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
         self._register_implementation(
-            implementations, "piq", get_piq_haarpsi(self.use_rgb, self.C, self.alpha, self.preprocess_with_subsampling)
+            implementations,
+            "piq",
+            partial(get_piq_haarpsi, self.use_rgb, self.C, self.alpha, self.preprocess_with_subsampling),
         )
-        self._register_implementation(implementations, "piqa", get_piqa_haarpsi(self.use_rgb, self.C, self.alpha))
         self._register_implementation(
-            implementations, "ideal_iqa", get_ideal_iqa_haarpsi(self.C, self.alpha, self.preprocess_with_subsampling)
+            implementations, "piqa", partial(get_piqa_haarpsi, self.use_rgb, self.C, self.alpha)
+        )
+        self._register_implementation(
+            implementations,
+            "ideal_iqa",
+            partial(get_ideal_iqa_haarpsi, self.C, self.alpha, self.preprocess_with_subsampling),
         )
         self._register_implementation(
             implementations,
             "deepinv",
-            get_deepinv_haarpsi(self.use_rgb, self.C, self.alpha, self.preprocess_with_subsampling),
+            partial(get_deepinv_haarpsi, self.use_rgb, self.C, self.alpha, self.preprocess_with_subsampling),
         )
         self._register_implementation(
-            implementations, "original_numpy", get_original_numpy_haarpsi(self.preprocess_with_subsampling)
+            implementations, "original_numpy", partial(get_original_numpy_haarpsi, self.preprocess_with_subsampling)
         )
 
     def __str__(self) -> str:

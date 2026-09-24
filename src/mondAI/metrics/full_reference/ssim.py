@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
+from functools import partial
 
 import torch
 
@@ -168,47 +169,47 @@ class SSIM(FullReferenceMetric):
         self._register_implementation(
             implementations,
             "scikit-image",
-            get_skimage_ssim(self.kernel_size, self.dynamic_range, self.k1, self.k2, self.kernel_sigma),
+            partial(get_skimage_ssim, self.kernel_size, self.dynamic_range, self.k1, self.k2, self.kernel_sigma),
         )
         self._register_implementation(
             implementations,
             "torchmetrics",
-            get_torchmetrics_ssim(self.kernel_sigma, self.kernel_size, self.dynamic_range, self.k1, self.k2),
+            partial(get_torchmetrics_ssim, self.kernel_sigma, self.kernel_size, self.dynamic_range, self.k1, self.k2),
         )
         self._register_implementation(
             implementations,
             "tensorflow",
-            get_tensorflow_ssim(self.dynamic_range, self.kernel_size, self.kernel_sigma, self.k1, self.k2),
+            partial(get_tensorflow_ssim, self.dynamic_range, self.kernel_size, self.kernel_sigma, self.k1, self.k2),
         )
         self._register_implementation(
             implementations,
             "piq",
-            get_piq_ssim(self.kernel_size, self.kernel_sigma, self.dynamic_range, self.k1, self.k2),
+            partial(get_piq_ssim, self.kernel_size, self.kernel_sigma, self.dynamic_range, self.k1, self.k2),
         )
         self._register_implementation(
             implementations,
             "piqa",
-            get_piqa_ssim(self.kernel_size, self.kernel_sigma, self.dynamic_range, self.k1, self.k2),
+            partial(get_piqa_ssim, self.kernel_size, self.kernel_sigma, self.dynamic_range, self.k1, self.k2),
         )
         self._register_implementation(
             implementations,
             "sewar",
-            get_sewar_ssim(self.kernel_size, self.k1, self.k2, self.dynamic_range, self.kernel_sigma),
+            partial(get_sewar_ssim, self.kernel_size, self.k1, self.k2, self.dynamic_range, self.kernel_sigma),
         )
         self._register_implementation(
             implementations,
             "monai",
-            get_monai_ssim(self.dynamic_range, self.kernel_size, self.kernel_sigma, self.k1, self.k2),
+            partial(get_monai_ssim, self.dynamic_range, self.kernel_size, self.kernel_sigma, self.k1, self.k2),
         )
         self._register_implementation(
             implementations,
             "deepinv",
-            get_deepinv_ssim(self.dynamic_range, self.kernel_sigma, self.kernel_size, self.k1, self.k2),
+            partial(get_deepinv_ssim, self.dynamic_range, self.kernel_sigma, self.kernel_size, self.k1, self.k2),
         )
         self._register_implementation(
             implementations,
             "medimetrics",
-            get_medimetrics_ssim(self.dynamic_range, self.kernel_size, self.kernel_sigma, self.k1, self.k2),
+            partial(get_medimetrics_ssim, self.dynamic_range, self.kernel_size, self.kernel_sigma, self.k1, self.k2),
         )
 
     def __str__(self) -> str:
