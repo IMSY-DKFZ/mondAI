@@ -18,6 +18,7 @@ dependencies = [
     "torch>=2.10,<3.0",         # BSD-3-Clause
     "numpy>=1.26.4,<2.0",       # BSD-3-Clause and MIT
     "torchvision>=0.25.0,<1.0", # BSD-3-Clause
+    "scipy>=1.15.3,<2.0",       # BSD-3-Clause
 ]
 
 [project.optional-dependencies]
