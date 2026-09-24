@@ -228,11 +228,17 @@ class Metric(ABC):
         logger.info(f"Metric computation done with mondAI v{__version__} using {self!s}")
 
         # return scalar if there are no "other dimensions" to iterate over
-        if len(other_shape) == 0 and not getattr(self, "batched", False):
+        is_batched = getattr(self, "batched", False)
+
+        if len(other_shape) == 0 and not is_batched:
             return scores_1d.item()
 
-        # reshape back to original "other dimensions" shape
-        scores = scores_1d.reshape(other_shape) if not getattr(self, "batched", False) else scores_1d
+        if is_batched:
+            batch_dim_index = dims_enum.index(Dimension.BATCH)
+            batch_size = torch_inputs[0].shape[batch_dim_index]
+            scores = scores_1d.reshape(*other_shape, batch_size)
+        else:
+            scores = scores_1d.reshape(other_shape)
 
         # convert to numpy if necessary for consistency with input types
         if output_is_torch:
