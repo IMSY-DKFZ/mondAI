@@ -95,6 +95,10 @@ class VIFP(FullReferenceMetric):
 
         self._input_checks(image, reference)
 
+        # If the images are identical, return a perfect score of 1.0
+        if torch.equal(image, reference):
+            return torch.ones((), device=image.device, dtype=image.dtype)
+
         EPSILON = 1e-10  # Small constant to prevent division by zero as defined in original MATLAB code
 
         numerator = 0.0

@@ -186,6 +186,10 @@ class HaarPSI(FullReferenceMetric):
         image = image.double()
         reference = reference.double()
 
+        # If the images are identical, return a perfect score of 1.0
+        if torch.equal(image, reference):
+            return torch.ones((), device=image.device, dtype=image.dtype)
+
         # Convert from RGB to YIQ color space
         if self.use_rgb:
             image = rgb_to_yiq(image)

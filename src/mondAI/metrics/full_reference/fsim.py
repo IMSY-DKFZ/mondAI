@@ -276,6 +276,10 @@ class FSIM(FullReferenceMetric):
         image = image.double()
         reference = reference.double()
 
+        # If the images are identical, return a perfect score of 1.0
+        if torch.equal(image, reference):
+            return torch.ones((), device=image.device, dtype=image.dtype)
+
         # Downsample the images
         min_dimension = min(
             image.shape[self.expected_dimensions.index(dim)] for dim in (Dimension.HEIGHT, Dimension.WIDTH)

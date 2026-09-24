@@ -188,6 +188,10 @@ class IWSSIM(FullReferenceMetric):
         """
         self._input_checks(image, reference)
 
+        # If the images are identical, return a perfect score of 1.0
+        if torch.equal(image, reference):
+            return torch.ones((), device=image.device, dtype=image.dtype)
+
         weights = torch.tensor(self.weights[: self.scales], device=image.device, dtype=image.dtype)
         weights = weights / weights.sum()
 
