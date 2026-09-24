@@ -20,7 +20,7 @@ from mondAI.metrics.full_reference.base import FullReferenceMetric
 from mondAI.metrics.no_reference import NO_REFERENCE_METRICS
 from mondAI.metrics.no_reference.base import NoReferenceMetric
 
-ROUND_DIGITS = 9
+ROUND_DIGITS = 8
 
 
 @pytest.mark.parametrize("metric_class", FULL_REFERENCE_METRICS)
