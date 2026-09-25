@@ -1,0 +1,511 @@
+# SPDX-FileCopyrightText: 2026 Division of Intelligent Medical Systems, DKFZ
+# SPDX-License-Identifier: Apache-2.0
+
+from collections.abc import Callable
+from functools import partial
+
+import torch
+
+from mondAI.logging import get_logger
+from mondAI.metrics.dimension import Dimension
+from mondAI.metrics.full_reference.base import FullReferenceMetric
+from mondAI.metrics.third_party.deepinv import get_deepinv_haarpsi
+from mondAI.metrics.third_party.others import get_ideal_iqa_haarpsi, get_original_numpy_haarpsi
+from mondAI.metrics.third_party.piq import get_piq_haarpsi
+from mondAI.metrics.third_party.piqa import get_piqa_haarpsi
+from mondAI.utils.checks import check_rgb, check_value_range, warn_if_all_pixels_in_0_to_1_range
+from mondAI.utils.conversions import rgb_to_yiq
+from mondAI.utils.signal_processing import convolve2d
+from mondAI.utils.similarity_map import similarity_map
+
+logger = get_logger()
+
+
+class HaarPSI(FullReferenceMetric):
+    """Haar wavelet-based perceptual similarity index (HaarPSI) computes the perceptual
+    similarity between two images based on features from their Haar wavelet
+    coefficients. It is designed to capture perceptual differences between images which
+    align with human visual perception by optimizing the parameters C and alpha. While
+    for natural images C=30 and alpha=4.2 are recommended, for medical images C=5 and
+    alpha=4.9 are recommended, as shown in Karner et al. (2025), which are the defaults
+    in HaarPSI_MED.
+
+    It expects two-dimensional grayscale or RGB (set `use_rgb` to True) images with pixel values in the range [0, 255],
+    therefore input images are scaled from [0,1] to [0,255] by multiplying with a scaling factor of 255.
+    The resulting HaarPSI score ranges from 0 to 1, where a score of 1 indicates perfect
+    similarity between the input image and the reference image, while a score of 0 indicates
+    no perceptual similarity. Note that the RGB definition is not just a simple channel-wise application of the
+    grayscale definition,
+    but rather a different definition that considers the Y, I and Q channels of the YIQ color space separately.
+
+    HaarPSI uses the magnitudes of high-frequency Haar wavelet coefficients to compute local similarities and the
+    magnitudes of low-frequency Haar wavelet coefficients to compute weights for these local similarities.
+    For the mathematical formulation of the metric, please refer to
+    the original publication
+
+
+    Implementation adapted from Anna Breger and Clemens Karner
+    (https://github.com/ideal-iqa/haarpsi-pytorch/blob/main/haarpsi.py commit:
+    a64b753b1b95a826996fcc035ce3f4dc4c630a5f, License: MIT), with the difference
+    that this implementation expects images with pixel values in the range [0, 255]
+    as the original publication, while their implementation expects images with
+    pixel values in the range [0, 1]. Furthermore, this implementation uses a double
+    precision floating point format for all computations, while their implementation
+    uses single precision. The original MATLAB and NumPy implementations by Rafael
+    Reisenhofer (https://github.com/rgcda/haarpsi/blob/master/HaarPSI.m commit:
+    2c2793108477deb81971658a7666d5f85ba2587b, License: MIT) and David Neumann
+    (https://github.com/rgcda/haarpsi/blob/master/haarPsi.py commit:
+    2c2793108477deb81971658a7666d5f85ba2587b, License: MIT) also expect images with
+    pixel values in the range [0, 255] and use double precision floating point
+    format.
+
+    Original publication:
+    R. Reisenhofer, S. Bosse, G. Kutyniok and T. Wiegand.
+    A Haar Wavelet-Based Perceptual Similarity Index for Image Quality Assessment.
+    Signal Processing: Image Communication, vol. 61, 33-43, 2018.
+    doi:10.1016/j.image.2017.11.001
+
+    Parameter configuration for medical images based on this publication:
+    Karner, C., Gröhl, J., Selby, I., Babar, J., Beckford, J., Else, T. R., Sadler, T. J.,
+    Shahipasand, S., Thavakumar, A., Roberts, M., Rudd, J. H. F., Schönlieb, C.-B.,
+    Weir-McCall, J. R., & Breger, A. (2025). Parameter choices in HaarPSI for IQA with
+    medical images. 2025 IEEE International Symposium on Biomedical Imaging (ISBI).
+
+    """
+
+    @property
+    def name(self) -> str:
+        return "Haar wavelet-based perceptual similarity index"
+
+    @property
+    def abbreviation(self) -> str:
+        return "HaarPSI"
+
+    @property
+    def higher_is_better(self) -> bool:
+        return True
+
+    @property
+    def scaling_factor(self) -> float:
+        return 255.0
+
+    @property
+    def expected_dimensions(self) -> tuple[Dimension, ...]:
+        if self.use_rgb:
+            return (Dimension.CHANNEL, Dimension.HEIGHT, Dimension.WIDTH)
+        return (Dimension.HEIGHT, Dimension.WIDTH)
+
+    def __init__(
+        self, preprocess_with_subsampling: bool = True, C: float = 30.0, alpha: float = 4.2, use_rgb: bool = False
+    ) -> None:
+        """Initialize HaarPSI metric with parameter settings recommended for natural
+        images.
+
+        :param preprocess_with_subsampling: Whether to preprocess the images with
+            subsampling to accommodate for viewing distance in psychophysical
+            experiments as described in the original publication. Default is True
+        :type preprocess_with_subsampling: bool
+        :param C: A positive constant used in the computation of HaarPSI to avoid
+            instability when the local similarity is close to zero. Default for medical
+            images is 5.0, for natural images 30.0. The authors suggest to set it in
+            the range [5.0, 100.0].
+        :type C: float
+        :param alpha: A positive constant used in the computation of HaarPSI to control
+            the logistic function of the local similarity map. Default for medical
+            images is 4.9, for natural images 4.2. The authors suggest to set it in the
+            range [2.0, 8.0].
+        :type alpha: float
+        :param use_rgb: Whether to use metric definition for RGB images instead of
+            grayscale definition. Note that the RGB definition is different from
+            applying the grayscale definition to each channel separately and then
+            aggregate. If True, the metric will expect 3-channel RGB images. Default is
+            False (grayscale).
+        :type use_rgb: bool
+        : raises ValueError: If C is not a positive float.
+        : raises ValueError: If alpha is not a positive float.
+        : raises ValueError: If use_rgb is True but the images do not have 3 channels, which
+            is required for the RGB definition of HaarPSI.
+
+        """
+
+        super().__init__()
+        self.preprocess_with_subsampling = preprocess_with_subsampling
+        self.C = C
+        self.alpha = alpha
+        self.use_rgb = use_rgb
+
+        # Check parameter settings for validity
+        if self.C <= 0:
+            raise ValueError(f"C must be a positive float, but got {self.C}.")
+
+        if not isinstance(self.C, float):
+            if isinstance(self.C, int):
+                self.C = float(self.C)
+            else:
+                raise ValueError(f"C must be a float, but got {type(self.C)}.")
+
+        if self.alpha <= 0:
+            raise ValueError(f"alpha must be a positive float {self.alpha}.")
+
+        if not isinstance(self.alpha, float):
+            raise ValueError(f"alpha must be a float, but got {type(self.alpha)}.")
+
+        # Warnings for parameter choices outside of recommended ranges, but still valid
+        if not 5 <= self.C <= 100:
+            logger.warning(
+                "C should be set in the range [5, 100]. Please ensure that your choice of C "
+                f"is appropriate for your use case, got {self.C}."
+            )
+
+        if not 2 <= self.alpha <= 8:
+            logger.warning(
+                "alpha should be set in the range [2, 8]. Please ensure that your choice of alpha "
+                f"is appropriate for your use case, got {self.alpha}."
+            )
+
+        logger.info(
+            "HaarPSI was selected with parameters C=30.0 and alpha=4.2, which are recommended for natural images. "
+            "If you intended to use the parameter settings recommended for medical images,based on the publication "
+            "by Karner et al. (2025), please use HaarPSI_MED with C=5.0 and alpha=4.9."
+        )
+
+    def _compute(self, image: torch.Tensor, reference: torch.Tensor) -> torch.Tensor:
+        """Compute the metric between image and reference.
+
+        :param image: The input image for which the metric is being computed.
+        :type image: torch.Tensor
+        :param reference: The reference image to compare against.
+        :type reference: torch.Tensor
+        :return: The computed metric score.
+        :rtype: torch.Tensor
+
+        """
+
+        self._input_checks(image, reference)
+
+        # Convert to double precision if not already (as in original implementation)
+        image = image.double()
+        reference = reference.double()
+
+        # If the images are identical, return a perfect score of 1.0
+        if torch.equal(image, reference):
+            return torch.ones((), device=image.device, dtype=image.dtype)
+
+        # Convert from RGB to YIQ color space
+        if self.use_rgb:
+            image = rgb_to_yiq(image)
+            reference = rgb_to_yiq(reference)
+
+        # Downscale input to simulates the typical distance between an image and its viewer.
+        if self.preprocess_with_subsampling:
+            image = self._subsample(image)
+            reference = self._subsample(reference)
+
+        # Perform Haar wavelet decomposition on 3 scales
+        n_scales = 3
+        coefficients_reference = self._haar_wavelet_decomposition(reference[0] if self.use_rgb else reference, n_scales)
+        coefficients_image = self._haar_wavelet_decomposition(image[0] if self.use_rgb else image, n_scales)
+
+        # Pre-allocate variables for the local similarities and the weights
+        n_orientations = 2  # consider vertical and horizontal orientations of a 2D discrete Haar wavelet transform
+        n_feature_channels = n_orientations + 1 if self.use_rgb else n_orientations  # grayscale: 2 , RGB 3 (Y, I, Q)
+        local_similarities = reference.new_zeros((n_feature_channels, *reference.shape))  # (2 or 3, H, W)
+        weights = reference.new_zeros(local_similarities.shape)  # (2 or 3, H, W)
+
+        # Computes the weights and similarities for each orientation
+        for orientation in range(n_orientations):
+            # Low-frequency coefficients used as weights
+            weights[orientation] = self._get_weights_for_orientation(
+                coefficients_image, coefficients_reference, n_scales, orientation
+            )
+
+            # High-frequency coefficients used for local similarity
+            local_similarities[orientation] = self._get_local_similarity_for_orientation(
+                coefficients_image, coefficients_reference, n_scales, orientation
+            )
+
+        # Compute similarities for color channels (third feature channel)
+        if self.use_rgb:
+
+            def magnitude(image: torch.Tensor) -> torch.Tensor:
+                return torch.abs(convolve2d(image, image.new_ones((2, 2)) / 4.0, padding="same"))
+
+            coefficients_reference_I = magnitude(reference[1])
+            coefficients_image_I = magnitude(image[1])
+            coefficients_reference_Q = magnitude(reference[2])
+            coefficients_image_Q = magnitude(image[2])
+
+            similarity_I = similarity_map(coefficients_reference_I, coefficients_image_I, self.C)
+            similarity_Q = similarity_map(coefficients_reference_Q, coefficients_image_Q, self.C)
+            weights[2] = (weights[0] + weights[1]) / 2
+            local_similarities[2] = (similarity_I + similarity_Q) / 2
+
+        # Calculates the final score
+        pre_logit = torch.sum(torch.sigmoid(self.alpha * local_similarities) * weights) / torch.sum(weights)
+        similarity = (torch.log(pre_logit / (1 - pre_logit)) / self.alpha) ** 2
+
+        return similarity  # noqa: RET504  # , local_similarities, weights
+
+    def _register_other_implementations(self, implementations: dict[str, Callable[..., torch.Tensor]]) -> None:
+        self._register_implementation(
+            implementations,
+            "piq",
+            partial(get_piq_haarpsi, self.use_rgb, self.C, self.alpha, self.preprocess_with_subsampling),
+        )
+        self._register_implementation(
+            implementations, "piqa", partial(get_piqa_haarpsi, self.use_rgb, self.C, self.alpha)
+        )
+        self._register_implementation(
+            implementations,
+            "ideal_iqa",
+            partial(get_ideal_iqa_haarpsi, self.C, self.alpha, self.preprocess_with_subsampling),
+        )
+        self._register_implementation(
+            implementations,
+            "deepinv",
+            partial(get_deepinv_haarpsi, self.use_rgb, self.C, self.alpha, self.preprocess_with_subsampling),
+        )
+        self._register_implementation(
+            implementations, "original_numpy", partial(get_original_numpy_haarpsi, self.preprocess_with_subsampling)
+        )
+
+    def __str__(self) -> str:
+        """Full text representation of the metric.
+
+        :return: A string representation of the metric including its name,
+            abbreviation, and an arrow indicating whether higher values are better.
+        :rtype: str
+
+        """
+        arrow = self._arrow_indicating_optimum()
+        preprocessing = " and subsampling as preprocessing" if self.preprocess_with_subsampling else ""
+        rgb_info = " using RGB definition" if self.use_rgb else ""
+        return (
+            f"{self.name} ({self.abbreviation}) {arrow} with C={self.C} and alpha={self.alpha}{preprocessing}{rgb_info}"
+        )
+
+    def _input_checks(self, image: torch.Tensor, reference: torch.Tensor) -> None:
+        """Perform input checks specific to HaarPSI, such as checking for valid pixel
+        value ranges and dimensions.
+
+        Warns if the images have height or width smaller than 16 pixels, which may lead
+        to unreliable results due to border effects of the 16x16 kernel used in
+        HaarPSI. Warns if all pixel values in both image and reference are in the range
+        [0, 1], which may indicate that the images are not correctly scaled for
+        HaarPSI, which expects pixel values in the range [0, 255].
+
+        :param image: The input image for which the metric is being computed.
+        :type image: torch.Tensor
+        :param reference: The reference image to compare against.
+        :type reference: torch.Tensor
+        :raises ValueError: If the input image contains pixel values outside the range
+            [0, 255].
+        :raises ValueError: If the reference image contains pixel values outside the
+            range [0, 255].
+        :raises ValueError: If use_rgb is True but the images do not have 3 channels,
+            which is required for the RGB definition of HaarPSI.
+
+        """
+        # Input checks specific to HaarPSI
+        check_value_range(image, 0, 255)
+        check_value_range(reference, 0, 255, reference=True)
+
+        warn_if_all_pixels_in_0_to_1_range(image, reference)
+
+        if any(
+            [reference.shape[self.expected_dimensions.index(dim)] < 16 for dim in (Dimension.HEIGHT, Dimension.WIDTH)]
+        ):
+            logger.warning(
+                "Input image has height or width smaller than 16 pixels. HaarPSI uses a 16x16 kernel, "
+                "so results may be unreliable for small images due to border effects."
+            )
+
+        if any([image.shape[self.expected_dimensions.index(dim)] < 16 for dim in (Dimension.HEIGHT, Dimension.WIDTH)]):
+            logger.warning(
+                "Images have height or width smaller than 16 pixels. HaarPSI uses a 16x16 kernel, "
+                "so results may be unreliable for small images due to border effects."
+            )
+
+        if self.use_rgb:
+            check_rgb(
+                self.expected_dimensions,
+                image,
+                self.abbreviation,
+                additional_error_message=(
+                    " Instead you might want to use the grayscale definition (use_rgb=False) and apply it channel wise."
+                ),
+            )
+
+    def _subsample(self, image: torch.Tensor) -> torch.Tensor:
+        """Subsample the input image by a factor of 2 using a 2x2 mean filter and
+        dyadic subsampling. This simulates the typical distance between an image and
+        its viewer in psychophysical experiments as described in the original
+        publication.
+
+        If use_rgb is True and the input image has 3 channels, the subsampling is
+        applied to each channel separately and then the subsampled channels are stacked
+        back together.
+
+        :param image: The input 2D image to be subsampled, shape (H, W), or (C, H, W)
+            if use_rgb is True and the image has 3 channels.
+        :type image: torch.Tensor
+        :return: The subsampled image, shape (H/2, W/2), or (H/2+1, W/2+1) if the input
+            dimensions are odd. If use_rgb is True and the input image has 3 channels,
+            the output shape will be (C, H/2, W/2) or (C, H/2+1, W/2+1) if the input
+            dimensions are odd.
+        :rtype: torch.Tensor
+
+        """
+
+        # apply subsampling to each channel separately and stack back together
+        if self.use_rgb and image.shape[self.expected_dimensions.index(Dimension.CHANNEL)] == 3:
+            subsampled_channels = [self._subsample(image[channel]) for channel in range(3)]
+            return torch.stack(subsampled_channels, dim=self.expected_dimensions.index(Dimension.CHANNEL))
+
+        kernel_size = 2
+        filter_weights = image.new_ones(1, 1, kernel_size, kernel_size) / kernel_size**2
+        padded_image = torch.nn.functional.pad(image.unsqueeze(0), (0, 1, 0, 1))
+        mean_filtered = torch.nn.functional.conv2d(padded_image, weight=filter_weights)
+        return mean_filtered.squeeze()[::kernel_size, ::kernel_size]
+
+    def _haar_wavelet_decomposition(self, image: torch.Tensor, n_scales: int) -> torch.Tensor:
+        """Perform a 2D Haar wavelet decomposition of the input image up to the
+        specified number of scales.
+
+        :param image: The input 2D image to be decomposed, shape (H, W)
+        :type image: torch.Tensor
+        :param n_scales: The number of scales to decompose the image into
+        :type n_scales: int
+        :return: The Haar wavelet coefficients, shape (2 * n_scales, H, W)
+        :rtype: torch.Tensor
+
+        """
+        coefficients = image.new_zeros(2 * n_scales, *image.shape)  # (2*n_scales, H, W)
+
+        def _get_haar_filter(scale: int) -> torch.Tensor:
+            """Get the 2D Haar wavelet filter for the specified scale.
+
+            :param scale: The scale for which to get the Haar filter (1-based index)
+            :type scale: int
+            :return: The 2D Haar wavelet filter for the specified scale, shape
+                  (2^scale, 2^scale)
+            :rtype: torch.Tensor
+
+            """
+            haar_filter = 2**-scale * image.new_ones(2**scale, 2**scale)
+            haar_filter[: haar_filter.shape[0] // 2, :] = -haar_filter[: haar_filter.shape[0] // 2, :]
+            return haar_filter
+
+        for scale in range(n_scales):
+            haar_filter = _get_haar_filter(scale + 1)
+            coefficients[scale] = convolve2d(image, haar_filter, padding="same")
+            coefficients[scale + n_scales] = convolve2d(image, haar_filter.t(), padding="same")
+        return coefficients
+
+    def _get_weights_for_orientation(
+        self,
+        coefficients_image: torch.Tensor,
+        coefficients_reference: torch.Tensor,
+        n_scales: int,
+        orientation: int,
+    ) -> torch.Tensor:
+        """Calculate the weights for the specified orientation based on maximum
+        magnitudes of Haar wavelet coefficients.
+
+        :param coefficients_image: The Haar wavelet coefficients of the input image,
+            shape (2*n_scales, H, W)
+        :type coefficients_image: torch.Tensor
+        :param coefficients_reference: The Haar wavelet coefficients of the reference
+            image, shape (2*n_scales, H, W)
+        :type coefficients_reference: torch.Tensor
+        :param n_scales: The number of scales in the Haar wavelet decomposition
+        :type n_scales: int
+        :param orientation: The orientation for which to calculate the weights
+        :type orientation: int
+        :return: The weights for the specified orientation, shape (H, W)
+        :rtype: torch.Tensor
+
+        """
+        return torch.maximum(
+            coefficients_reference[len(coefficients_reference) // n_scales + orientation * n_scales].abs(),
+            coefficients_image[len(coefficients_image) // n_scales + orientation * n_scales].abs(),
+        )
+
+    def _get_local_similarity_for_orientation(
+        self,
+        coefficients_image: torch.Tensor,
+        coefficients_reference: torch.Tensor,
+        n_scales: int,
+        orientation: int,
+    ) -> torch.Tensor:
+        """Calculate local similarity for the specified orientation based on magnitudes
+        of Haar wavelet coefficients.
+
+        :param coefficients_image: The Haar wavelet coefficients of the input image,
+            shape (2*n_scales, H, W)
+        :type coefficients_image: torch.Tensor
+        :param coefficients_reference: The Haar wavelet coefficients of the reference
+            image, shape (2*n_scales, H, W)
+        :type coefficients_reference: torch.Tensor
+        :param n_scales: The number of scales in the Haar wavelet decomposition
+        :type n_scales: int
+        :param orientation: The orientation for which to calculate the local similarity
+        :type orientation: int
+        :return: The local similarity for the specified orientation, shape (H, W)
+        :rtype: torch.Tensor
+
+        """
+
+        coefficients_reference_magnitude = coefficients_reference.abs()[
+            (orientation * n_scales, 1 + orientation * n_scales), :, :
+        ]
+        coefficients_image_magnitude = coefficients_image.abs()[
+            (orientation * n_scales, 1 + orientation * n_scales), :, :
+        ]
+
+        similarity_maps = similarity_map(coefficients_reference_magnitude, coefficients_image_magnitude, self.C)
+        return (similarity_maps[0] + similarity_maps[1]) / 2
+
+
+class HaarPSI_MED(HaarPSI):
+    """Haar wavelet-based perceptual similarity index with parameter settings
+    recommended for medical images based on the publication by Karner et al (2025)."""
+
+    @property
+    def abbreviation(self) -> str:
+        return "HaarPSI_MED"
+
+    def __init__(
+        self, preprocess_with_subsampling: bool = True, C: float = 5.0, alpha: float = 4.9, use_rgb: bool = False
+    ) -> None:
+        """Initialize HaarPSI with parameter settings recommended for medical images
+        based on the publication by Karner et al. (2025).
+
+        :param preprocess_with_subsampling: Whether to preprocess the images with
+            subsampling to accommodate for viewing distance in psychophysical
+            experiments as described in the original publication. Default is True
+        :type preprocess_with_subsampling: bool
+        :param C: A positive constant used in the computation of HaarPSI to avoid
+            instability when the local similarity is close to zero. Default for medical
+            images is 5.0, for natural images 30.0. The authors suggest to set it in
+            the range [5.0, 100.0].
+        :type C: float
+        :param alpha: A positive constant used in the computation of HaarPSI to control
+            the logistic function of the local similarity map. Default for medical
+            images is 4.9, for natural images 4.2. The authors suggest to set it in the
+            range [2.0, 8.0].
+        :type alpha: float
+        :param use_rgb: Whether to use metric definition for RGB images instead of
+            grayscale definition. Note that the RGB definition is different from
+            applying the grayscale definition to each channel separately and then
+            aggregate. If True, the metric will expect 3-channel RGB images. Default is
+            False (grayscale).
+        :type use_rgb: bool
+
+        """
+        super().__init__(preprocess_with_subsampling=preprocess_with_subsampling, C=C, alpha=alpha, use_rgb=use_rgb)
+        logger.info(
+            "HaarPSI_MED was selected with parameters C=5.0 and alpha=4.9, which are recommended for medical images "
+            "based on the publication by Karner et al. (2025). If you intended to use the parameter settings "
+            "recommended for natural images, please use HaarPSI with C=30.0 and alpha=4.2."
+        )

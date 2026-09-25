@@ -18,3 +18,11 @@ help:
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+# Generate API .rst files from the package
+apidoc:
+	@sphinx-apidoc -o "$(SOURCEDIR)/generated" -f -M ../src/mondAI
+
+# Build HTML (ensure apidoc ran)
+html: apidoc
+	@$(SPHINXBUILD) -M html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

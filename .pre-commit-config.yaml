@@ -4,13 +4,54 @@ repos:
     hooks:
       # Run the linter
       - id: ruff-check
-        args: [--fix]
+        args: [--fix, --config=pyproject.toml]
+        exclude: 'src/mondAI/metrics/third_party/'
       # Run the formatter
       - id: ruff-format
+        args: [--config=pyproject.toml]
+        exclude: ^src/mondAI/metrics/full_reference/(haarpsi_original|haarpsi_ideal_iqa)\.py$
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.19.1
     hooks:
-      - id: mypy 
+      - id: mypy
         additional_dependencies: [types-requests]
         files: ^(src|tests)/ #only check src and tests folders not docs or other files
+
+  - repo: https://github.com/PyCQA/docformatter
+    rev: v1.7.7
+    hooks:
+      - id: docformatter
+        additional_dependencies: [tomli]
+        args: ["--in-place", "--style=sphinx", "--recursive", "--config", "pyproject.toml"]
+
+  - repo: https://github.com/lk16/detect-missing-init
+    rev: v0.1.6
+    hooks:
+      - id: detect-missing-init
+        args: ["--create", "--python-folders", "mondAI"]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-yaml
+      - id: check-toml
+      - id: trailing-whitespace
+      - id: check-case-conflict
+      - id: debug-statements
+      - id: name-tests-test
+        args: [--pytest-test-first]
+      - id: mixed-line-ending
+      - id: end-of-file-fixer
+
+  # Ensure that every Python file contains the SPDX license header.
+  # Missing headers are inserted automatically.
+  - repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.5.6
+    hooks:
+      - id: insert-license
+        types: [python]
+        exclude: ^src/mondAI/metrics/third_party/ # Exclude third-party metrics from license header insertion
+        args:
+          - --license-filepath
+          - spdx_header.txt
