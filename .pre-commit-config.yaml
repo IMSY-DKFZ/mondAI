@@ -54,4 +54,4 @@ repos:
         exclude: ^src/mondAI/metrics/third_party/ # Exclude third-party metrics from license header insertion
         args:
           - --license-filepath
-          - license_header.txt
+          - spdx_header.txt
