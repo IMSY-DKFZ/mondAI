@@ -147,6 +147,21 @@ doi: 10.1109/TIP.2003.819861.
 
 Implementation adapted from the original MATLAB implementation by Zhou Wang_ https://ece.uwaterloo.ca/~z70wang/research/ssim/ssim_index.m
 
+## S3IM
+
+Based on:
+Joseph, Francis Kalloor.
+"Sparse structural similarity index (S3IM): a new full reference image quality metric for photoacoustic imaging."
+Photons Plus Ultrasound: Imaging and Sensing 2025. Vol. 13319. SPIE, 2025.
+and
+Van Der Brugge, Melle, Kalloor Joseph Francis, and Navchetan Awasthi.
+"Assessing image quality in photoacoustic imaging: A metric-based and deep learning-based evaluation."
+Photoacoustics (2026): 100800.
+
+Implementation adapted from original numpy implementation by Melle Van Der Brugge, which is available at:
+https://github.com/MellevdB/photoacoustic-image-quality-assessment/blob/main/src/evaluation/metrics/fr.py#L21
+(licence: MIT)
+
 ## VIFP
 
 Based on:
