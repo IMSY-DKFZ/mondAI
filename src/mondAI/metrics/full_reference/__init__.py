@@ -16,6 +16,7 @@ from .msssim import MSSSIM
 from .nmse import NMSE
 from .psnr import PSNR
 from .rmse import RMSE
+from .s3im import S3IM
 from .ssim import SSIM
 from .vifp import VIFP
 from .vsi import VSI
@@ -40,4 +41,5 @@ FULL_REFERENCE_METRICS = [
     RMSE,
     LPIPS,
     NMSE,
+    S3IM,
 ]
